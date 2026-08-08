@@ -1,0 +1,487 @@
+================================================================================
+                  ESCTRIX - PROJECT PLAN & IMPLEMENTATION SUMMARY
+                        Complete Development Documentation
+================================================================================
+
+Project Name    : ESCTRIX
+Project Type    : Secure Web Chat Application (E2EE)
+Platform        : Django (Python) Web Application
+Location        : d:\Chipher\esctrix_django\
+Date            : August 2026
+Admin Username  : Esctrix215
+Admin Password  : Jerry215
+Admin Email     : admin@esctrix.com
+App URL         : http://127.0.0.1:8000/
+Admin Panel URL : http://127.0.0.1:8000/admin/
+
+================================================================================
+                              USER'S PLAN / VISION
+================================================================================
+
+The user's original plan was to build a premium, Instagram-inspired secure
+messaging web application with the following goals:
+
+  1. BRANDING
+     - Name the app "ESCTRIX"
+     - Create a custom logo (orbit/chat bubble/arrow icon + "ESCTRIX" text)
+     - The app should feel modern, dark-themed, and professional
+
+  2. USER AUTHENTICATION
+     - Login and Registration pages (no Facebook login)
+     - A one-click Privacy Policy / E2EE terms checkbox on login
+     - Real-time username availability check (Instagram style: green tick or
+       red cross as user types)
+     - Forgot password using username + date of birth (no email required)
+     - Human verification (checkbox confirmation in place of CAPTCHA)
+
+  3. CHAT FEATURES
+     - End-to-End Encrypted (E2EE) messaging
+     - Add friends / friend requests / notifications
+     - Direct messaging and group chats
+     - Typing indicators, read receipts (✔✔), online/offline status
+     - Emoji reactions on messages
+     - Disappearing/self-destruct messages (countdown timer)
+     - File/image sharing in chats (encrypted)
+
+  4. PROFILE MANAGEMENT
+     - Editable display name (profile name)
+     - Editable username, bio, date of birth
+     - Live preview of name changes while typing
+     - Avatar system
+
+  5. USER SETTINGS
+     - Block / unblock users
+     - Change password
+     - Help & Support ticket submission
+     - Theme selector (multiple chat color themes)
+
+  6. ADMIN SYSTEM
+     - Separate admin credentials (Esctrix215 / Jerry215)
+     - Admin logs in from the SAME login page as regular users
+     - Automatically redirected to admin panel after login
+     - Admin panel styled in the same dark ESCTRIX theme
+     - Admin can:
+         * View all user accounts
+         * Deactivate / terminate user accounts
+         * Read and resolve support tickets
+         * Manage friend requests, groups, block lists
+
+  7. MOBILE-FRIENDLY
+     - The app should work fully on mobile phones
+     - Responsive bottom navigation, fullscreen chat on mobile
+     - Touch-friendly UI
+
+  8. CLEAN PROJECT
+     - Remove unused files, legacy folders, IDE files, Python cache
+     - Organized file structure
+     - Version-controlled with Git
+
+================================================================================
+                           HOW IT WAS IMPLEMENTED
+================================================================================
+
+------------------------------------------------------------------------
+STEP 1: PROJECT SETUP & REBRANDING
+------------------------------------------------------------------------
+  - Renamed the legacy "cipher6_django" folder to "esctrix_django"
+  - Deleted unused legacy folders:
+      * chipher_pro (old Flutter mobile app)
+      * frontend_web (old mock HTML layout)
+      * backend_server (old API server copy)
+      * cipher6_django (duplicate folder)
+  - Updated all internal references from "Cipher6" to "ESCTRIX"
+  - Updated Django settings.py, urls.py, and templates to use ESCTRIX naming
+
+  FILES AFFECTED:
+    esctrix_django/esctrix_django/settings.py
+    esctrix_django/esctrix_django/urls.py
+    esctrix_django/templates/auth.html
+    esctrix_django/templates/home.html
+
+------------------------------------------------------------------------
+STEP 2: LOGO & BRANDING
+------------------------------------------------------------------------
+  - Generated multiple ESCTRIX logo designs using AI image generation
+  - Final logo selected: orbit ring + chat bubble + arrow + "ESCTRIX" text
+    with a blue-to-purple gradient and transparent background
+  - Logo processed with Python (Pillow) to remove checkerboard background
+  - Saved to: esctrix_django/static/img/logo.png
+  - Login page and sidebar both display this logo
+  - App default theme set to purple/cyan gradient matching the logo:
+      --accent: #7c3aed (purple)
+      --text-active: #a78bfa (light purple)
+      Logo gradient: #00d2ff → #7c3aed (cyan to purple)
+
+  FILES AFFECTED:
+    esctrix_django/static/img/logo.png
+    esctrix_django/static/css/style.css (root CSS variables)
+    esctrix_django/templates/auth.html
+
+------------------------------------------------------------------------
+STEP 3: AUTHENTICATION SYSTEM
+------------------------------------------------------------------------
+  - Built a premium dark login/register page (auth.html)
+  - Background: cyber-matrix grid with radial purple/cyan glow
+  - Cards: glassmorphic (backdrop-filter blur + translucent borders)
+  - Removed Facebook login option entirely
+  - Added a mandatory one-click Privacy Policy checkbox:
+      "I accept the Privacy Policy & E2EE cryptographic security terms"
+      (form cannot submit until this is checked)
+
+  REAL-TIME USERNAME AVAILABILITY CHECKER (Instagram Style):
+  - As user types in the username field during registration:
+      * Green ✔ appears inside the input if username is AVAILABLE
+      * Red ✘ appears inside the input if username is TAKEN or INVALID
+      * Input border highlights green or red accordingly
+      * Uses 400ms debounce to avoid excessive server calls
+  - Backend endpoint: GET /api/check-username/?username=<value>
+  - Returns: { "available": true/false }
+
+  FORGOT PASSWORD (No Email Required):
+  - User enters their username + date of birth
+  - If both match a registered account, a session token is granted
+  - User is then shown a new password form
+  - Password reset is saved without any SMTP email server
+
+  FILES AFFECTED:
+    esctrix_django/templates/auth.html
+    esctrix_django/static/css/style.css
+    esctrix_django/static/js/auth.js
+    esctrix_django/accounts/views.py (api_login, api_forgot_password,
+                                      api_reset_password, api_check_username)
+    esctrix_django/accounts/urls.py
+
+------------------------------------------------------------------------
+STEP 4: HOME / CHAT APPLICATION
+------------------------------------------------------------------------
+  - Built an Instagram-style single-page app (home.html + chat.js)
+  - Left sidebar: Logo, navigation icons (Messages, Search, Groups,
+                  Notifications, Settings, Logout)
+  - Center panel: Friends list / sub-navigation depending on active tab
+  - Main area: Active chat window or placeholder
+
+  FEATURES IMPLEMENTED:
+    * Friend search by username or display name
+    * Send/Accept/Decline friend requests
+    * Notification badge on pending friend requests
+    * Direct chat with friends (real-time WebSocket)
+    * Group chat creation and messaging
+    * Block / unblock users
+    * Chat history loaded on demand
+
+  E2EE ENCRYPTION:
+    * Client-side key derivation using SubtleCrypto (WebCrypto API)
+    * Messages encrypted before sending over WebSocket
+    * Decrypted on the receiver's side only
+    * File sharing via encrypted attachment links
+
+  REAL-TIME FEATURES (WebSocket via Django Channels):
+    * Online / offline status indicators
+    * Typing indicators (e.g. "Alice is typing...")
+    * Read receipts (single ✔ sent, double ✔✔ read)
+    * Emoji reactions (hover message → pick emoji)
+    * Disappearing messages (self-destruct countdown: 10s/30s/1m/1h/1d)
+
+  FILES AFFECTED:
+    esctrix_django/templates/home.html
+    esctrix_django/static/js/chat.js
+    esctrix_django/static/js/api.js
+    esctrix_django/static/js/webrtc.js
+    esctrix_django/static/css/style.css
+    esctrix_django/chat/consumers.py
+    esctrix_django/chat/models.py
+    esctrix_django/chat/routing.py
+    esctrix_django/chat/admin.py
+
+------------------------------------------------------------------------
+STEP 5: PROFILE SETTINGS
+------------------------------------------------------------------------
+  - Users can edit their profile from the Settings > Profile tab:
+      * Username (with live availability check)
+      * Display Name (Profile Name) - live preview updates as you type
+      * Bio / Description
+      * Date of Birth
+  - Profile changes are saved via PATCH /api/profile/update/
+  - Password can be changed separately under Settings > Change Password
+
+  FILES AFFECTED:
+    esctrix_django/templates/home.html (profile-tab-wrapper section)
+    esctrix_django/accounts/views.py (api_update_profile)
+
+------------------------------------------------------------------------
+STEP 6: THEME SELECTOR
+------------------------------------------------------------------------
+  - Users can change the chat app color theme from Settings > Chat Theme
+  - 4 themes available:
+      1. Cyber Purple (Default) - matches the ESCTRIX logo (#7c3aed / #00d2ff)
+      2. Sunset Rose           - (#dc2743 / #cc2366)
+      3. Emerald Forest        - (#11998e / #38ef7d)
+      4. Crimson Glow          - (#cb2d3e / #ef473a)
+  - Theme applies instantly by setting data-theme on <html> element
+  - Theme is saved to localStorage and restored on next visit
+  - Active theme card is highlighted with an accent border
+
+  FILES AFFECTED:
+    esctrix_django/templates/home.html (set-theme panel)
+    esctrix_django/static/css/style.css ([data-theme] CSS variables)
+    esctrix_django/static/js/chat.js (changeAppTheme function)
+
+------------------------------------------------------------------------
+STEP 7: HELP & SUPPORT TICKET SYSTEM
+------------------------------------------------------------------------
+  - Users can submit support tickets from Settings > Help & Support
+  - Form fields: Subject, Message
+  - Ticket is saved to the database with status "open"
+  - Users can view their past ticket history and check status (Open/Solved)
+  - Admin can view all tickets in the admin panel and mark them Solved
+
+  DATABASE MODEL (HelpTicket):
+    - user        : ForeignKey to CustomUser
+    - subject     : CharField
+    - message     : TextField
+    - status      : CharField ('open' or 'solved')
+    - created_at  : DateTimeField
+
+  API ENDPOINTS:
+    POST /api/help/submit/   → Submit a new support ticket
+    GET  /api/help/list/     → List current user's tickets with status
+
+  FILES AFFECTED:
+    esctrix_django/accounts/models.py (HelpTicket model)
+    esctrix_django/accounts/views.py  (api_submit_help_ticket,
+                                       api_get_help_tickets)
+    esctrix_django/accounts/urls.py
+    esctrix_django/accounts/admin.py  (registered HelpTicket in admin)
+    esctrix_django/templates/home.html (set-help panel)
+    esctrix_django/static/js/chat.js  (submitHelpTicket, loadHelpTickets)
+
+------------------------------------------------------------------------
+STEP 8: ADMIN SYSTEM
+------------------------------------------------------------------------
+  CREDENTIALS:
+    Username : Esctrix215
+    Password : Jerry215
+    URL      : http://127.0.0.1:8000/admin/
+
+  HOW ADMIN LOGIN WORKS:
+    - Admin uses the SAME login page as regular users (http://127.0.0.1:8000/auth/)
+    - After login, the API detects is_staff=True and returns is_admin: true
+    - The frontend (auth.js) redirects admin to /admin/ instead of the home page
+    - Regular users go to the main chat app as normal
+
+  ADMIN PANEL CUSTOMIZATION:
+    - Header: "🔒 ESCTRIX Administration"
+    - Title:  "ESCTRIX Admin Portal"
+    - Index:  "ESCTRIX Platform Management"
+    - Full dark theme matching the app (black background, purple accents)
+    - Styled using: esctrix_django/templates/admin/base_site.html
+
+  ADMIN CAPABILITIES:
+    * View all registered user accounts
+    * Action: "Terminate / Deactivate selected user accounts" (is_active=False)
+    * View and filter support tickets (HelpTicket)
+    * Action: "Mark selected tickets as Solved"
+    * View all chat messages, groups, and group members
+    * View friendship/block list records
+
+  MODELS REGISTERED IN ADMIN:
+    - CustomUser       (accounts/admin.py)
+    - Friendship       (accounts/admin.py)
+    - BlockList        (accounts/admin.py)
+    - HelpTicket       (accounts/admin.py)
+    - ChatMessage      (chat/admin.py)
+    - ChatGroup        (chat/admin.py)
+    - ChatGroupMember  (chat/admin.py)
+    - ChatGroupMessage (chat/admin.py)
+
+  FILES AFFECTED:
+    esctrix_django/accounts/admin.py
+    esctrix_django/chat/admin.py
+    esctrix_django/esctrix_django/urls.py (admin site branding)
+    esctrix_django/templates/admin/base_site.html
+    esctrix_django/static/js/auth.js (admin redirect logic)
+    esctrix_django/accounts/views.py (is_admin flag in login response)
+
+------------------------------------------------------------------------
+STEP 9: MOBILE RESPONSIVENESS
+------------------------------------------------------------------------
+  - The entire app is mobile-friendly using CSS media queries
+  - On mobile screens (< 768px):
+      * Sidebar collapses to a bottom navigation bar
+      * Chat list panel slides out of view
+      * Active chat goes fullscreen
+      * All buttons and inputs are touch-sized (min 44px)
+  - The login/register card is centered and full-width on mobile
+  - Settings panels are scrollable on small screens
+
+  FILES AFFECTED:
+    esctrix_django/static/css/style.css (responsive media queries section)
+
+------------------------------------------------------------------------
+STEP 10: PROJECT CLEANUP & VERSION CONTROL
+------------------------------------------------------------------------
+  DELETED FILES (unwanted/legacy):
+    - Cipher6_Complete_Plan.html
+    - DATABASE_SCHEMA.txt
+    - FEATURES.txt
+    - FILE_STRUCTURE.txt
+    - PROJECT_MANUAL.txt
+    - PROJECT_OVERVIEW.txt
+    - SERVER_PROTOCOL.txt
+    - plan_text.txt
+    - .idea/ (IDE folder)
+    - All __pycache__/ directories
+    - All *.pyc compiled Python bytecode files
+
+  CREATED:
+    - .gitignore (prevents above from being tracked in future)
+
+  GIT HISTORY (key commits):
+    1. "Complete ESCTRIX rebranding, help desk, and E2EE advanced features"
+    2. "Add real-time Instagram-style username availability checker"
+    3. "Add Chat Theme switcher and logo theming"
+    4. "Admin rebranding: new credentials, ESCTRIX dark admin theme..."
+    5. "Cleanup: remove legacy docs, .idea, __pycache__; add .gitignore"
+
+================================================================================
+                            FINAL PROJECT FILE STRUCTURE
+================================================================================
+
+d:\Chipher\
+├── .gitignore
+├── .git\
+└── esctrix_django\
+    ├── manage.py
+    ├── db.sqlite3
+    ├── esctrix_django\           ← Django project settings
+    │   ├── settings.py
+    │   ├── urls.py               ← Admin branding + URL routing
+    │   ├── asgi.py               ← WebSocket support (Django Channels)
+    │   └── wsgi.py
+    ├── accounts\                 ← User auth + profile + help desk app
+    │   ├── models.py             ← CustomUser, Friendship, BlockList, HelpTicket
+    │   ├── views.py              ← All API endpoints
+    │   ├── urls.py               ← All URL routes
+    │   ├── admin.py              ← Admin panel registration + actions
+    │   ├── apps.py
+    │   ├── tests.py
+    │   └── migrations\
+    ├── chat\                     ← Chat application
+    │   ├── models.py             ← ChatMessage, ChatGroup, ChatGroupMember, etc.
+    │   ├── consumers.py          ← WebSocket consumer (real-time chat engine)
+    │   ├── routing.py            ← WebSocket URL routing
+    │   ├── admin.py              ← Chat models in admin
+    │   ├── views.py
+    │   ├── apps.py
+    │   └── migrations\
+    ├── templates\
+    │   ├── auth.html             ← Login / Register page
+    │   ├── home.html             ← Main chat app (single page)
+    │   └── admin\
+    │       └── base_site.html    ← Custom ESCTRIX dark admin theme
+    └── static\
+        ├── img\
+        │   └── logo.png          ← ESCTRIX transparent logo
+        ├── css\
+        │   └── style.css         ← Full app stylesheet + themes
+        └── js\
+            ├── auth.js           ← Login/Register/ForgotPassword logic
+            ├── chat.js           ← Chat, settings, friends, themes logic
+            ├── api.js            ← Shared API helper functions
+            └── webrtc.js         ← WebRTC (voice/video call groundwork)
+
+================================================================================
+                              API ENDPOINT REFERENCE
+================================================================================
+
+AUTHENTICATION:
+  POST /api/login/              → Login user (returns is_admin flag)
+  POST /api/register/           → Register new account
+  GET  /api/check-username/     → Check username availability (live)
+  GET  /api/logout/             → Log out user
+  POST /api/forgot-password/    → Verify identity (username + DOB)
+  POST /api/reset-password/     → Reset password after verification
+
+PROFILE:
+  POST /api/profile/update/     → Update username, display name, bio, DOB
+  POST /api/profile/change-password/  → Change password
+  GET  /api/profile/get/        → Get current user profile data
+
+FRIENDS & SOCIAL:
+  GET  /api/search/             → Search users by username or display name
+  POST /api/friend-request/send/     → Send a friend request
+  POST /api/friend-request/accept/   → Accept a friend request
+  POST /api/friend-request/decline/  → Decline a friend request
+  GET  /api/friend-requests/pending/ → List pending incoming requests
+
+BLOCKING:
+  POST /api/block/add/          → Block a user
+  POST /api/block/remove/       → Unblock a user
+  GET  /api/block/list/         → Get block list
+
+CHAT HISTORY:
+  GET  /api/chat/history/       → Load direct message history
+  GET  /api/group/history/      → Load group message history
+
+GROUPS:
+  POST /api/group/create/       → Create a group chat
+  GET  /api/group/list/         → List user's groups
+  GET  /api/group/members/      → Get group members list
+
+HELP & SUPPORT:
+  POST /api/help/submit/        → Submit a support ticket
+  GET  /api/help/list/          → List user's support tickets
+
+ADMIN PANEL:
+  ANY  /admin/                  → Django admin panel (staff only)
+
+REAL-TIME (WebSocket):
+  ws://host/ws/chat/<room_id>/  → E2EE Direct/Group chat WebSocket
+  ws://host/ws/status/          → Online/offline presence tracking
+
+================================================================================
+                          HOW TO RUN THE PROJECT
+================================================================================
+
+1. Open terminal and navigate to the project:
+   cd d:\Chipher\esctrix_django
+
+2. Start the Django server (with WebSocket support via Daphne/ASGI):
+   python manage.py runserver
+
+3. Open in browser:
+   http://127.0.0.1:8000/
+
+4. Register a new user account on the login page
+
+5. To access the admin panel:
+   URL: http://127.0.0.1:8000/auth/
+   Username: Esctrix215
+   Password: Jerry215
+   (Will automatically redirect to /admin/ after login)
+
+================================================================================
+                              THEME COLOR REFERENCE
+================================================================================
+
+DEFAULT (Cyber Purple):
+  --accent:       #7c3aed
+  --accent-hover: #6d28d9
+  --text-active:  #a78bfa
+  Gradient:       #00d2ff → #7c3aed
+
+SUNSET ROSE:
+  --accent:       #dc2743
+  --accent-hover: #cc2366
+
+EMERALD FOREST:
+  --accent:       #11998e
+  --accent-hover: #0d7a6f
+
+CRIMSON GLOW:
+  --accent:       #cb2d3e
+  --accent-hover: #b91c1c
+
+================================================================================
+                                END OF DOCUMENT
+================================================================================
