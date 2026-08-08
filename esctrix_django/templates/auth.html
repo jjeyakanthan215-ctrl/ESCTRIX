@@ -45,8 +45,9 @@
             <!-- Register Form -->
             <form id="register-form" class="ig-form" onsubmit="handleRegister(event)">
                 {% csrf_token %}
-                <div class="ig-input-group">
-                    <input type="text" id="reg-username" required placeholder="Username (3-20 chars)" autocomplete="off">
+                <div class="ig-input-group" style="position: relative;">
+                    <input type="text" id="reg-username" required placeholder="Username (3-20 chars)" autocomplete="off" oninput="checkUsernameAvailability(this.value)" style="padding-right: 32px;">
+                    <span id="username-status-icon" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 1.1rem; display: none; pointer-events: none;"></span>
                 </div>
                 <div class="ig-input-group">
                     <input type="text" id="reg-displayname" required placeholder="Full Name" autocomplete="name">

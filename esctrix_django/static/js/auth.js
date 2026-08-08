@@ -128,3 +128,50 @@ async function handleResetPassword(e) {
         document.getElementById('auth-error-reset').innerText = 'Connection error';
     }
 }
+
+let usernameCheckTimeout = null;
+async function checkUsernameAvailability(username) {
+    const iconEl = document.getElementById('username-status-icon');
+    const inputEl = document.getElementById('reg-username');
+    
+    if (usernameCheckTimeout) {
+        clearTimeout(usernameCheckTimeout);
+    }
+    
+    const val = username.trim().toLowerCase();
+    
+    if (val.length < 3) {
+        iconEl.style.display = 'none';
+        iconEl.innerHTML = '';
+        inputEl.style.borderColor = '';
+        return;
+    }
+    
+    if (!/^[a-zA-Z0-9_]{3,30}$/.test(val)) {
+        iconEl.style.display = 'inline-block';
+        iconEl.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color: var(--danger);"></i>';
+        inputEl.style.borderColor = 'var(--danger)';
+        return;
+    }
+    
+    iconEl.style.display = 'inline-block';
+    iconEl.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color: var(--text-secondary);"></i>';
+    
+    usernameCheckTimeout = setTimeout(async () => {
+        try {
+            const response = await fetch(`/api/check-username/?username=${encodeURIComponent(val)}`);
+            const data = await response.json();
+            
+            if (data.available) {
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-check" style="color: var(--success);"></i>';
+                inputEl.style.borderColor = 'var(--success)';
+            } else {
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color: var(--danger);"></i>';
+                inputEl.style.borderColor = 'var(--danger)';
+            }
+        } catch (err) {
+            console.error("Username check failed", err);
+            iconEl.style.display = 'none';
+        }
+    }, 400);
+}

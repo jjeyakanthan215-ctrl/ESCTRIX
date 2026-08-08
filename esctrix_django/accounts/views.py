@@ -597,6 +597,19 @@ def api_get_help_tickets(request):
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
     return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
 
+def api_check_username(request):
+    username = request.GET.get('username', '').strip().lower()
+    if not username:
+        return JsonResponse({'available': False, 'error': 'Empty username'})
+    
+    # Validation matches registration rules: alphanumeric + underscores, 3-30 chars
+    if not re.match(r'^[a-zA-Z0-9_]{3,30}$', username):
+        return JsonResponse({'available': False, 'error': 'Invalid username format'})
+        
+    exists = CustomUser.objects.filter(username__iexact=username).exists()
+    return JsonResponse({'available': not exists})
+
+
 
 
 

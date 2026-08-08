@@ -6,6 +6,7 @@ urlpatterns = [
     path('auth/', views.auth_view, name='auth'),
     path('api/login/', views.api_login, name='api_login'),
     path('api/register/', views.api_register, name='api_register'),
+    path('api/check-username/', views.api_check_username, name='api_check_username'),
     path('api/logout/', views.api_logout, name='api_logout'),
     path('api/search/', views.api_search, name='api_search'),
     path('api/friend-request/send/', views.api_send_friend_request, name='api_send_friend_request'),
