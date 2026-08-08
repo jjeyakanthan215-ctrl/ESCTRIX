@@ -808,17 +808,164 @@
             </div>
         </div>
 
-        <div class="panel-footer">
-            © 2026 ESCTRIX · <a href="#">Privacy</a> · <a href="#">Terms</a> · <a href="#">Security</a>
+        <div style="position:absolute; bottom:60px; left:0; right:0; text-align:center;">
+            <button onclick="document.getElementById('help-modal').classList.add('open')"
+                style="background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.3);
+                       color:#a78bfa; padding:8px 20px; border-radius:50px; font-size:0.78rem;
+                       font-weight:600; font-family:Inter,sans-serif; cursor:pointer;
+                       transition:all 0.2s; letter-spacing:0.3px;"
+                onmouseover="this.style.background='rgba(124,58,237,0.22)'"
+                onmouseout="this.style.background='rgba(124,58,237,0.12)'">
+                <i class="fa-solid fa-circle-question" style="margin-right:6px;"></i>Help &amp; Support
+            </button>
+        </div>
+
+        <div style="position:absolute; bottom:20px; left:0; right:0; text-align:center; font-size:0.67rem; color:rgba(255,255,255,0.18);">
+            <a href="/privacy/" style="color:rgba(255,255,255,0.28);text-decoration:none;" target="_blank">Privacy</a> ·
+            <a href="/terms/" style="color:rgba(255,255,255,0.28);text-decoration:none;" target="_blank">Terms</a> ·
+            <a href="/security/" style="color:rgba(255,255,255,0.28);text-decoration:none;" target="_blank">Security</a>
+            &nbsp;·&nbsp; © 2026 ESCTRIX
         </div>
     </div>
 
-    <script src="{% static 'js/auth.js' %}?v=3"></script>
+    <!-- ═══ HELP CONTACT MODAL ════════════════════════════ -->
+    <div id="help-modal" style="
+        display:none; position:fixed; inset:0; z-index:9999;
+        background:rgba(0,0,0,0.7); backdrop-filter:blur(6px);
+        align-items:center; justify-content:center;">
+
+        <div style="
+            background:#0f1012; border:1px solid rgba(255,255,255,0.1);
+            border-radius:16px; padding:32px 28px; width:100%; max-width:460px;
+            margin:20px; position:relative; box-shadow:0 30px 80px rgba(0,0,0,0.6);">
+
+            <!-- Close -->
+            <button onclick="document.getElementById('help-modal').classList.remove('open')"
+                style="position:absolute; top:16px; right:16px; background:rgba(255,255,255,0.07);
+                       border:none; color:#fff; width:30px; height:30px; border-radius:50%;
+                       cursor:pointer; font-size:0.85rem; display:flex; align-items:center; justify-content:center;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <!-- Header -->
+            <div style="margin-bottom:22px;">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                    <div style="width:36px;height:36px;border-radius:10px;background:rgba(124,58,237,0.15);
+                                border:1px solid rgba(124,58,237,0.3); display:flex;align-items:center;
+                                justify-content:center; color:#a78bfa;">
+                        <i class="fa-solid fa-headset"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:1rem; font-weight:700; color:#fff;">Contact Support</div>
+                        <div style="font-size:0.72rem; color:rgba(255,255,255,0.38);">We respond within 24–48 hours</div>
+                    </div>
+                </div>
+            </div>
+
+            <form onsubmit="submitGuestContact(event)">
+                <!-- Name -->
+                <div style="margin-bottom:12px;">
+                    <label style="font-size:0.75rem;color:rgba(255,255,255,0.4);font-weight:600;
+                                  display:block;margin-bottom:5px;letter-spacing:0.3px;">
+                        YOUR NAME (OPTIONAL)
+                    </label>
+                    <input type="text" id="gc-name" placeholder="e.g. John Doe" style="
+                        width:100%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+                        border-radius:8px; padding:10px 12px; font-size:0.85rem; color:#fff;
+                        font-family:Inter,sans-serif; outline:none;">
+                </div>
+
+                <!-- Email -->
+                <div style="margin-bottom:12px;">
+                    <label style="font-size:0.75rem;color:rgba(255,255,255,0.4);font-weight:600;
+                                  display:block;margin-bottom:5px;letter-spacing:0.3px;">
+                        EMAIL (OPTIONAL — for follow-up)
+                    </label>
+                    <input type="email" id="gc-email" placeholder="your@email.com" style="
+                        width:100%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+                        border-radius:8px; padding:10px 12px; font-size:0.85rem; color:#fff;
+                        font-family:Inter,sans-serif; outline:none;">
+                </div>
+
+                <!-- Issue type -->
+                <div style="margin-bottom:12px;">
+                    <label style="font-size:0.75rem;color:rgba(255,255,255,0.4);font-weight:600;
+                                  display:block;margin-bottom:5px;letter-spacing:0.3px;">
+                        WHAT IS YOUR ISSUE? *
+                    </label>
+                    <select id="gc-issue" required style="
+                        width:100%; background:#1a1b1f; border:1px solid rgba(255,255,255,0.1);
+                        border-radius:8px; padding:10px 12px; font-size:0.85rem; color:#d4d4d8;
+                        font-family:Inter,sans-serif; outline:none; cursor:pointer;">
+                        <option value="" disabled selected>Select a topic...</option>
+                        <option value="cant_login">Can't log in to my account</option>
+                        <option value="forgot_password">Forgot my password</option>
+                        <option value="account_banned">My account was suspended/banned</option>
+                        <option value="account_hacked">I think my account was hacked</option>
+                        <option value="privacy_concern">Privacy or data concern</option>
+                        <option value="report_user">Report a user / abusive content</option>
+                        <option value="technical_issue">Technical / app issue</option>
+                        <option value="feature_request">Feature request or feedback</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <!-- Message -->
+                <div style="margin-bottom:18px;">
+                    <label style="font-size:0.75rem;color:rgba(255,255,255,0.4);font-weight:600;
+                                  display:block;margin-bottom:5px;letter-spacing:0.3px;">
+                        DESCRIBE YOUR ISSUE *
+                    </label>
+                    <textarea id="gc-message" required rows="4" placeholder="Please describe your issue in detail so we can help you as quickly as possible..." style="
+                        width:100%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+                        border-radius:8px; padding:10px 12px; font-size:0.85rem; color:#fff;
+                        font-family:Inter,sans-serif; outline:none; resize:none; line-height:1.5;"></textarea>
+                </div>
+
+                <button type="submit" style="
+                    width:100%; padding:12px; border:none; border-radius:9px;
+                    background:linear-gradient(135deg,#7c3aed,#5b21b6);
+                    color:#fff; font-size:0.9rem; font-weight:700;
+                    font-family:Inter,sans-serif; cursor:pointer; transition:all 0.2s;">
+                    <i class="fa-solid fa-paper-plane" style="margin-right:8px;"></i>Send Request
+                </button>
+
+                <p id="gc-status" style="margin-top:10px; font-size:0.78rem; text-align:center; min-height:18px;"></p>
+            </form>
+
+            <!-- Legal links inside modal -->
+            <div style="margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.07);
+                        display:flex; justify-content:center; gap:16px; flex-wrap:wrap;">
+                <a href="/privacy/" target="_blank" style="font-size:0.72rem;color:rgba(255,255,255,0.3);text-decoration:none;">
+                    <i class="fa-solid fa-shield-halved" style="margin-right:4px;color:#a78bfa;"></i>Privacy Policy
+                </a>
+                <a href="/terms/" target="_blank" style="font-size:0.72rem;color:rgba(255,255,255,0.3);text-decoration:none;">
+                    <i class="fa-solid fa-file-contract" style="margin-right:4px;color:#a78bfa;"></i>Terms
+                </a>
+                <a href="/security/" target="_blank" style="font-size:0.72rem;color:rgba(255,255,255,0.3);text-decoration:none;">
+                    <i class="fa-solid fa-lock" style="margin-right:4px;color:#a78bfa;"></i>Security
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        #help-modal { display:none; }
+        #help-modal.open { display:flex; }
+        select option { background:#1a1b1f; color:#d4d4d8; }
+        input:focus, textarea:focus, select:focus {
+            border-color:rgba(124,58,237,0.6) !important;
+            box-shadow:0 0 0 3px rgba(124,58,237,0.1) !important;
+        }
+    </style>
+
+    <script src="{% static 'js/auth.js' %}?v=4"></script>
     <script>
+        const csrftoken = document.cookie.split(';').find(c=>c.trim().startsWith('csrftoken='))?.split('=')[1] || '';
+
         function switchForm(mode) {
             document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
             document.getElementById('form-' + mode).classList.add('active');
-            // clear errors
             ['auth-error-login','auth-error-reg','auth-error-forgot','auth-error-reset'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.innerText = '';
@@ -827,6 +974,51 @@
 
         // Legacy alias used by auth.js forgot flow
         function toggleAuthMode(mode) { switchForm(mode); }
+
+        async function submitGuestContact(e) {
+            e.preventDefault();
+            const statusEl = document.getElementById('gc-status');
+            statusEl.style.color = '#a78bfa';
+            statusEl.innerText = 'Sending...';
+
+            const payload = {
+                name: document.getElementById('gc-name').value,
+                email: document.getElementById('gc-email').value,
+                issue: document.getElementById('gc-issue').value,
+                message: document.getElementById('gc-message').value
+            };
+
+            try {
+                const resp = await fetch('/api/guest-contact/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    statusEl.style.color = '#4cd964';
+                    statusEl.innerText = '✔ Request sent! We will get back to you soon.';
+                    document.getElementById('gc-name').value = '';
+                    document.getElementById('gc-email').value = '';
+                    document.getElementById('gc-issue').selectedIndex = 0;
+                    document.getElementById('gc-message').value = '';
+                    setTimeout(() => {
+                        document.getElementById('help-modal').classList.remove('open');
+                        statusEl.innerText = '';
+                    }, 2500);
+                } else {
+                    statusEl.style.color = '#f87171';
+                    statusEl.innerText = data.error || 'Failed to send. Please try again.';
+                }
+            } catch(err) {
+                statusEl.style.color = '#f87171';
+                statusEl.innerText = 'Network error. Please try again.';
+            }
+        }
     </script>
 </body>
 </html>
+

@@ -4,6 +4,10 @@ from . import views
 urlpatterns = [
     path('', views.home, name='home'),
     path('auth/', views.auth_view, name='auth'),
+    path('privacy/', views.privacy_policy_view, name='privacy'),
+    path('terms/', views.terms_view, name='terms'),
+    path('security/', views.security_view, name='security'),
+    path('api/guest-contact/', views.api_guest_contact, name='api_guest_contact'),
     path('api/login/', views.api_login, name='api_login'),
     path('api/register/', views.api_register, name='api_register'),
     path('api/check-username/', views.api_check_username, name='api_check_username'),

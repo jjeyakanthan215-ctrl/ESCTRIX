@@ -6,7 +6,7 @@ import json
 import re
 from datetime import timedelta, datetime
 from django.utils import timezone
-from .models import CustomUser, Friendship, BlockList, HelpTicket
+from .models import CustomUser, Friendship, BlockList, HelpTicket, GuestContactRequest
 from chat.models import ChatGroup, ChatGroupMember, ChatMessage, ChatGroupMessage, MessageReaction
 
 @ensure_csrf_cookie
@@ -20,6 +20,34 @@ def auth_view(request):
     if request.user.is_authenticated:
         return redirect('home')
     return render(request, 'auth.html')
+
+def privacy_policy_view(request):
+    return render(request, 'legal/privacy.html')
+
+def terms_view(request):
+    return render(request, 'legal/terms.html')
+
+def security_view(request):
+    return render(request, 'legal/security.html')
+
+def api_guest_contact(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            name    = data.get('name', 'Anonymous').strip()[:80]
+            email   = data.get('email', '').strip()[:254]
+            issue   = data.get('issue', 'other')
+            message = data.get('message', '').strip()
+            if not message:
+                return JsonResponse({'success': False, 'error': 'Message cannot be empty.'}, status=400)
+            valid_issues = [k for k, _ in GuestContactRequest.ISSUE_CHOICES]
+            if issue not in valid_issues:
+                issue = 'other'
+            GuestContactRequest.objects.create(name=name, email=email, issue=issue, message=message)
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
 
 def api_login(request):
     if request.method == 'POST':
