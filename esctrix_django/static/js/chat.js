@@ -187,6 +187,15 @@ function switchSettingOption(optionId) {
         loadBlockList();
     } else if (optionId === 'set-help') {
         loadHelpTickets();
+    } else if (optionId === 'set-theme') {
+        const currentTheme = localStorage.getItem('esctrix_theme') || 'default';
+        document.querySelectorAll('.theme-card').forEach(card => {
+            card.style.border = '1px solid var(--border-color)';
+        });
+        const activeCard = document.getElementById(`theme-card-${currentTheme}`);
+        if (activeCard) {
+            activeCard.style.border = '2px solid var(--accent)';
+        }
     }
 
     // On mobile, transition pane view
@@ -1502,6 +1511,27 @@ async function loadHelpTickets() {
         }
     } catch (err) {
         listEl.innerHTML = '<p class="empty-placeholder text-danger">Error loading tickets.</p>';
+    }
+}
+
+// --- APP CHAT THEME SELECTOR ---
+function changeAppTheme(themeName) {
+    if (themeName === 'default') {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.removeItem('esctrix_theme');
+    } else {
+        document.documentElement.setAttribute('data-theme', themeName);
+        localStorage.setItem('esctrix_theme', themeName);
+    }
+    
+    // Update visual active card borders
+    document.querySelectorAll('.theme-card').forEach(card => {
+        card.style.border = '1px solid var(--border-color)';
+    });
+    
+    const activeCard = document.getElementById(`theme-card-${themeName}`);
+    if (activeCard) {
+        activeCard.style.border = '2px solid var(--accent)';
     }
 }
 

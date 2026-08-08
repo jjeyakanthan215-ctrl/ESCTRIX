@@ -40,7 +40,12 @@ async function handleLogin(e) {
         const data = await response.json();
         
         if (data.success) {
-            window.location.href = '/';
+            // Admins are redirected to the admin panel
+            if (data.is_admin) {
+                window.location.href = '/admin/';
+            } else {
+                window.location.href = '/';
+            }
         } else {
             document.getElementById('auth-error-login').innerText = data.error;
         }

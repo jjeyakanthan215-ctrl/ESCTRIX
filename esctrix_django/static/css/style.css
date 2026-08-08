@@ -11,10 +11,10 @@
     
     --text-primary: #ffffff;
     --text-secondary: #a8a8a8;
-    --text-active: #0095f6;
+    --text-active: #a78bfa;
     
-    --accent: #0095f6;
-    --accent-hover: #1877f2;
+    --accent: #7c3aed;
+    --accent-hover: #6d28d9;
     --danger: #ed4956;
     --success: #4cd964;
     
@@ -146,14 +146,14 @@ input:focus, textarea:focus, select:focus {
     height: 60px;
     border-radius: 14px;
     margin-bottom: 10px;
-    box-shadow: 0 4px 15px rgba(240, 148, 51, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3);
 }
 
 .ig-logo h2 {
     font-size: 2.2rem;
     font-weight: 800;
     letter-spacing: 2px;
-    background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+    background: linear-gradient(135deg, #00d2ff 0%, #7c3aed 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }

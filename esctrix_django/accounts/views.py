@@ -30,7 +30,11 @@ def api_login(request):
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
-                return JsonResponse({'success': True, 'username': user.username})
+                return JsonResponse({
+                    'success': True,
+                    'username': user.username,
+                    'is_admin': user.is_staff or user.is_superuser
+                })
             else:
                 return JsonResponse({'success': False, 'error': 'Invalid credentials'}, status=401)
         except Exception as e:

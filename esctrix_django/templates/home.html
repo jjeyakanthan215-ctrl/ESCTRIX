@@ -126,6 +126,9 @@
                     <button class="setting-nav-item" onclick="switchSettingOption('set-help')">
                         <i class="fa-regular fa-circle-question"></i> Help & Support
                     </button>
+                    <button class="setting-nav-item" onclick="switchSettingOption('set-theme')">
+                        <i class="fa-solid fa-palette"></i> Chat Theme
+                    </button>
                 </div>
             </div>
 
@@ -138,31 +141,37 @@
                     <div class="profile-avatar-row">
                         <img id="profile-avatar-preview" src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ request.user.avatar_index }}">
                         <div>
-                            <h4>{{ request.user.display_name }}</h4>
+                            <h4 id="profile-preview-displayname">{{ request.user.display_name }}</h4>
                             <p>@{{ request.user.username }}</p>
                         </div>
                     </div>
+                    <p style="font-size:0.78rem; color:var(--text-secondary); margin: 10px 0 15px; padding: 0 5px;">
+                        <i class="fa-solid fa-pen-to-square" style="color:var(--accent); margin-right:5px;"></i>
+                        All fields below are editable. Changes save immediately.
+                    </p>
                     <form id="profile-form" class="profile-edit-form" onsubmit="updateProfile(event)">
                         <div class="input-group">
                             <label>Username</label>
-                            <input type="text" id="edit-username" value="{{ request.user.username }}" required>
+                            <input type="text" id="edit-username" value="{{ request.user.username }}" required placeholder="Your unique username">
                         </div>
                         <div class="input-group">
-                            <label>Display Name</label>
-                            <input type="text" id="edit-displayname" value="{{ request.user.display_name }}" required>
+                            <label>Display Name (Profile Name)</label>
+                            <input type="text" id="edit-displayname" value="{{ request.user.display_name }}" required placeholder="Your public display name" oninput="document.getElementById('profile-preview-displayname').innerText = this.value">
                         </div>
                         <div class="input-group">
                             <label>Bio</label>
-                            <textarea id="edit-bio" rows="3" placeholder="Write bio...">{{ request.user.bio }}</textarea>
+                            <textarea id="edit-bio" rows="3" placeholder="Write something about yourself...">{{ request.user.bio }}</textarea>
                         </div>
                         <div class="input-group">
                             <label>Date of Birth</label>
                             <input type="date" id="edit-dob" value="{% if request.user.date_of_birth %}{{ request.user.date_of_birth|date:'Y-m-d' }}{% endif %}">
                         </div>
-                        <button type="submit" class="btn-ig-submit">Save Changes</button>
+                        <button type="submit" class="btn-ig-submit">Save Profile Changes</button>
+                        <p id="profile-status" style="margin-top:10px; font-size:0.82rem; color:var(--success); font-weight:600;"></p>
                     </form>
                 </div>
             </div>
+
 
         </div>
 
@@ -272,6 +281,38 @@
                     <h4 style="margin-top: 25px; margin-bottom: 10px; font-size: 0.95rem; font-weight: 700; border-top: 1px solid var(--border-color); padding-top: 15px;">Your Support Tickets</h4>
                     <div id="help-ticket-list" class="block-items-container" style="display: flex; flex-direction: column; gap: 10px; max-height: 200px; overflow-y: auto;">
                         <!-- Tickets loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- Sub Option: Theme Settings -->
+                <div id="set-theme" class="setting-form-pane hidden">
+                    <h3>Select Chat Theme</h3>
+                    <p class="setting-desc">Personalize the styling and accent colors of your chat workspace.</p>
+                    
+                    <div class="theme-selection-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px;">
+                        <!-- Cyber Purple (Default) -->
+                        <div class="theme-card" id="theme-card-default" onclick="changeAppTheme('default')" style="background: #0f1012; border: 2px solid var(--accent); border-radius: var(--radius-sm); padding: 15px; cursor: pointer; text-align: center; transition: transform 0.2s;">
+                            <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #00d2ff, #7c3aed); margin: 0 auto 10px;"></div>
+                            <span style="font-weight: 600; font-size: 0.85rem;">Cyber Purple (Default)</span>
+                        </div>
+                        
+                        <!-- Sunset Rose -->
+                        <div class="theme-card" id="theme-card-sunset" onclick="changeAppTheme('sunset')" style="background: #0f1012; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 15px; cursor: pointer; text-align: center; transition: transform 0.2s;">
+                            <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #dc2743, #cc2366); margin: 0 auto 10px;"></div>
+                            <span style="font-weight: 600; font-size: 0.85rem;">Sunset Rose</span>
+                        </div>
+                        
+                        <!-- Emerald Forest -->
+                        <div class="theme-card" id="theme-card-emerald" onclick="changeAppTheme('emerald')" style="background: #0f1012; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 15px; cursor: pointer; text-align: center; transition: transform 0.2s;">
+                            <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #11998e, #38ef7d); margin: 0 auto 10px;"></div>
+                            <span style="font-weight: 600; font-size: 0.85rem;">Emerald Forest</span>
+                        </div>
+                        
+                        <!-- Crimson Glow -->
+                        <div class="theme-card" id="theme-card-crimson" onclick="changeAppTheme('crimson')" style="background: #0f1012; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 15px; cursor: pointer; text-align: center; transition: transform 0.2s;">
+                            <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #cb2d3e, #ef473a); margin: 0 auto 10px;"></div>
+                            <span style="font-weight: 600; font-size: 0.85rem;">Crimson Glow</span>
+                        </div>
                     </div>
                 </div>
 
