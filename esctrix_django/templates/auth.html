@@ -5,136 +5,828 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESCTRIX | Secure Connect</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #09090f;
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* ─── LEFT HERO PANEL ─────────────────────────────── */
+        .auth-hero {
+            flex: 1.1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 50px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* animated background glow */
+        .auth-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 70% 60% at 30% 40%, rgba(124,58,237,0.22) 0%, transparent 65%),
+                radial-gradient(ellipse 50% 50% at 70% 70%, rgba(0,210,255,0.13) 0%, transparent 60%);
+            animation: heroPulse 6s ease-in-out infinite alternate;
+            z-index: 0;
+        }
+
+        @keyframes heroPulse {
+            0%   { opacity: 0.7; transform: scale(1); }
+            100% { opacity: 1;   transform: scale(1.06); }
+        }
+
+        /* grid lines */
+        .auth-hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+            background-size: 44px 44px;
+            z-index: 0;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            max-width: 540px;
+        }
+
+        .hero-tagline {
+            font-size: 2.8rem;
+            font-weight: 800;
+            line-height: 1.2;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .hero-tagline .highlight {
+            background: linear-gradient(135deg, #00d2ff 0%, #7c3aed 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-sub {
+            font-size: 1rem;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 50px;
+            font-weight: 400;
+        }
+
+        /* ── Phone Mockup stack ── */
+        .phone-stack {
+            position: relative;
+            width: 340px;
+            height: 420px;
+            margin: 0 auto;
+        }
+
+        .phone-frame {
+            width: 200px;
+            height: 360px;
+            background: #18191e;
+            border-radius: 28px;
+            border: 2px solid rgba(255,255,255,0.12);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+            position: absolute;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .phone-notch {
+            width: 80px;
+            height: 18px;
+            background: #0a0a10;
+            border-radius: 0 0 14px 14px;
+            margin: 0 auto;
+            flex-shrink: 0;
+        }
+
+        .phone-frame:nth-child(1) {
+            left: 0;
+            top: 40px;
+            transform: rotate(-8deg);
+            z-index: 1;
+            animation: phoneFloat1 4s ease-in-out infinite;
+        }
+
+        .phone-frame:nth-child(2) {
+            right: 0;
+            top: 20px;
+            transform: rotate(6deg);
+            z-index: 2;
+            animation: phoneFloat2 4.5s ease-in-out infinite;
+        }
+
+        .phone-frame:nth-child(3) {
+            left: 50%;
+            top: 0;
+            transform: translateX(-50%);
+            z-index: 3;
+            animation: phoneFloat3 5s ease-in-out infinite;
+        }
+
+        @keyframes phoneFloat1 {
+            0%, 100% { transform: rotate(-8deg) translateY(0); }
+            50% { transform: rotate(-8deg) translateY(-12px); }
+        }
+
+        @keyframes phoneFloat2 {
+            0%, 100% { transform: rotate(6deg) translateY(0); }
+            50% { transform: rotate(6deg) translateY(-8px); }
+        }
+
+        @keyframes phoneFloat3 {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-15px); }
+        }
+
+        /* Chat preview inside phones */
+        .phone-screen {
+            flex: 1;
+            padding: 10px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            overflow: hidden;
+        }
+
+        .chat-bubble {
+            border-radius: 14px;
+            padding: 7px 11px;
+            font-size: 0.6rem;
+            line-height: 1.4;
+            max-width: 80%;
+            color: #fff;
+        }
+
+        .chat-bubble.sent {
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+            align-self: flex-end;
+        }
+
+        .chat-bubble.recv {
+            background: #2a2a35;
+            align-self: flex-start;
+        }
+
+        .chat-meta {
+            font-size: 0.5rem;
+            color: rgba(255,255,255,0.35);
+            text-align: right;
+            padding-right: 4px;
+        }
+
+        .phone-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .ph-avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7c3aed, #00d2ff);
+        }
+
+        .ph-name {
+            font-size: 0.62rem;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+
+        .ph-status {
+            font-size: 0.5rem;
+            color: #4cd964;
+        }
+
+        /* floating badges */
+        .float-badge {
+            position: absolute;
+            border-radius: 50px;
+            font-size: 0.58rem;
+            font-weight: 700;
+            padding: 6px 12px;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            animation: badgeFloat 3s ease-in-out infinite;
+            z-index: 10;
+        }
+
+        .badge-e2ee {
+            background: rgba(76,217,100,0.22);
+            bottom: 20px;
+            left: 10px;
+            animation-delay: 0.5s;
+        }
+
+        .badge-online {
+            background: rgba(124,58,237,0.3);
+            top: 10px;
+            right: 10px;
+            animation-delay: 1s;
+        }
+
+        .badge-read {
+            background: rgba(0,210,255,0.2);
+            bottom: 60px;
+            right: 0;
+            animation-delay: 1.5s;
+        }
+
+        @keyframes badgeFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        /* ─── RIGHT LOGIN PANEL ───────────────────────────── */
+        .auth-panel {
+            width: 420px;
+            min-width: 380px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 50px 44px;
+            background: rgba(10, 10, 16, 0.85);
+            border-left: 1px solid rgba(255,255,255,0.06);
+            backdrop-filter: blur(20px);
+            position: relative;
+            z-index: 10;
+        }
+
+        /* inner glow edge */
+        .auth-panel::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: linear-gradient(to bottom, transparent, rgba(124,58,237,0.5), transparent);
+        }
+
+        /* Logo */
+        .panel-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 36px;
+        }
+
+        .panel-logo img {
+            height: 42px;
+            filter: drop-shadow(0 0 12px rgba(124,58,237,0.5));
+        }
+
+        .panel-logo-text {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #00d2ff 0%, #7c3aed 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Form header */
+        .form-header {
+            margin-bottom: 24px;
+        }
+
+        .form-title {
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+
+        .form-subtitle {
+            font-size: 0.82rem;
+            color: rgba(255,255,255,0.4);
+        }
+
+        /* Input fields */
+        .field-group {
+            position: relative;
+            margin-bottom: 14px;
+        }
+
+        .field-group input {
+            width: 100%;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 13px 42px 13px 42px;
+            font-size: 0.9rem;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+
+        .field-group input::placeholder {
+            color: rgba(255,255,255,0.28);
+        }
+
+        .field-group input:focus {
+            border-color: rgba(124,58,237,0.7);
+            box-shadow: 0 0 0 3px rgba(124,58,237,0.12);
+            background: rgba(255,255,255,0.06);
+        }
+
+        .field-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.3);
+            font-size: 0.85rem;
+            pointer-events: none;
+            transition: color 0.2s;
+        }
+
+        .field-group:focus-within .field-icon {
+            color: #a78bfa;
+        }
+
+        /* Username availability tick */
+        .field-suffix {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.95rem;
+            pointer-events: none;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 6px;
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+            color: #fff;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(124,58,237,0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        /* Divider */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 18px 0;
+            color: rgba(255,255,255,0.2);
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.1);
+        }
+
+        /* Privacy checkbox */
+        .privacy-check {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin: 12px 0;
+        }
+
+        .privacy-check input[type=checkbox] {
+            width: 16px;
+            height: 16px;
+            margin-top: 2px;
+            accent-color: #7c3aed;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+
+        .privacy-check label {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.38);
+            line-height: 1.5;
+            cursor: pointer;
+        }
+
+        .privacy-check label a {
+            color: #a78bfa;
+            text-decoration: none;
+        }
+
+        /* Switch / forgot links */
+        .switch-row {
+            margin-top: 22px;
+            text-align: center;
+            font-size: 0.82rem;
+            color: rgba(255,255,255,0.35);
+        }
+
+        .switch-row a {
+            color: #a78bfa;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .switch-row a:hover {
+            color: #c4b5fd;
+        }
+
+        /* forgot link inline */
+        .link-forgot {
+            display: block;
+            text-align: right;
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.38);
+            text-decoration: none;
+            margin-top: -6px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .link-forgot:hover {
+            color: #a78bfa;
+        }
+
+        /* Error message */
+        .error-msg {
+            font-size: 0.78rem;
+            color: #f87171;
+            margin-top: 6px;
+            min-height: 18px;
+            text-align: center;
+        }
+
+        /* success msg */
+        .success-msg {
+            font-size: 0.78rem;
+            color: #4cd964;
+            margin-top: 6px;
+            min-height: 18px;
+            text-align: center;
+        }
+
+        /* Terms text */
+        .terms-text {
+            font-size: 0.72rem;
+            color: rgba(255,255,255,0.25);
+            text-align: center;
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+
+        /* Form visibility */
+        .auth-form { display: none; }
+        .auth-form.active { display: block; }
+
+        /* Form title sub-icons */
+        .forgot-icon {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .forgot-icon i {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #00d2ff, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* footer */
+        .panel-footer {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 0.68rem;
+            color: rgba(255,255,255,0.18);
+        }
+
+        .panel-footer a { color: rgba(255,255,255,0.28); text-decoration: none; }
+
+        /* Hero features row */
+        .hero-features {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            margin-top: 40px;
+            flex-wrap: wrap;
+        }
+
+        .hero-feat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hero-feat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            background: rgba(124,58,237,0.15);
+            border: 1px solid rgba(124,58,237,0.3);
+            color: #a78bfa;
+        }
+
+        .hero-feat-label {
+            font-size: 0.68rem;
+            color: rgba(255,255,255,0.4);
+            font-weight: 500;
+        }
+    </style>
 </head>
 <body>
-    <div class="instagram-auth-container">
-        <!-- MAIN CARD -->
-        <div class="ig-card main-card">
-            <div class="ig-logo">
-                <img src="{% static 'img/logo.png' %}" alt="ESCTRIX Logo">
-                <h2>ESCTRIX</h2>
+
+    <!-- ═══ LEFT HERO ══════════════════════════════════════ -->
+    <div class="auth-hero">
+        <div class="hero-content">
+            <h1 class="hero-tagline">
+                Connect with your<br>
+                <span class="highlight">close friends.</span>
+            </h1>
+            <p class="hero-sub">End-to-end encrypted. Private by design.</p>
+
+            <!-- Phone Stack -->
+            <div class="phone-stack">
+                <!-- Phone 1 -->
+                <div class="phone-frame">
+                    <div class="phone-notch"></div>
+                    <div class="phone-header">
+                        <div class="ph-avatar"></div>
+                        <div>
+                            <div class="ph-name">alice_x</div>
+                            <div class="ph-status">● Online</div>
+                        </div>
+                    </div>
+                    <div class="phone-screen">
+                        <div class="chat-bubble recv">Hey! Did you see the news?</div>
+                        <div class="chat-meta">10:42 AM</div>
+                        <div class="chat-bubble sent">Yes! Amazing stuff 🔥</div>
+                        <div class="chat-meta" style="text-align:right">10:43 AM ✔✔</div>
+                        <div class="chat-bubble recv">Let's chat about it later</div>
+                        <div class="chat-meta">10:44 AM</div>
+                    </div>
+                </div>
+
+                <!-- Phone 2 -->
+                <div class="phone-frame">
+                    <div class="phone-notch"></div>
+                    <div class="phone-header">
+                        <div class="ph-avatar" style="background:linear-gradient(135deg,#00d2ff,#11998e)"></div>
+                        <div>
+                            <div class="ph-name">Team ESCTRIX</div>
+                            <div class="ph-status">● 4 members</div>
+                        </div>
+                    </div>
+                    <div class="phone-screen">
+                        <div class="chat-bubble recv">Meeting at 3pm 📅</div>
+                        <div class="chat-meta">09:10 AM</div>
+                        <div class="chat-bubble sent">I'll be there! ✅</div>
+                        <div class="chat-meta" style="text-align:right">09:12 AM ✔✔</div>
+                        <div class="chat-bubble recv">Same here 👍</div>
+                        <div class="chat-meta">09:15 AM</div>
+                    </div>
+                </div>
+
+                <!-- Phone 3 (center, front) -->
+                <div class="phone-frame">
+                    <div class="phone-notch"></div>
+                    <div class="phone-header">
+                        <div class="ph-avatar" style="background:linear-gradient(135deg,#dc2743,#cc2366)"></div>
+                        <div>
+                            <div class="ph-name">bob_secure</div>
+                            <div class="ph-status">● Typing...</div>
+                        </div>
+                    </div>
+                    <div class="phone-screen">
+                        <div class="chat-bubble recv">🔒 E2EE Active</div>
+                        <div class="chat-meta">Just now</div>
+                        <div class="chat-bubble sent">Perfect. Nobody can read this 😄</div>
+                        <div class="chat-meta" style="text-align:right">Just now ✔✔</div>
+                        <div style="font-size:0.55rem;color:rgba(255,255,255,0.3);text-align:left;padding:0 4px">bob is typing...</div>
+                    </div>
+                </div>
+
+                <!-- Floating badges -->
+                <div class="float-badge badge-e2ee"><i class="fa-solid fa-lock" style="margin-right:5px;color:#4cd964;"></i>E2E Encrypted</div>
+                <div class="float-badge badge-online"><i class="fa-solid fa-circle" style="margin-right:5px;color:#a78bfa;font-size:0.45rem;"></i>12 Online</div>
+                <div class="float-badge badge-read">✔✔ Read</div>
             </div>
-            
-            <!-- Login Form -->
-            <form id="login-form" class="ig-form active" onsubmit="handleLogin(event)">
-                {% csrf_token %}
-                <div class="ig-input-group">
-                    <input type="text" id="login-username" required placeholder="Username" autocomplete="username">
-                </div>
-                <div class="ig-input-group">
-                    <input type="password" id="login-password" required placeholder="Password" autocomplete="current-password">
-                </div>
-                <button type="submit" class="btn-ig-primary">Log In</button>
-                
-                <div class="privacy-check-group" style="margin: 18px 0 10px; display: flex; align-items: center; gap: 10px; width: 100%;">
-                    <label style="display: flex; align-items: center; gap: 10px; font-size: 0.82rem; color: var(--text-secondary); cursor: pointer; user-select: none; line-height: 1.35;">
-                        <input type="checkbox" required style="width: 16px; height: 16px; accent-color: var(--accent); flex-shrink: 0;">
-                        <span>I accept the Privacy Policy & E2EE cryptographic security terms</span>
-                    </label>
-                </div>
-                
-                <div class="ig-footer-links">
-                    <a href="#" class="link-forgot" onclick="toggleAuthMode('forgot')">Forgot password?</a>
-                </div>
-                <p id="auth-error-login" class="ig-error-msg"></p>
-            </form>
 
-            <!-- Register Form -->
-            <form id="register-form" class="ig-form" onsubmit="handleRegister(event)">
-                {% csrf_token %}
-                <div class="ig-input-group" style="position: relative;">
-                    <input type="text" id="reg-username" required placeholder="Username (3-20 chars)" autocomplete="off" oninput="checkUsernameAvailability(this.value)" style="padding-right: 32px;">
-                    <span id="username-status-icon" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 1.1rem; display: none; pointer-events: none;"></span>
+            <!-- Feature pills -->
+            <div class="hero-features">
+                <div class="hero-feat">
+                    <div class="hero-feat-icon"><i class="fa-solid fa-lock"></i></div>
+                    <span class="hero-feat-label">E2EE</span>
                 </div>
-                <div class="ig-input-group">
-                    <input type="text" id="reg-displayname" required placeholder="Full Name" autocomplete="name">
+                <div class="hero-feat">
+                    <div class="hero-feat-icon"><i class="fa-solid fa-bolt"></i></div>
+                    <span class="hero-feat-label">Real-time</span>
                 </div>
-                <div class="ig-input-group">
-                    <input type="date" id="reg-dob" required placeholder="Date of Birth">
+                <div class="hero-feat">
+                    <div class="hero-feat-icon"><i class="fa-solid fa-users"></i></div>
+                    <span class="hero-feat-label">Groups</span>
                 </div>
-                <div class="ig-input-group">
-                    <input type="password" id="reg-password" required placeholder="Password (min 8 chars)" autocomplete="new-password">
+                <div class="hero-feat">
+                    <div class="hero-feat-icon"><i class="fa-solid fa-fire"></i></div>
+                    <span class="hero-feat-label">Vanish Mode</span>
                 </div>
-                <button type="submit" class="btn-ig-primary">Sign Up</button>
-                
-                <p class="ig-terms">
-                    By signing up, you agree to our Terms, Privacy Policy and Cookies Policy.
-                </p>
-                <p id="auth-error-reg" class="ig-error-msg"></p>
-            </form>
-
-            <!-- Forgot Password Form (Date of Birth verification) -->
-            <form id="forgot-password-form" class="ig-form" onsubmit="handleForgotPassword(event)">
-                {% csrf_token %}
-                <div style="text-align: center; margin-bottom: 15px; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4;">
-                    Verify your identity using your username and Date of Birth to reset your password.
+                <div class="hero-feat">
+                    <div class="hero-feat-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                    <span class="hero-feat-label">Private</span>
                 </div>
-                <div class="ig-input-group">
-                    <input type="text" id="forgot-username" required placeholder="Username" autocomplete="off">
-                </div>
-                <div class="ig-input-group">
-                    <input type="date" id="forgot-dob" required placeholder="Date of Birth">
-                </div>
-                <button type="submit" class="btn-ig-primary">Verify Identity</button>
-                <p id="auth-error-forgot" class="ig-error-msg"></p>
-            </form>
-
-            <!-- Reset Password Form -->
-            <form id="reset-password-form" class="ig-form" onsubmit="handleResetPassword(event)">
-                {% csrf_token %}
-                <div style="text-align: center; margin-bottom: 15px; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4;">
-                    Enter a new password for your account (minimum 8 characters).
-                </div>
-                <div class="ig-input-group">
-                    <input type="password" id="reset-new-password" required placeholder="New Password" autocomplete="new-password">
-                </div>
-                <button type="submit" class="btn-ig-primary">Reset Password</button>
-                <p id="auth-error-reset" class="ig-error-msg"></p>
-            </form>
-        </div>
-
-        <!-- SWITCH CARD -->
-        <div class="ig-card switch-card">
-            <p id="switch-text">Don't have an account? <a href="#" onclick="toggleAuthMode('register')">Sign up</a></p>
+            </div>
         </div>
     </div>
 
-    <script src="{% static 'js/auth.js' %}?v=2"></script>
+    <!-- ═══ RIGHT PANEL ════════════════════════════════════ -->
+    <div class="auth-panel">
+
+        <!-- Logo -->
+        <div class="panel-logo">
+            <img src="{% static 'img/logo.png' %}" alt="ESCTRIX">
+            <span class="panel-logo-text">ESCTRIX</span>
+        </div>
+
+        <!-- ── LOGIN FORM ── -->
+        <div id="form-login" class="auth-form active">
+            <div class="form-header">
+                <div class="form-title">Welcome back</div>
+                <div class="form-subtitle">Sign in to your secure account</div>
+            </div>
+            <form onsubmit="handleLogin(event)">
+                {% csrf_token %}
+                <div class="field-group">
+                    <i class="fa-solid fa-user field-icon"></i>
+                    <input type="text" id="login-username" required placeholder="Username" autocomplete="username">
+                </div>
+                <div class="field-group">
+                    <i class="fa-solid fa-lock field-icon"></i>
+                    <input type="password" id="login-password" required placeholder="Password" autocomplete="current-password">
+                </div>
+                <a class="link-forgot" onclick="switchForm('forgot')">Forgot password?</a>
+                <div class="privacy-check">
+                    <input type="checkbox" id="login-privacy" required>
+                    <label for="login-privacy">
+                        I accept the <a href="#">Privacy Policy</a> &amp; E2EE cryptographic security terms
+                    </label>
+                </div>
+                <button type="submit" class="btn-primary">Log In</button>
+                <p id="auth-error-login" class="error-msg"></p>
+            </form>
+            <div class="switch-row">
+                Don't have an account? <a onclick="switchForm('register')">Sign up</a>
+            </div>
+        </div>
+
+        <!-- ── REGISTER FORM ── -->
+        <div id="form-register" class="auth-form">
+            <div class="form-header">
+                <div class="form-title">Create account</div>
+                <div class="form-subtitle">Join ESCTRIX — secure &amp; private</div>
+            </div>
+            <form onsubmit="handleRegister(event)">
+                {% csrf_token %}
+                <div class="field-group">
+                    <i class="fa-solid fa-at field-icon"></i>
+                    <input type="text" id="reg-username" required placeholder="Username (3–30 chars)" autocomplete="off"
+                           oninput="checkUsernameAvailability(this.value)" style="padding-right:36px">
+                    <span class="field-suffix" id="username-status-icon"></span>
+                </div>
+                <div class="field-group">
+                    <i class="fa-solid fa-id-card field-icon"></i>
+                    <input type="text" id="reg-displayname" required placeholder="Full Name" autocomplete="name">
+                </div>
+                <div class="field-group">
+                    <i class="fa-solid fa-calendar field-icon"></i>
+                    <input type="date" id="reg-dob" required>
+                </div>
+                <div class="field-group">
+                    <i class="fa-solid fa-lock field-icon"></i>
+                    <input type="password" id="reg-password" required placeholder="Password (min 8 chars)" autocomplete="new-password">
+                </div>
+                <button type="submit" class="btn-primary">Create Account</button>
+                <p class="terms-text">
+                    By signing up you agree to our Terms &amp; Privacy Policy
+                </p>
+                <p id="auth-error-reg" class="error-msg"></p>
+            </form>
+            <div class="switch-row">
+                Have an account? <a onclick="switchForm('login')">Log in</a>
+            </div>
+        </div>
+
+        <!-- ── FORGOT PASSWORD ── -->
+        <div id="form-forgot" class="auth-form">
+            <div class="forgot-icon"><i class="fa-solid fa-key"></i></div>
+            <div class="form-header" style="text-align:center">
+                <div class="form-title">Forgot Password?</div>
+                <div class="form-subtitle">Verify your identity to reset</div>
+            </div>
+            <form onsubmit="handleForgotPassword(event)">
+                {% csrf_token %}
+                <div class="field-group">
+                    <i class="fa-solid fa-user field-icon"></i>
+                    <input type="text" id="forgot-username" required placeholder="Your username" autocomplete="off">
+                </div>
+                <div class="field-group">
+                    <i class="fa-solid fa-calendar field-icon"></i>
+                    <input type="date" id="forgot-dob" required>
+                </div>
+                <button type="submit" class="btn-primary">Verify Identity</button>
+                <p id="auth-error-forgot" class="error-msg"></p>
+            </form>
+            <div class="switch-row">
+                Remembered? <a onclick="switchForm('login')">Log in</a>
+            </div>
+        </div>
+
+        <!-- ── RESET PASSWORD ── -->
+        <div id="form-reset" class="auth-form">
+            <div class="forgot-icon"><i class="fa-solid fa-shield-halved"></i></div>
+            <div class="form-header" style="text-align:center">
+                <div class="form-title">Reset Password</div>
+                <div class="form-subtitle">Choose a new secure password</div>
+            </div>
+            <form onsubmit="handleResetPassword(event)">
+                {% csrf_token %}
+                <div class="field-group">
+                    <i class="fa-solid fa-lock field-icon"></i>
+                    <input type="password" id="reset-new-password" required placeholder="New password (min 8 chars)" autocomplete="new-password">
+                </div>
+                <button type="submit" class="btn-primary">Reset Password</button>
+                <p id="auth-error-reset" class="error-msg"></p>
+            </form>
+            <div class="switch-row">
+                <a onclick="switchForm('login')">← Back to login</a>
+            </div>
+        </div>
+
+        <div class="panel-footer">
+            © 2026 ESCTRIX · <a href="#">Privacy</a> · <a href="#">Terms</a> · <a href="#">Security</a>
+        </div>
+    </div>
+
+    <script src="{% static 'js/auth.js' %}?v=3"></script>
     <script>
-        function toggleAuthMode(mode) {
-            const loginForm = document.getElementById('login-form');
-            const regForm = document.getElementById('register-form');
-            const forgotForm = document.getElementById('forgot-password-form');
-            const resetForm = document.getElementById('reset-password-form');
-            const switchText = document.getElementById('switch-text');
-            
-            document.getElementById('auth-error-login').innerText = '';
-            document.getElementById('auth-error-reg').innerText = '';
-            document.getElementById('auth-error-forgot').innerText = '';
-            document.getElementById('auth-error-reset').innerText = '';
-            
-            loginForm.classList.remove('active');
-            regForm.classList.remove('active');
-            forgotForm.classList.remove('active');
-            resetForm.classList.remove('active');
-            
-            if (mode === 'register') {
-                regForm.classList.add('active');
-                switchText.innerHTML = `Have an account? <a href="#" onclick="toggleAuthMode('login')">Log in</a>`;
-            } else if (mode === 'forgot') {
-                forgotForm.classList.add('active');
-                switchText.innerHTML = `Remembered your password? <a href="#" onclick="toggleAuthMode('login')">Log in</a>`;
-            } else if (mode === 'reset') {
-                resetForm.classList.add('active');
-                switchText.innerHTML = `Go back to <a href="#" onclick="toggleAuthMode('login')">Log in</a>`;
-            } else {
-                loginForm.classList.add('active');
-                switchText.innerHTML = `Don't have an account? <a href="#" onclick="toggleAuthMode('register')">Sign up</a>`;
-            }
+        function switchForm(mode) {
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            document.getElementById('form-' + mode).classList.add('active');
+            // clear errors
+            ['auth-error-login','auth-error-reg','auth-error-forgot','auth-error-reset'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = '';
+            });
         }
+
+        // Legacy alias used by auth.js forgot flow
+        function toggleAuthMode(mode) { switchForm(mode); }
     </script>
 </body>
 </html>

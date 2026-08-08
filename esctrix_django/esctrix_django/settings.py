@@ -145,3 +145,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# After logout (including admin logout), redirect to the ESCTRIX login page
+LOGOUT_REDIRECT_URL = '/auth/'
