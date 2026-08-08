@@ -1,0 +1,40 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+env/
+.env
+.venv/
+
+# Django
+*.sqlite3
+db.sqlite3
+*.log
+media/
+
+# IDE / Editor
+.idea/
+.vscode/
+*.iml
+*.suo
+*.user
+.DS_Store
+Thumbs.db
+
+# Build / dist
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Node (if any future frontend assets)
+node_modules/
+
+# Test coverage
+htmlcov/
+.coverage
+.pytest_cache/
