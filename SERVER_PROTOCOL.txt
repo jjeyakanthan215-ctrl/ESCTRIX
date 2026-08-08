@@ -1,0 +1,612 @@
+================================================================================
+              CIPHER6 (HEXACONNECT) — SERVER PROTOCOL SPECIFICATION
+================================================================================
+
+Server Type:      WebSocket (AsyncIO)
+Address:          0.0.0.0:8765
+Connection Map:   {username: websocket} in-memory dictionary
+Auth:             JWT tokens (issued on login, validated on every message)
+Heartbeat:        Ping every 30 seconds, update last_seen, remove dead connections
+Rate Limiting:    Per-IP based
+
+================================================================================
+  RATE LIMITS
+================================================================================
+
+Action                  Limit
+---------------------   -------------------------
+Registrations           5 per hour per IP
+Login attempts          5 per 5 minutes per username
+Messages                30 per minute per user
+Search queries          10 per minute per user
+Friend requests         20 per hour per user
+
+================================================================================
+  MESSAGE FORMAT
+================================================================================
+
+All messages are JSON objects with this structure:
+
+{
+    "type": "MESSAGE_TYPE",
+    "token": "jwt_token_here",     (required for all except REGISTER and LOGIN)
+    "data": { ... }                (type-specific payload)
+}
+
+Server responses:
+
+{
+    "type": "RESPONSE_TYPE",
+    "success": true/false,
+    "data": { ... },               (on success)
+    "error": "error message"       (on failure)
+}
+
+================================================================================
+  AUTHENTICATION MESSAGES
+================================================================================
+
+--- REGISTER ---
+Client → Server:
+{
+    "type": "REGISTER",
+    "data": {
+        "username": "darkphoenix",
+        "display_name": "Alex Chen",
+        "password": "securepassword123"
+    }
+}
+
+Server → Client (success):
+{
+    "type": "REGISTER_RESPONSE",
+    "success": true,
+    "data": {
+        "token": "eyJhbGciOiJIUzI1NiIs...",
+        "user": {
+            "id": 1,
+            "username": "darkphoenix",
+            "display_name": "Alex Chen",
+            "bio": "",
+            "avatar_index": 0,
+            "created_at": "2026-08-06T12:00:00"
+        }
+    }
+}
+
+Server → Client (failure):
+{
+    "type": "REGISTER_RESPONSE",
+    "success": false,
+    "error": "Username 'darkphoenix' is already taken"
+}
+
+Validation errors:
+  - "Username must be 3-20 characters"
+  - "Username can only contain lowercase letters, numbers, and underscores"
+  - "Username 'admin' is reserved"
+  - "Password must be at least 8 characters"
+
+--- LOGIN ---
+Client → Server:
+{
+    "type": "LOGIN",
+    "data": {
+        "username": "darkphoenix",
+        "password": "securepassword123"
+    }
+}
+
+Server → Client (success):
+{
+    "type": "LOGIN_RESPONSE",
+    "success": true,
+    "data": {
+        "token": "eyJhbGciOiJIUzI1NiIs...",
+        "user": {
+            "id": 1,
+            "username": "darkphoenix",
+            "display_name": "Alex Chen",
+            "bio": "Privacy enthusiast",
+            "avatar_index": 2,
+            "created_at": "2026-08-06T12:00:00"
+        },
+        "pending_requests": [ ... ],
+        "pending_messages": [ ... ]
+    }
+}
+
+Server → Client (failure):
+{
+    "type": "LOGIN_RESPONSE",
+    "success": false,
+    "error": "Wrong password"
+}
+
+================================================================================
+  SOCIAL / FRIEND MESSAGES
+================================================================================
+
+--- SEARCH_USERS ---
+Client → Server:
+{
+    "type": "SEARCH_USERS",
+    "token": "jwt...",
+    "data": {
+        "query": "ali"
+    }
+}
+
+Server → Client:
+{
+    "type": "SEARCH_RESULTS",
+    "success": true,
+    "data": {
+        "users": [
+            {
+                "username": "alice",
+                "display_name": "Alice Chen",
+                "avatar_index": 3,
+                "friend_status": null
+            },
+            {
+                "username": "ali_k",
+                "display_name": "Ali Kumar",
+                "avatar_index": 1,
+                "friend_status": "pending_sent"
+            },
+            {
+                "username": "alicia",
+                "display_name": "Alicia Davis",
+                "avatar_index": 5,
+                "friend_status": "accepted"
+            }
+        ]
+    }
+}
+
+friend_status values:
+  null              — no connection
+  "pending_sent"    — current user sent request, waiting
+  "pending_received"— other user sent request, waiting for current user
+  "accepted"        — mutual friends
+
+--- FRIEND_REQUEST ---
+Client → Server:
+{
+    "type": "FRIEND_REQUEST",
+    "token": "jwt...",
+    "data": {
+        "target_username": "alice"
+    }
+}
+
+Server → Sender:
+{
+    "type": "FRIEND_REQUEST_RESPONSE",
+    "success": true,
+    "data": {
+        "request_id": 42,
+        "target_username": "alice"
+    }
+}
+
+Server → Target (if online, push notification):
+{
+    "type": "FRIEND_REQUEST_NOTIFY",
+    "data": {
+        "request_id": 42,
+        "from_user": {
+            "username": "darkphoenix",
+            "display_name": "Alex Chen",
+            "avatar_index": 2
+        },
+        "created_at": "2026-08-06T12:30:00"
+    }
+}
+
+--- FRIEND_ACCEPT ---
+Client → Server:
+{
+    "type": "FRIEND_ACCEPT",
+    "token": "jwt...",
+    "data": {
+        "request_id": 42
+    }
+}
+
+Server → Accepter:
+{
+    "type": "FRIEND_ACCEPT_RESPONSE",
+    "success": true,
+    "data": {
+        "friend": {
+            "username": "darkphoenix",
+            "display_name": "Alex Chen",
+            "avatar_index": 2,
+            "is_online": true
+        }
+    }
+}
+
+Server → Original Requester (if online):
+{
+    "type": "FRIEND_ACCEPTED_NOTIFY",
+    "data": {
+        "friend": {
+            "username": "alice",
+            "display_name": "Alice Chen",
+            "avatar_index": 3,
+            "is_online": true
+        }
+    }
+}
+
+--- FRIEND_DECLINE ---
+Client → Server:
+{
+    "type": "FRIEND_DECLINE",
+    "token": "jwt...",
+    "data": {
+        "request_id": 42
+    }
+}
+
+Server → Client:
+{
+    "type": "FRIEND_DECLINE_RESPONSE",
+    "success": true
+}
+
+(No notification sent to the requester)
+
+--- FRIEND_REMOVE ---
+Client → Server:
+{
+    "type": "FRIEND_REMOVE",
+    "token": "jwt...",
+    "data": {
+        "friend_username": "alice"
+    }
+}
+
+Server → Client:
+{
+    "type": "FRIEND_REMOVE_RESPONSE",
+    "success": true
+}
+
+(Friend is silently removed from both users' lists)
+
+--- FRIEND_LIST ---
+Client → Server:
+{
+    "type": "FRIEND_LIST",
+    "token": "jwt..."
+}
+
+Server → Client:
+{
+    "type": "FRIEND_LIST_RESPONSE",
+    "success": true,
+    "data": {
+        "friends": [
+            {
+                "username": "alice",
+                "display_name": "Alice Chen",
+                "avatar_index": 3,
+                "is_online": true,
+                "last_seen": "2026-08-06T12:00:00"
+            },
+            {
+                "username": "bob",
+                "display_name": "Bob Kumar",
+                "avatar_index": 1,
+                "is_online": false,
+                "last_seen": "2026-08-06T10:30:00"
+            }
+        ]
+    }
+}
+
+--- FRIEND_STATUS (Server Push) ---
+Server → Client (when a friend comes online or goes offline):
+{
+    "type": "FRIEND_STATUS",
+    "data": {
+        "username": "alice",
+        "is_online": true
+    }
+}
+
+--- GET_PROFILE ---
+Client → Server:
+{
+    "type": "GET_PROFILE",
+    "token": "jwt...",
+    "data": {
+        "username": "alice"
+    }
+}
+
+Server → Client:
+{
+    "type": "PROFILE_RESPONSE",
+    "success": true,
+    "data": {
+        "username": "alice",
+        "display_name": "Alice Chen",
+        "bio": "Loves coding and coffee ☕",
+        "avatar_index": 3,
+        "friend_count": 15,
+        "friend_status": "accepted",
+        "mutual_friends": 3,
+        "created_at": "2026-08-01T09:00:00",
+        "is_online": true
+    }
+}
+
+--- UPDATE_PROFILE ---
+Client → Server:
+{
+    "type": "UPDATE_PROFILE",
+    "token": "jwt...",
+    "data": {
+        "display_name": "Alex C.",
+        "bio": "Privacy first 🔒",
+        "avatar_index": 5
+    }
+}
+
+Server → Client:
+{
+    "type": "UPDATE_PROFILE_RESPONSE",
+    "success": true,
+    "data": { ... updated profile ... }
+}
+
+================================================================================
+  CALLING MESSAGES
+================================================================================
+
+SECURITY: Server checks are_friends() before relaying any call message.
+          If not mutual friends, returns error.
+
+--- CALL_REQUEST ---
+Client → Server:
+{
+    "type": "CALL_REQUEST",
+    "token": "jwt...",
+    "data": {
+        "target_username": "alice"
+    }
+}
+
+Server checks:
+  1. Are they mutual friends? → if no, error "You can only call friends"
+  2. Is target online? → if no, error "User is offline"
+  3. Is target in a call? → if yes, return BUSY
+
+Server → Target:
+{
+    "type": "INCOMING_CALL",
+    "data": {
+        "caller_username": "darkphoenix",
+        "caller_display_name": "Alex Chen"
+    }
+}
+
+--- CALL_ACCEPT ---
+Client → Server:
+{
+    "type": "CALL_ACCEPT",
+    "token": "jwt...",
+    "data": {
+        "caller_username": "darkphoenix"
+    }
+}
+
+Server → Caller:
+{
+    "type": "CALL_ACCEPTED",
+    "data": {
+        "target_username": "alice"
+    }
+}
+
+(WebRTC handshake begins — OFFER/ANSWER/ICE_CANDIDATE exchange)
+
+--- CALL_REJECT ---
+Client → Server:
+{
+    "type": "CALL_REJECT",
+    "token": "jwt...",
+    "data": {
+        "caller_username": "darkphoenix"
+    }
+}
+
+Server → Caller:
+{
+    "type": "CALL_REJECTED",
+    "data": {
+        "target_username": "alice"
+    }
+}
+
+--- OFFER ---
+Client → Server:
+{
+    "type": "OFFER",
+    "token": "jwt...",
+    "data": {
+        "target_username": "alice",
+        "sdp": "v=0\r\no=- ..."
+    }
+}
+
+Server → Target:
+{
+    "type": "OFFER",
+    "data": {
+        "from_username": "darkphoenix",
+        "sdp": "v=0\r\no=- ..."
+    }
+}
+
+--- ANSWER ---
+Client → Server:
+{
+    "type": "ANSWER",
+    "token": "jwt...",
+    "data": {
+        "target_username": "darkphoenix",
+        "sdp": "v=0\r\no=- ..."
+    }
+}
+
+Server → Target:
+{
+    "type": "ANSWER",
+    "data": {
+        "from_username": "alice",
+        "sdp": "v=0\r\no=- ..."
+    }
+}
+
+--- ICE_CANDIDATE ---
+Client → Server:
+{
+    "type": "ICE_CANDIDATE",
+    "token": "jwt...",
+    "data": {
+        "target_username": "alice",
+        "candidate": {
+            "candidate": "candidate:...",
+            "sdpMid": "0",
+            "sdpMLineIndex": 0
+        }
+    }
+}
+
+Server → Target:
+{
+    "type": "ICE_CANDIDATE",
+    "data": {
+        "from_username": "darkphoenix",
+        "candidate": { ... }
+    }
+}
+
+--- HANG_UP ---
+Client → Server:
+{
+    "type": "HANG_UP",
+    "token": "jwt...",
+    "data": {
+        "target_username": "alice"
+    }
+}
+
+Server → Target:
+{
+    "type": "HANG_UP",
+    "data": {
+        "from_username": "darkphoenix"
+    }
+}
+
+--- BUSY ---
+Server → Caller (when target is already in a call):
+{
+    "type": "BUSY",
+    "data": {
+        "target_username": "alice"
+    }
+}
+
+--- PEER_STATUS ---
+Client → Server:
+{
+    "type": "PEER_STATUS",
+    "token": "jwt...",
+    "data": {
+        "target_username": "alice"
+    }
+}
+
+Server → Client:
+{
+    "type": "PEER_STATUS_RESPONSE",
+    "data": {
+        "username": "alice",
+        "is_online": true,
+        "in_call": false
+    }
+}
+
+================================================================================
+  CHAT MESSAGES
+================================================================================
+
+--- CHAT_MESSAGE ---
+Client → Server:
+{
+    "type": "CHAT_MESSAGE",
+    "token": "jwt...",
+    "data": {
+        "target_username": "alice",
+        "encrypted_content": "base64(IV || ciphertext || authTag)"
+    }
+}
+
+Server checks:
+  1. Are they mutual friends? → if no, error
+  2. Is target online?
+      YES → relay directly to target via WebSocket
+      NO  → store in pending_messages table
+
+Server → Target (if online):
+{
+    "type": "CHAT_MESSAGE",
+    "data": {
+        "from_username": "darkphoenix",
+        "encrypted_content": "base64(IV || ciphertext || authTag)",
+        "timestamp": "2026-08-06T12:45:00"
+    }
+}
+
+(If target is offline, message is stored and delivered on next login)
+
+================================================================================
+  CONNECTION LIFECYCLE
+================================================================================
+
+1. Client connects to WebSocket
+2. Client sends LOGIN or REGISTER
+3. Server validates → adds to connection map {username: websocket}
+4. Server notifies all online friends: FRIEND_STATUS (is_online: true)
+5. Server sends pending friend requests + pending messages
+6. Heartbeat ping every 30 seconds
+7. On disconnect:
+   - Remove from connection map
+   - Update last_seen in database
+   - Notify online friends: FRIEND_STATUS (is_online: false)
+   - If in a call: send HANG_UP to peer
+
+================================================================================
+  SECURITY RULES (Server Enforced)
+================================================================================
+
+1. All messages (except REGISTER/LOGIN) require valid JWT token
+2. CALL_REQUEST requires mutual friendship (status = 'accepted')
+3. CHAT_MESSAGE requires mutual friendship (status = 'accepted')
+4. Users cannot send friend requests to themselves
+5. Duplicate friend requests are rejected
+6. Rate limiting on all endpoints
+7. Login throttling: 5 failures = 5 min lockout
+8. Username validation on registration
+9. JWT expiry: 7 days (configurable)
+10. Passwords never logged or stored in plaintext
+
+================================================================================

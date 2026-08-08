@@ -1,0 +1,139 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESCTRIX | Secure Connect</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <div class="instagram-auth-container">
+        <!-- MAIN CARD -->
+        <div class="ig-card main-card">
+            <div class="ig-logo">
+                <img src="{% static 'img/logo.png' %}" alt="ESCTRIX Logo">
+                <h2>ESCTRIX</h2>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="login-form" class="ig-form active" onsubmit="handleLogin(event)">
+                {% csrf_token %}
+                <div class="ig-input-group">
+                    <input type="text" id="login-username" required placeholder="Username" autocomplete="username">
+                </div>
+                <div class="ig-input-group">
+                    <input type="password" id="login-password" required placeholder="Password" autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn-ig-primary">Log In</button>
+                
+                <div class="privacy-check-group" style="margin: 18px 0 10px; display: flex; align-items: center; gap: 10px; width: 100%;">
+                    <label style="display: flex; align-items: center; gap: 10px; font-size: 0.82rem; color: var(--text-secondary); cursor: pointer; user-select: none; line-height: 1.35;">
+                        <input type="checkbox" required style="width: 16px; height: 16px; accent-color: var(--accent); flex-shrink: 0;">
+                        <span>I accept the Privacy Policy & E2EE cryptographic security terms</span>
+                    </label>
+                </div>
+                
+                <div class="ig-footer-links">
+                    <a href="#" class="link-forgot" onclick="toggleAuthMode('forgot')">Forgot password?</a>
+                </div>
+                <p id="auth-error-login" class="ig-error-msg"></p>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="ig-form" onsubmit="handleRegister(event)">
+                {% csrf_token %}
+                <div class="ig-input-group">
+                    <input type="text" id="reg-username" required placeholder="Username (3-20 chars)" autocomplete="off">
+                </div>
+                <div class="ig-input-group">
+                    <input type="text" id="reg-displayname" required placeholder="Full Name" autocomplete="name">
+                </div>
+                <div class="ig-input-group">
+                    <input type="date" id="reg-dob" required placeholder="Date of Birth">
+                </div>
+                <div class="ig-input-group">
+                    <input type="password" id="reg-password" required placeholder="Password (min 8 chars)" autocomplete="new-password">
+                </div>
+                <button type="submit" class="btn-ig-primary">Sign Up</button>
+                
+                <p class="ig-terms">
+                    By signing up, you agree to our Terms, Privacy Policy and Cookies Policy.
+                </p>
+                <p id="auth-error-reg" class="ig-error-msg"></p>
+            </form>
+
+            <!-- Forgot Password Form (Date of Birth verification) -->
+            <form id="forgot-password-form" class="ig-form" onsubmit="handleForgotPassword(event)">
+                {% csrf_token %}
+                <div style="text-align: center; margin-bottom: 15px; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4;">
+                    Verify your identity using your username and Date of Birth to reset your password.
+                </div>
+                <div class="ig-input-group">
+                    <input type="text" id="forgot-username" required placeholder="Username" autocomplete="off">
+                </div>
+                <div class="ig-input-group">
+                    <input type="date" id="forgot-dob" required placeholder="Date of Birth">
+                </div>
+                <button type="submit" class="btn-ig-primary">Verify Identity</button>
+                <p id="auth-error-forgot" class="ig-error-msg"></p>
+            </form>
+
+            <!-- Reset Password Form -->
+            <form id="reset-password-form" class="ig-form" onsubmit="handleResetPassword(event)">
+                {% csrf_token %}
+                <div style="text-align: center; margin-bottom: 15px; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4;">
+                    Enter a new password for your account (minimum 8 characters).
+                </div>
+                <div class="ig-input-group">
+                    <input type="password" id="reset-new-password" required placeholder="New Password" autocomplete="new-password">
+                </div>
+                <button type="submit" class="btn-ig-primary">Reset Password</button>
+                <p id="auth-error-reset" class="ig-error-msg"></p>
+            </form>
+        </div>
+
+        <!-- SWITCH CARD -->
+        <div class="ig-card switch-card">
+            <p id="switch-text">Don't have an account? <a href="#" onclick="toggleAuthMode('register')">Sign up</a></p>
+        </div>
+    </div>
+
+    <script src="{% static 'js/auth.js' %}?v=2"></script>
+    <script>
+        function toggleAuthMode(mode) {
+            const loginForm = document.getElementById('login-form');
+            const regForm = document.getElementById('register-form');
+            const forgotForm = document.getElementById('forgot-password-form');
+            const resetForm = document.getElementById('reset-password-form');
+            const switchText = document.getElementById('switch-text');
+            
+            document.getElementById('auth-error-login').innerText = '';
+            document.getElementById('auth-error-reg').innerText = '';
+            document.getElementById('auth-error-forgot').innerText = '';
+            document.getElementById('auth-error-reset').innerText = '';
+            
+            loginForm.classList.remove('active');
+            regForm.classList.remove('active');
+            forgotForm.classList.remove('active');
+            resetForm.classList.remove('active');
+            
+            if (mode === 'register') {
+                regForm.classList.add('active');
+                switchText.innerHTML = `Have an account? <a href="#" onclick="toggleAuthMode('login')">Log in</a>`;
+            } else if (mode === 'forgot') {
+                forgotForm.classList.add('active');
+                switchText.innerHTML = `Remembered your password? <a href="#" onclick="toggleAuthMode('login')">Log in</a>`;
+            } else if (mode === 'reset') {
+                resetForm.classList.add('active');
+                switchText.innerHTML = `Go back to <a href="#" onclick="toggleAuthMode('login')">Log in</a>`;
+            } else {
+                loginForm.classList.add('active');
+                switchText.innerHTML = `Don't have an account? <a href="#" onclick="toggleAuthMode('register')">Sign up</a>`;
+            }
+        }
+    </script>
+</body>
+</html>

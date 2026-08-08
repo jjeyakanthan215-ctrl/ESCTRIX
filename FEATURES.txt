@@ -1,0 +1,243 @@
+================================================================================
+                    CIPHER6 (HEXACONNECT) — FEATURE DETAILS
+================================================================================
+
+================================================================================
+  FEATURE 1: AUTHENTICATION (Username-Based)
+================================================================================
+
+REGISTRATION:
+  - User provides: username, display name, password
+  - Username rules:
+      * 3-20 characters long
+      * Lowercase letters, numbers, underscores only (a-z, 0-9, _)
+      * Must be unique (server enforces)
+      * Case-insensitive (stored as lowercase)
+      * Cannot be changed after registration
+      * Displayed with @ prefix everywhere (@darkphoenix)
+      * Reserved words blocked: admin, system, cipher6, support, null, undefined
+  - Display name: any text, can be changed later
+  - Password: minimum 8 characters, strength indicator shown
+  - Server hashes password with Argon2id (memory=65536, time=3, parallelism=4)
+  - On success: server returns JWT token + user profile data
+
+LOGIN:
+  - User provides: username + password
+  - Server verifies Argon2id hash
+  - On success: returns JWT + profile + pending friend requests + pending messages
+  - On failure: "Username not found" or "Wrong password"
+  - Login throttling: 5 failed attempts = 5 minute lockout
+
+SESSION MANAGEMENT:
+  - JWT token stored in flutter_secure_storage (EncryptedSharedPreferences)
+  - Auto-login on app restart (validate stored token)
+  - On token expiry: prompt re-login
+  - Logout: clear all stored credentials
+
+================================================================================
+  FEATURE 2: USER SEARCH
+================================================================================
+
+  - Real-time search bar on Search screen
+  - Searches by username AND display name
+  - Auto-search with 300ms debounce (search as you type)
+  - Case-insensitive matching
+  - Maximum 20 results per query
+  - Rate limited: 10 searches per minute per IP
+
+SEARCH RESULT CARD shows:
+  - Avatar (preset illustration)
+  - Username (@alice)
+  - Display name (Alice Chen)
+  - Friend status button:
+      * [+ Add]       — not connected, tap to send request
+      * [Pending]     — request already sent, waiting
+      * [Friends ✓]   — already mutual friends
+
+  - Tap username → view their profile
+  - Tap [+ Add] → sends friend request → button changes to [Pending]
+  - Empty state with illustration when no query entered
+  - "No results" message when search returns nothing
+
+================================================================================
+  FEATURE 3: FRIEND SYSTEM (Instagram-Style)
+================================================================================
+
+SENDING REQUESTS:
+  - Tap [+ Add] on any search result or user profile
+  - Server creates entry in friends table with status = 'pending'
+  - If target user is online: instant push notification via WebSocket
+  - Cannot send request to yourself
+  - Cannot send duplicate request
+  - Cannot send request to someone who already sent you one (auto-prompt accept)
+
+RECEIVING REQUESTS:
+  - Shown in Activity screen under "Friend Requests" section
+  - Each request shows: avatar, username, display name, timestamp
+  - Two action buttons: [✓ Accept] and [✗ Decline]
+  - Badge count on Activity tab icon shows pending count
+
+ACCEPTING REQUESTS:
+  - Creates MUTUAL friendship (both directions in database)
+  - Both users immediately see each other in Friends list
+  - Activity feed entry: "You are now friends with @alice"
+  - If both online: instant update via WebSocket push
+
+DECLINING REQUESTS:
+  - Removes the pending request
+  - No notification sent to the requester
+  - Requester can send another request later
+
+REMOVING FRIENDS:
+  - Available from friend's profile or friends list
+  - Removes both direction entries from database
+  - Both users lose each other from friends list
+  - Cannot call or chat after unfriending
+
+FRIEND STATUS:
+  - pending_sent     — you sent a request, waiting for them
+  - pending_received — they sent you a request, waiting for you
+  - accepted         — mutual friends, can call and chat
+  - null             — no connection exists
+
+================================================================================
+  FEATURE 4: USER PROFILES
+================================================================================
+
+OWN PROFILE (Editable):
+  - Avatar: choose from preset avatar illustrations (no camera needed)
+  - Username: displayed with @ prefix (NOT editable)
+  - Display name: editable text field
+  - Bio: editable text field (short description)
+  - Friend count: total accepted friends
+  - Join date: registration timestamp
+  - Logout button
+
+OTHER USER'S PROFILE (View-only):
+  - Same layout but read-only
+  - Action buttons based on friend status:
+      * Not connected: [+ Add Friend]
+      * Request sent:  [Pending ⏳]
+      * Request received: [✓ Accept] [✗ Decline]
+      * Friends: [📞 Call] [💬 Chat] [Remove Friend]
+  - Mutual friends count (friends you have in common)
+
+================================================================================
+  FEATURE 5: E2EE VOICE CALLS
+================================================================================
+
+REQUIREMENTS:
+  - Both users must be MUTUAL FRIENDS
+  - Server enforces this check before relaying call request
+
+CALL FLOW:
+  1. User A taps 📞 on friend's card in Home screen
+  2. Server checks friendship → relays CALL_REQUEST to User B
+  3. User B sees incoming call overlay: "@alice is calling..."
+  4. User B taps [Accept] → WebRTC handshake begins
+  5. SDP Offer/Answer exchanged via server (signaling)
+  6. ICE candidates exchanged → direct P2P connection established
+  7. Audio flows directly between devices (not through server)
+  8. Either user taps [End Call] → cleanup → return to Home
+
+CALL FEATURES:
+  - Mute/unmute microphone
+  - Speaker toggle (earpiece ↔ speakerphone)
+  - Call timer (HH:MM:SS)
+  - Connection quality indicator (green/yellow/red)
+  - Call continues when app minimized (Foreground Service)
+
+CALL EDGE CASES:
+  - Target offline: "User is offline" message
+  - Target busy: "User is in another call" message
+  - No answer in 30 seconds: auto-cancel + notify caller
+  - Network switch (WiFi → Mobile): ICE restart, no drop
+  - App minimized: Foreground Service keeps audio alive
+
+AUDIO SPECS:
+  - Codec: Opus
+  - Bitrate: 8-16 kbps (adaptive)
+  - DTX: enabled (silence suppression — saves data)
+  - Bandwidth: ~18 MB/hour (vs WhatsApp ~35 MB/hour)
+
+================================================================================
+  FEATURE 6: E2EE CHAT MESSAGES
+================================================================================
+
+REQUIREMENTS:
+  - Both users must be MUTUAL FRIENDS
+  - Server enforces this check
+
+MESSAGE ENCRYPTION:
+  - Algorithm: AES-256-GCM
+  - Random 12-byte IV per message
+  - Output format: base64(IV || ciphertext || authTag)
+  - Server NEVER sees plaintext
+
+ONLINE CHAT:
+  - Messages sent via WebRTC DataChannel (direct P2P)
+  - No server involvement after connection established
+  - Real-time delivery
+
+OFFLINE CHAT:
+  - If recipient is offline, message goes to server
+  - Server stores encrypted message in pending_messages table
+  - When recipient comes online and logs in, pending messages delivered
+  - Server deletes messages after delivery confirmation
+  - Server is a "blind mailbox" — cannot read encrypted content
+
+CHAT UI:
+  - Scrollable message list with chat bubbles
+  - Sent messages: right-aligned, accent color
+  - Received messages: left-aligned, dark color
+  - Text input field + send button
+  - Timestamps on messages
+
+================================================================================
+  FEATURE 7: ACTIVITY FEED & NOTIFICATIONS
+================================================================================
+
+ACTIVITY SCREEN SHOWS:
+  - Incoming friend requests (with Accept/Decline buttons)
+  - Recent social events:
+      * "@alice accepted your friend request · 2h ago"
+      * "You are now friends with @bob · 1d ago"
+      * "@charlie sent you a friend request · 3h ago"
+
+NOTIFICATIONS:
+  - Badge count on Activity tab (pending friend requests)
+  - Real-time push via WebSocket when:
+      * Someone sends you a friend request
+      * Someone accepts your friend request
+      * A friend comes online/goes offline
+      * Incoming call
+
+================================================================================
+  FEATURE 8: HOME SCREEN (Friends List)
+================================================================================
+
+LAYOUT:
+  - Top bar: app name + your username + settings icon
+  - Search bar (tap → navigate to Search screen)
+  - Friends list divided into:
+      * "Online" section (green dot) — can call or chat
+      * "Offline" section (gray dot) — can chat only (stored)
+  - Each friend shows: avatar, username, display name, quick action buttons
+
+FRIEND CARD ACTIONS:
+  - 📞 Voice Call (only if friend is online)
+  - 💬 Encrypted Chat (works online or offline)
+  - Tap username → view profile
+
+REAL-TIME UPDATES:
+  - Friends' online/offline status updates instantly via WebSocket
+  - New friend appears immediately after accepting request
+  - Removed friend disappears immediately
+
+BOTTOM NAVIGATION:
+  - 🏠 Home (friends list)
+  - 🔍 Search (find users)
+  - ❤️ Activity (friend requests + feed)
+  - 👤 Profile (your profile)
+
+================================================================================

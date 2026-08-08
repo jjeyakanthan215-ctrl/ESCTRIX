@@ -1,0 +1,79 @@
+================================================================================
+                    CIPHER6 (HEXACONNECT) — PROJECT OVERVIEW
+================================================================================
+
+Project Name:     Cipher6 (HexaConnect)
+Type:             Encrypted Social Communication App
+Platform:         Android (Flutter) + Python Backend
+Primary Feature:  Username-based social connections with E2EE voice calls & chat
+
+================================================================================
+                              WHAT IS CIPHER6?
+================================================================================
+
+Cipher6 is a privacy-focused social communication app where users connect
+through Instagram-style usernames. Unlike traditional phone apps that use
+phone numbers, Cipher6 uses unique usernames (@darkphoenix, @alice, etc.)
+as the primary identity system.
+
+Users can:
+  - Create an account with a unique username and password
+  - Search for other users by username
+  - Send and accept friend requests (like Instagram)
+  - Make end-to-end encrypted (E2EE) voice calls with friends
+  - Send end-to-end encrypted chat messages with friends
+  - See friends' online/offline status in real-time
+
+================================================================================
+                              CORE PRINCIPLES
+================================================================================
+
+1. USERNAME IS KING
+   - No phone numbers, no email required
+   - Username is the sole identifier (@username)
+   - Usernames are unique, immutable, and case-insensitive
+
+2. PRIVACY BY DESIGN
+   - End-to-end encryption for all calls and messages
+   - Server never sees plaintext messages
+   - Passwords hashed with Argon2id (not stored in plain text)
+   - JWT tokens stored in encrypted secure storage
+
+3. FRIENDS-ONLY COMMUNICATION
+   - You can ONLY call or message mutual friends
+   - Server enforces this rule — strangers cannot contact you
+   - Friend requests must be accepted by both parties
+
+4. ULTRA-LOW BANDWIDTH
+   - Voice calls use ~18 MB/hour (vs WhatsApp ~35 MB/hour)
+   - Opus codec at 8-16 kbps with silence suppression (DTX)
+   - Ideal for users with limited mobile data
+
+================================================================================
+                              TECH STACK
+================================================================================
+
+Layer               Technology
+-----------------   ----------------------------------------------------------
+Mobile App          Flutter (Dart) — cross-platform, single codebase
+Backend Server      Python 3.10+ with AsyncIO
+Communication       WebSocket (signaling) + WebRTC (peer-to-peer media)
+Database            SQLite (server-side)
+Encryption          AES-256-GCM (messages) + Argon2id (passwords)
+Audio Codec         Opus 8-16 kbps with DTX
+Auth Tokens         JWT (JSON Web Tokens)
+Secure Storage      flutter_secure_storage (Android EncryptedSharedPreferences)
+STUN Server         Google Public STUN (stun.l.google.com:19302)
+TURN Server         Metered.ca Open Relay (free 20GB/month)
+Font                Inter (Google Fonts)
+
+================================================================================
+                              TARGET PLATFORM
+================================================================================
+
+- Android 5.0+ (API 21+)
+- minSdkVersion: 21
+- targetSdkVersion: 34 (Android 14)
+- Foreground Service support for background calls
+
+================================================================================

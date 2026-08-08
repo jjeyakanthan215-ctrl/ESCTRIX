@@ -1,0 +1,104 @@
+================================================================================
+                                   ESCTRIX
+                      End-to-End Encrypted Chat & Call App
+================================================================================
+
+This document contains full details, architecture design, protocol specs, and
+instructions to recreate the ESCTRIX (formerly Cipher6) project from scratch.
+
+--------------------------------------------------------------------------------
+1. ARCHITECTURE OVERVIEW
+--------------------------------------------------------------------------------
+ESCTRIX is a full-stack, real-time social application built on:
+- Backend: Python 3 with Django (ASGI) & Django Channels
+- Real-Time Layer: WebSockets via Daphne ASGI server
+- Database: SQLite (configured with Argon2id for native password hashing)
+- Encryption: Client-side E2EE (AES-256-GCM) via WebCrypto API (window.crypto.subtle)
+- P2P Calls: WebRTC (Direct Audio/Video) with WebSocket signaling
+
+--------------------------------------------------------------------------------
+2. DATABASE MODELS (SQLite)
+--------------------------------------------------------------------------------
+Located in `accounts/models.py` and `chat/models.py`:
+
+- CustomUser (AbstractUser):
+  - username: unique string (used for connections, e.g. @alice)
+  - display_name: string (visible display name)
+  - bio: text field
+  - avatar_index: integer (seed for DiceBear avatar generator)
+  - last_seen: datetime
+
+- Friendship:
+  - user (ForeignKey to CustomUser): sender
+  - friend (ForeignKey to CustomUser): recipient
+  - status: CharField ('pending', 'accepted', 'blocked')
+  - created_at / updated_at: datetimes
+
+- PendingMessage:
+  - sender: ForeignKey
+  - recipient: ForeignKey
+  - encrypted_content: text (Base64-encoded encrypted package)
+  - created_at: datetime
+
+--------------------------------------------------------------------------------
+3. SIGNALLING PROTOCOL (WebSockets)
+--------------------------------------------------------------------------------
+WebSocket routes are configured at `ws/chat/` using Django Channels group layer.
+Every logged-in user joins their own group: `user_{username}`.
+
+Message Payload Format:
+{
+    "type": "MESSAGE_TYPE",
+    "data": { ... }
+}
+
+Message Types:
+- FRIEND_LIST: Client requests list of accepted friends. Server returns FRIEND_LIST_RESPONSE.
+- CHAT_MESSAGE: Relays encrypted chat text to mutual friend's group.
+- CALL_REQUEST / INCOMING_CALL: Initiates WebRTC calling procedure.
+- CALL_ACCEPT / CALL_ACCEPTED: Handshake indicating call accept.
+- CALL_REJECT / CALL_REJECTED: Handshake indicating call reject.
+- OFFER, ANSWER, ICE_CANDIDATE: Relays standard WebRTC connection parameters.
+- HANG_UP: Terminate call session.
+
+--------------------------------------------------------------------------------
+4. KEY RECREATION STEPS
+--------------------------------------------------------------------------------
+
+Step 1: Install Dependencies
+pip install django channels daphne argon2-cffi
+
+Step 2: Initialize Project
+python -m django startproject cipher6_django
+cd cipher6_django
+python manage.py startapp accounts
+python manage.py startapp chat
+
+Step 3: Setup Settings Configuration
+- Configure ASGI_APPLICATION = 'cipher6_django.asgi.application'
+- Configure CHANNEL_LAYERS to use InMemoryChannelLayer (or RedisChannelLayer in production)
+- Set AUTH_USER_MODEL = 'accounts.CustomUser'
+- Add 'daphne', 'channels', 'accounts', 'chat' to INSTALLED_APPS (ensure 'daphne' is at the top).
+- Set PASSWORD_HASHERS to prioritize 'django.contrib.auth.hashers.Argon2PasswordHasher'.
+
+Step 4: Run Migrations
+python manage.py makemigrations accounts chat
+python manage.py migrate
+
+Step 5: Run Server
+python manage.py runserver 8000
+
+--------------------------------------------------------------------------------
+5. CRYPTOGRAPHIC PIPELINE (AES-GCM)
+--------------------------------------------------------------------------------
+1. Key Derivation (PBKDF2):
+   - Derives a shared symmetric key from a sorted combination of both users' usernames + a master salt.
+   - Performed completely in the browser via window.crypto.subtle.
+2. Encryption (AES-GCM):
+   - Uses a random 12-byte initialization vector (IV).
+   - The cipher text is combined with the IV and Base64 encoded before sending over WebSockets.
+3. Decryption:
+   - Recipient separates the 12-byte IV from the ciphertext, derives the same shared key, and decrypts.
+
+--------------------------------------------------------------------------------
+================================================================================
