@@ -1,10 +1,10 @@
-function switchAuthTab(tab) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+function switchForm(formId) {
+    // Hide all forms
     document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-    
-    event.target.classList.add('active');
-    document.getElementById(`${tab}-form`).classList.add('active');
-    document.getElementById('auth-error').innerText = '';
+    // Show the target form
+    document.getElementById(`form-${formId}`).classList.add('active');
+    // Clear any error messages when switching forms
+    document.querySelectorAll('.error-msg').forEach(el => el.innerText = '');
 }
 
 function getCookie(name) {

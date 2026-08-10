@@ -556,30 +556,30 @@ function renderChatHistory() {
         let ticksHTML = '';
         if (activeUser && isMe && m.id && !m.id.toString().startsWith('temp_')) {
             if (m.is_read) {
-                ticksHTML = '<span class="ticks-read" style="margin-left: 4px; color: var(--success);"><i class="fa-solid fa-check-double"></i></span>';
+                ticksHTML = '<span class="ticks-read" title="Read"><i class="fa-solid fa-check-double"></i></span>';
             } else {
-                ticksHTML = '<span class="ticks-sent" style="margin-left: 4px; color: var(--text-muted);"><i class="fa-solid fa-check"></i></span>';
+                ticksHTML = '<span class="ticks-sent" title="Sent"><i class="fa-solid fa-check"></i></span>';
             }
         }
         
         // Reactions rendering
         let reactionsHTML = '';
         if (m.reactions && m.reactions.length > 0) {
-            reactionsHTML = `<div class="bubble-reactions" style="display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap;">`;
+            reactionsHTML = `<div class="bubble-reactions">`;
             m.reactions.forEach(r => {
-                reactionsHTML += `<span class="reaction-badge" title="Reacted by @${r.username}" style="background: rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 12px; font-size: 0.8rem; cursor: pointer;">${r.emoji}</span>`;
+                reactionsHTML += `<span class="reaction-badge" title="Reacted by @${r.username}">${r.emoji}</span>`;
             });
             reactionsHTML += `</div>`;
         }
         
         div.id = `msg-wrap-${m.id}`;
         div.innerHTML = `
-            <div class="message ${isMe ? 'msg-sent' : 'msg-recv'}" style="position: relative;">
-                ${activeGroupId && !isMe ? `<span class="msg-sender-name" style="font-weight: 600; font-size: 0.85rem; color: var(--primary-light);">@${m.from}</span><br>` : ''}
+            <div class="message ${isMe ? 'msg-sent' : 'msg-recv'}">
+                ${activeGroupId && !isMe ? `<div class="msg-sender-name">@${m.from}</div>` : ''}
                 <div class="msg-content-text">${contentHTML}</div>
-                <div class="msg-meta-row" style="display: flex; justify-content: flex-end; align-items: center; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+                <div class="msg-meta-row">
                     ${timerHTML}
-                    <span class="msg-time" style="margin-left: 6px;">${new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    <span class="msg-time">${new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                     ${ticksHTML}
                 </div>
                 ${reactionsHTML}
@@ -853,13 +853,13 @@ async function updateProfile(e) {
         });
         const data = await response.json();
         if (data.success) {
-            alert('Profile updated successfully!');
-            window.location.reload();
+            showToast('Profile Updated', 'Profile updated successfully!', 'success');
+            setTimeout(() => window.location.reload(), 1000);
         } else {
-            alert(data.error);
+            showToast('Profile Error', data.error || 'Failed to update profile', 'error');
         }
     } catch (err) {
-        alert('Failed to update profile');
+        showToast('Profile Error', 'Failed to update profile', 'error');
     }
 }
 
@@ -876,13 +876,13 @@ async function saveAvatarSeedOnly() {
         });
         const data = await response.json();
         if (data.success) {
-            alert('Avatar updated successfully!');
-            window.location.reload();
+            showToast('Avatar Updated', 'Avatar updated successfully!', 'success');
+            setTimeout(() => window.location.reload(), 1000);
         } else {
-            alert(data.error);
+            showToast('Avatar Error', data.error || 'Failed to update avatar', 'error');
         }
     } catch (err) {
-        alert('Failed to update avatar');
+        showToast('Avatar Error', 'Failed to update avatar', 'error');
     }
 }
 
@@ -963,10 +963,10 @@ async function unblockUser(username) {
         });
         const data = await response.json();
         if (data.success) {
-            alert('User unblocked!');
+            showToast('Privacy', `User @${username} unblocked!`, 'info');
             loadBlockList();
         } else {
-            alert(data.error);
+            showToast('Privacy Error', data.error || 'Failed to unblock user', 'error');
         }
     } catch (err) {
         console.error(err);
@@ -1123,7 +1123,7 @@ async function submitCreateGroup() {
     const nameInput = document.getElementById('new-group-name');
     const name = nameInput.value.trim();
     if (!name) {
-        alert('Please specify group name.');
+        showToast('Group Error', 'Please specify a group name.', 'error');
         return;
     }
 
@@ -1141,14 +1141,14 @@ async function submitCreateGroup() {
         });
         const data = await response.json();
         if (data.success) {
-            alert('Group created successfully!');
+            showToast('Group Created', `Group "${name}" created successfully!`, 'success');
             nameInput.value = '';
             closeCreateGroupModal();
             // Notify WebSocket to join group room dynamically
             sendToServer('JOIN_GROUP', { group_id: data.group_id });
             loadGroupList();
         } else {
-            alert(data.error);
+            showToast('Group Error', data.error, 'error');
         }
     } catch (err) {
         console.error(err);
@@ -1251,12 +1251,12 @@ async function toggleBlockFromProfileModal() {
         });
         const data = await response.json();
         if (data.success) {
-            alert(isUnblockAction ? 'User unblocked!' : 'User blocked successfully!');
+            showToast('Privacy', isUnblockAction ? `User @${modalProfileUsername} unblocked!` : `User @${modalProfileUsername} blocked successfully!`, 'info');
             closeUserProfileModal();
             sendToServer('FRIEND_LIST'); // Refresh list
             closeChat();
         } else {
-            alert(data.error);
+            showToast('Privacy Error', data.error, 'error');
         }
     } catch (err) {
         console.error(err);
@@ -1335,10 +1335,10 @@ async function sendFriendRequest(targetUsername) {
         });
         const data = await response.json();
         if (data.success) {
-            alert('Friend request sent!');
+            showToast('Friend Request', `Friend request sent to @${targetUsername}!`, 'success');
             debounceSearch();
         } else {
-            alert(data.error);
+            showToast('Friend Request Error', data.error, 'error');
         }
     } catch (err) {
         console.error(err);
@@ -1357,11 +1357,11 @@ async function acceptFriendRequest(senderUsername) {
         });
         const data = await response.json();
         if (data.success) {
-            alert('Friend request accepted!');
+            showToast('Friend Request', `Friend request from @${senderUsername} accepted!`, 'success');
             loadPendingRequests();
             sendToServer('FRIEND_LIST');
         } else {
-            alert(data.error);
+            showToast('Friend Request Error', data.error, 'error');
         }
     } catch (err) {
         console.error(err);
@@ -1380,9 +1380,10 @@ async function declineFriendRequest(senderUsername) {
         });
         const data = await response.json();
         if (data.success) {
+            showToast('Friend Request', `Friend request from @${senderUsername} declined.`, 'info');
             loadPendingRequests();
         } else {
-            alert(data.error);
+            showToast('Friend Request Error', data.error, 'error');
         }
     } catch (err) {
         console.error(err);
@@ -1539,4 +1540,68 @@ function changeAppTheme(themeName) {
 window.addEventListener('DOMContentLoaded', () => {
     loadPendingRequests();
     setInterval(loadPendingRequests, 10000);
+    renderAvatarPresetGrid();
 });
+
+// --- ANIMATED AVATAR PICKER GALLERY ---
+let currentAvatarStyle = 'avataaars';
+let selectedAvatarSeed = CURRENT_USER.avatar_index || 0;
+
+function switchAvatarStyle(style, btnEl) {
+    currentAvatarStyle = style;
+    document.querySelectorAll('.avatar-style-tab').forEach(b => b.classList.remove('active'));
+    if (btnEl) btnEl.classList.add('active');
+    renderAvatarPresetGrid();
+}
+
+function renderAvatarPresetGrid() {
+    const grid = document.getElementById('avatar-preset-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    
+    const presetSeeds = [
+        0, 101, 205, 312, 450, 520, 615, 789, 892, 999,
+        1234, 2500, 3810, 4920, 5555, 6789, 7420, 8888, 9301, 9999
+    ];
+    
+    presetSeeds.forEach(seed => {
+        const item = document.createElement('div');
+        item.className = `avatar-preset-item ${Number(seed) === Number(selectedAvatarSeed) ? 'selected' : ''}`;
+        item.onclick = () => selectAvatarSeed(seed);
+        
+        item.innerHTML = `
+            <img src="https://api.dicebear.com/7.x/${currentAvatarStyle}/svg?seed=${seed}" loading="lazy" alt="Avatar ${seed}">
+        `;
+        grid.appendChild(item);
+    });
+}
+
+function selectAvatarSeed(seed) {
+    selectedAvatarSeed = seed;
+    const inputEl = document.getElementById('edit-avatar');
+    if (inputEl) inputEl.value = seed;
+    
+    const previewEl = document.getElementById('setting-avatar-preview');
+    if (previewEl) previewEl.src = `https://api.dicebear.com/7.x/${currentAvatarStyle}/svg?seed=${seed}`;
+    
+    const labelEl = document.getElementById('current-seed-label');
+    if (labelEl) labelEl.innerText = seed;
+    
+    const profilePreviewEl = document.getElementById('profile-avatar-preview');
+    if (profilePreviewEl) profilePreviewEl.src = `https://api.dicebear.com/7.x/${currentAvatarStyle}/svg?seed=${seed}`;
+    
+    renderAvatarPresetGrid();
+}
+
+function randomizeAvatar() {
+    const randomSeed = Math.floor(Math.random() * 10000);
+    selectAvatarSeed(randomSeed);
+    
+    const previewImg = document.getElementById('setting-avatar-preview');
+    if (previewImg) {
+        previewImg.style.transform = 'scale(0.85) rotate(-12deg)';
+        setTimeout(() => {
+            previewImg.style.transform = 'scale(1) rotate(0deg)';
+        }, 220);
+    }
+}

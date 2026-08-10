@@ -46,7 +46,7 @@ async function startCall(type) {
     } catch (e) {
         console.error("Media access denied:", e);
         endCall(true);
-        alert("Microphone/Camera access required");
+        showToast('Call Error', 'Microphone/Camera access required', 'error');
     }
 }
 
@@ -98,7 +98,7 @@ apiEvents.onCallAccepted = async (data) => {
 };
 
 apiEvents.onCallRejected = (data) => {
-    alert(`${data.target_username} rejected the call.`);
+    showToast('Call Declined', `${data.target_username} rejected the call.`, 'info');
     endCall(true);
 };
 

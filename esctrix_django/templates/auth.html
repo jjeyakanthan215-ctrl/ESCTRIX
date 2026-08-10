@@ -580,6 +580,96 @@
             color: rgba(255,255,255,0.4);
             font-weight: 500;
         }
+
+        /* ─── HIDE ALL SCROLLBARS GLOBALLY ────────────────── */
+        * {
+            scrollbar-width: none;           /* Firefox */
+            -ms-overflow-style: none;        /* IE/Edge */
+        }
+        *::-webkit-scrollbar {
+            display: none;                   /* Chrome/Safari */
+        }
+        html, body {
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* ─── MOBILE RESPONSIVE ───────────────────────────── */
+        @media (max-width: 900px) {
+            body {
+                flex-direction: column;
+                overflow-y: auto;
+                height: auto;
+                min-height: 100vh;
+            }
+
+            /* Hero becomes compact header strip */
+            .auth-hero {
+                flex: none;
+                padding: 30px 20px 20px;
+                min-height: auto;
+            }
+
+            .hero-tagline {
+                font-size: 1.6rem;
+            }
+
+            .hero-sub {
+                font-size: 0.85rem;
+                margin-bottom: 20px;
+            }
+
+            /* Hide the phone stack and floating badges on mobile */
+            .phone-stack {
+                display: none !important;
+            }
+
+            .float-badge {
+                display: none !important;
+            }
+
+            /* Show feature pills in a tighter row */
+            .hero-features {
+                margin-top: 10px;
+                gap: 14px;
+            }
+
+            .hero-feat-icon {
+                width: 34px;
+                height: 34px;
+                font-size: 0.9rem;
+            }
+
+            .hero-feat-label {
+                font-size: 0.6rem;
+            }
+
+            /* Right panel fills remaining space */
+            .auth-panel {
+                width: 100%;
+                min-width: unset;
+                border-left: none;
+                border-top: 1px solid rgba(255,255,255,0.06);
+                padding: 30px 24px 100px;
+                position: relative;
+            }
+
+            .auth-panel::before {
+                display: none;
+            }
+
+            .panel-logo img {
+                height: 34px;
+            }
+
+            .panel-logo-text {
+                font-size: 1.3rem;
+            }
+
+            .form-title {
+                font-size: 1.2rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -715,7 +805,7 @@
                 <div class="privacy-check">
                     <input type="checkbox" id="login-privacy" required>
                     <label for="login-privacy">
-                        I accept the <a href="#">Privacy Policy</a> &amp; E2EE cryptographic security terms
+                        I accept the <a href="/privacy/" target="_blank">Privacy Policy</a> &amp; E2EE cryptographic security terms
                     </label>
                 </div>
                 <button type="submit" class="btn-primary">Log In</button>
@@ -754,7 +844,7 @@
                 </div>
                 <button type="submit" class="btn-primary">Create Account</button>
                 <p class="terms-text">
-                    By signing up you agree to our Terms &amp; Privacy Policy
+                    By signing up you agree to our <a href="/terms/" target="_blank" style="color:var(--text-active);">Terms</a> &amp; <a href="/privacy/" target="_blank" style="color:var(--text-active);">Privacy Policy</a>
                 </p>
                 <p id="auth-error-reg" class="error-msg"></p>
             </form>
@@ -962,17 +1052,6 @@
 
     <script src="{% static 'js/auth.js' %}?v=4"></script>
     <script>
-        const csrftoken = document.cookie.split(';').find(c=>c.trim().startsWith('csrftoken='))?.split('=')[1] || '';
-
-        function switchForm(mode) {
-            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-            document.getElementById('form-' + mode).classList.add('active');
-            ['auth-error-login','auth-error-reg','auth-error-forgot','auth-error-reset'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.innerText = '';
-            });
-        }
-
         // Legacy alias used by auth.js forgot flow
         function toggleAuthMode(mode) { switchForm(mode); }
 

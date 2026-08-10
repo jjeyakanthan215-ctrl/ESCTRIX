@@ -227,15 +227,40 @@
             <!-- Settings Sub Option Details Panel (Shows forms corresponding to chosen settings option) -->
             <div id="settings-display-panel" class="ig-settings-forms-wrapper hidden">
                 
-                <!-- Sub Option: Profile Picture / Seed -->
+                <!-- Sub Option: Profile Picture / Animated Avatars -->
                 <div id="set-avatar" class="setting-form-pane active">
-                    <h3>Change Profile Picture Seed</h3>
-                    <p class="setting-desc">Alter the numerical seed to dynamically generate a unique DiceBear avatar.</p>
-                    <div class="avatar-update-row">
-                        <img id="setting-avatar-preview" src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ request.user.avatar_index }}">
-                        <div class="avatar-update-input-group">
-                            <input type="number" id="edit-avatar" value="{{ request.user.avatar_index }}" oninput="previewSettingAvatar(this.value)">
-                            <button type="button" class="btn-ig-submit" onclick="saveAvatarSeedOnly()">Update Picture</button>
+                    <h3>Choose Animated Avatar</h3>
+                    <p class="setting-desc">Select from our animated avatar gallery, switch styles, or generate a random seed.</p>
+
+                    <!-- Large Selected Preview Card -->
+                    <div class="avatar-preview-card">
+                        <div class="avatar-preview-wrapper">
+                            <img id="setting-avatar-preview" src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ request.user.avatar_index }}">
+                            <button type="button" class="btn-random-avatar" onclick="randomizeAvatar()" title="Randomize Avatar">
+                                <i class="fa-solid fa-dice"></i>
+                            </button>
+                        </div>
+                        <div class="avatar-preview-meta">
+                            <div class="avatar-seed-badge">Seed: <span id="current-seed-label">{{ request.user.avatar_index }}</span></div>
+                            <input type="hidden" id="edit-avatar" value="{{ request.user.avatar_index }}">
+                            <button type="button" class="btn-ig-submit" onclick="saveAvatarSeedOnly()" style="margin-top: 6px;">Save Selected Avatar</button>
+                        </div>
+                    </div>
+
+                    <!-- Style Filter Tabs -->
+                    <div class="avatar-style-tabs">
+                        <button type="button" class="avatar-style-tab active" onclick="switchAvatarStyle('avataaars', this)">🎨 2D Avataaars</button>
+                        <button type="button" class="avatar-style-tab" onclick="switchAvatarStyle('bottts', this)">🤖 Cyber Robots</button>
+                        <button type="button" class="avatar-style-tab" onclick="switchAvatarStyle('lorelei', this)">🌟 Lorelei</button>
+                        <button type="button" class="avatar-style-tab" onclick="switchAvatarStyle('fun-emoji', this)">😜 3D Emoji</button>
+                        <button type="button" class="avatar-style-tab" onclick="switchAvatarStyle('adventurer', this)">🧙 Adventurer</button>
+                    </div>
+
+                    <!-- Gallery Grid -->
+                    <div class="avatar-gallery-container">
+                        <h4>Preset Animated Avatars</h4>
+                        <div id="avatar-preset-grid" class="avatar-preset-grid">
+                            <!-- Injected by chat.js -->
                         </div>
                     </div>
                 </div>

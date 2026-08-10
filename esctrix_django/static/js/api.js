@@ -96,3 +96,52 @@ function handleServerMessage(msg) {
 }
 
 connectWebSocket();
+
+// ==========================================
+// IN-APP TOAST NOTIFICATION SYSTEM
+// ==========================================
+function showToast(title, message, type = 'info', duration = 3500) {
+    if (message === undefined) {
+        message = title;
+        title = type === 'error' ? 'Error' : (type === 'success' ? 'Success' : 'Notification');
+    }
+    
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
+    }
+    
+    const toast = document.createElement('div');
+    toast.className = `esctrix-toast toast-${type}`;
+    
+    let iconHTML = '<i class="fa-solid fa-bell" style="color:var(--text-active);"></i>';
+    if (type === 'success') iconHTML = '<i class="fa-solid fa-circle-check" style="color:#4cd964;"></i>';
+    else if (type === 'error') iconHTML = '<i class="fa-solid fa-circle-exclamation" style="color:#ed4956;"></i>';
+    else if (type === 'info') iconHTML = '<i class="fa-solid fa-user-plus" style="color:#00d2ff;"></i>';
+    
+    toast.innerHTML = `
+        <div class="toast-icon">${iconHTML}</div>
+        <div class="toast-body">
+            <div class="toast-title">${title}</div>
+            <div class="toast-msg">${message}</div>
+        </div>
+        <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+        <div class="toast-progress" style="animation-duration: ${duration}ms;"></div>
+    `;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.style.animation = 'toastSlideOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, duration);
+}
+
+// Override native alert globally for modern in-app toasts
+window.alert = function(msg) {
+    showToast('Notification', msg, 'info');
+};

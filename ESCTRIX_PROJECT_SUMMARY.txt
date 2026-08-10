@@ -741,21 +741,6 @@ UPDATE 10: ENHANCED ADMIN PANEL (User-Friendly & Visual)
   HELP TICKET LIST:
     * Colored badges: ✔ Solved (green) / ● Open (yellow)
     * Actions: Mark as Solved + Mark as Open (reopen)
-    * Read-only fields to prevent accidental edits
-
-  GUEST CONTACT REQUESTS (NEW):
-    * Shows name (or "Anonymous"), issue category label, email, status
-    * Status badges: 🆕 New (purple) / ⟳ In Review (yellow) / ✔ Resolved (green)
-    * Actions: Mark as Resolved + Mark as In Review
-    * Read-only fields
-
-  ALL LISTS:
-    * Sorted by newest first
-    * 25 items per page
-    * Rich search and filter sidebars
-
-  FILES AFFECTED:
-    esctrix_django/accounts/admin.py  (completely rewritten)
 
 ------------------------------------------------------------------------
 UPDATE 11: PROJECT CLEANUP
@@ -771,141 +756,54 @@ UPDATE 11: PROJECT CLEANUP
     - .gitignore — permanently excludes: __pycache__, .pyc, .idea,
       .vscode, db.sqlite3, media/, venv/, node_modules/, *.egg-info/
 
-  GIT COMMITS (in order):
-    1. "Complete ESCTRIX rebranding, help desk, and E2EE advanced features"
-    2. "Add real-time Instagram-style username availability checker"
-    3. "Add Chat Theme switcher and logo theming"
-    4. "Admin rebranding: new credentials, ESCTRIX dark admin theme..."
-    5. "Cleanup: remove legacy docs, .idea, __pycache__; add .gitignore"
-    6. "Add ESCTRIX_PROJECT_SUMMARY.txt"
-    7. "Redesign login page: split-screen desktop layout with animated
-        phone mockups; admin logout redirects to /auth/"
-    8. "Add help modal, guest contact API, 3 legal pages, improved admin"
+------------------------------------------------------------------------
+UPDATE 12: GLOBAL SCROLLBAR REMOVAL, MOBILE RESPONSIVENESS & LEGAL LINKS
+------------------------------------------------------------------------
+  - Added global scrollbar hiding CSS across style.css, auth.html, base_legal.html:
+      * Firefox (scrollbar-width: none), IE/Edge (-ms-overflow-style: none)
+      * WebKit/Chrome/Safari (*::-webkit-scrollbar { display: none; })
+  - Added mobile responsive layout query (@media max-width: 900px) in auth.html
+  - Connected Privacy Policy & Terms links in sign-in & sign-up forms to /privacy/ and /terms/
+  - Refactored switchForm() in auth.js to handle tab switching cleanly
 
-================================================================================
-                        COMPLETE FINAL FILE STRUCTURE
-================================================================================
+------------------------------------------------------------------------
+UPDATE 13: CHAT TIMESTAMP ALIGNMENT & AMBIENT BACKGROUND SYSTEM
+------------------------------------------------------------------------
+  - Fixed chat timestamp alignment inside message bubbles:
+      * Font size: 0.63rem, muted opacity (0.5), font-weight: 500
+      * Positioned inline-flex at bottom-right inside message bubbles
+      * Micro-icon read receipts (✔✔) with glowing cyan filter (#00f2fe)
+      * Disappearing message countdown timer badge (.msg-timer)
+  - Upgraded message bubbles:
+      * Sent: linear-gradient with theme accent glow shadow
+      * Received: translucent glassmorphism (backdrop-filter: blur(16px))
+  - Upgraded main workspace background (.tg-chat-box-background):
+      * Multi-layered glowing radial ambient lights + futuristic dot-matrix pattern
+      * Theme reactive: background light glows shift dynamically with selected theme
+        (Cyber Purple, Sunset Rose, Emerald Forest, Crimson Glow)
+  - Upgraded placeholder screen (.ig-chat-placeholder):
+      * Glassmorphic hero card (backdrop-filter: blur(20px)) with glowing orb icon
 
-d:\Chipher\
-├── .gitignore
-├── ESCTRIX_PROJECT_SUMMARY.txt  ← This file
-├── .git\
-└── esctrix_django\
-    ├── manage.py
-    ├── db.sqlite3
-    ├── esctrix_django\                ← Django project config
-    │   ├── settings.py                ← App config, LOGOUT_REDIRECT_URL
-    │   ├── urls.py                    ← Admin branding, logout override
-    │   ├── asgi.py                    ← WebSocket support
-    │   └── wsgi.py
-    ├── accounts\                      ← User auth, profile, help, legal
-    │   ├── models.py                  ← CustomUser, Friendship, BlockList,
-    │   │                                HelpTicket, GuestContactRequest
-    │   ├── views.py                   ← All API endpoints + page views
-    │   ├── urls.py                    ← All URL routes
-    │   ├── admin.py                   ← Enhanced admin with badges & actions
-    │   ├── apps.py
-    │   └── migrations\
-    │       ├── 0001_initial.py
-    │       ├── 0002_customuser_username_last_changed.py
-    │       ├── 0003_customuser_date_of_birth_blocklist.py
-    │       ├── 0004_helpticket.py
-    │       └── 0005_add_guest_contact_request.py
-    ├── chat\                          ← Chat application
-    │   ├── models.py                  ← ChatMessage, ChatGroup, etc.
-    │   ├── consumers.py               ← WebSocket consumer
-    │   ├── routing.py                 ← WebSocket URL routing
-    │   ├── admin.py                   ← Chat models in admin
-    │   └── migrations\
-    ├── templates\
-    │   ├── auth.html                  ← Split-screen login page (redesigned)
-    │   ├── home.html                  ← Main chat app (single page)
-    │   ├── admin\
-    │   │   └── base_site.html         ← ESCTRIX dark admin theme
-    │   └── legal\
-    │       ├── base_legal.html        ← Shared legal page layout
-    │       ├── privacy.html           ← Privacy Policy (18+ warning)
-    │       ├── terms.html             ← Terms & Conditions
-    │       └── security.html         ← Security Features
-    └── static\
-        ├── img\
-        │   └── logo.png               ← ESCTRIX transparent logo (purple/cyan)
-        ├── css\
-        │   └── style.css              ← Full stylesheet + 4 theme definitions
-        └── js\
-            ├── auth.js                ← Login/Register/Forgot/Username check
-            ├── chat.js                ← Chat, settings, themes, help tickets
-            ├── api.js                 ← Shared API helpers
-            └── webrtc.js              ← WebRTC groundwork
-
-================================================================================
-                            HOW TO RUN THE PROJECT
-================================================================================
-
-1. Open terminal and navigate to the project:
-   cd d:\Chipher\esctrix_django
-
-2. Start the Django server:
-   python manage.py runserver
-
-3. Open in browser:
-   http://127.0.0.1:8000/
-
-4. Register a new account — or log in with admin credentials:
-   Username: Esctrix215
-   Password: Jerry215
-   (Admin is automatically redirected to /admin/)
-
-5. Admin logout → automatically goes back to /auth/ login page
-
-LEGAL PAGES (accessible without login):
-   http://127.0.0.1:8000/privacy/    ← Privacy Policy
-   http://127.0.0.1:8000/terms/      ← Terms & Conditions
-   http://127.0.0.1:8000/security/   ← Security Features
-
-HELP BUTTON:
-   Click "Help & Support" at the bottom of the login page right panel
-   to submit a guest contact request without logging in.
-
-================================================================================
-                               THEME COLOR REFERENCE
-================================================================================
-
-DEFAULT (Cyber Purple):
-  --accent:       #7c3aed
-  --accent-hover: #6d28d9
-  --text-active:  #a78bfa
-  Gradient:       #00d2ff → #7c3aed
-
-SUNSET ROSE:
-  --accent:       #dc2743
-  --accent-hover: #cc2366
-
-EMERALD FOREST:
-  --accent:       #11998e
-  --accent-hover: #0d7a6f
-
-CRIMSON GLOW:
-  --accent:       #cb2d3e
-  --accent-hover: #b91c1c
+------------------------------------------------------------------------
+UPDATE 14: IN-APP TOAST NOTIFICATIONS & ANIMATED AVATARS GALLERY
+------------------------------------------------------------------------
+  - In-App Toast Notification System (showToast):
+      * Replaced all browser native alert() popups with sleek web toast notifications
+      * Floating glassmorphic toast cards with icon badges (cyan user-plus for
+        friend requests, green checkmark for success, red exclamation for errors)
+      * Auto-dismiss progress countdown line & manual close (×) button
+      * Smooth slide-in / slide-out keyframe animations
+      * Global window.alert override in api.js
+  - Animated Avatar Picker & Gallery (Settings > Profile Picture):
+      * Interactive Animated Avatar Picker supporting 5 style categories:
+        1. 🎨 2D Avataaars (2D illustrations with turbans, hairstyles, glasses, expressions)
+        2. 🤖 Cyber Robots (Bottts)
+        3. 🌟 Lorelei (Vibrant Anime/Art)
+        4. 😜 3D Emoji (Fun Emojis)
+        5. 🧙 Adventurer (Fantasy RPG)
+      * Preset Gallery Grid: 20 clickable animated avatar cards with instant live preview
+      * 🎲 Randomize Avatar button: generates random seeds with spin animation
+      * Fills and saves avatar_index seamlessly
 
 ================================================================================
                                  END OF DOCUMENT
-================================================================================
-c3aed
-
-SUNSET ROSE:
-  --accent:       #dc2743
-  --accent-hover: #cc2366
-
-EMERALD FOREST:
-  --accent:       #11998e
-  --accent-hover: #0d7a6f
-
-CRIMSON GLOW:
-  --accent:       #cb2d3e
-  --accent-hover: #b91c1c
-
-================================================================================
-                                END OF DOCUMENT
-================================================================================
