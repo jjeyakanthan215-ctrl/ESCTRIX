@@ -68,16 +68,27 @@
                     </div>
                 </div>
                 <!-- Official ESCTRIX Channel -->
-                <div class="contacts-wrapper" style="padding-bottom: 5px;">
-                    <h4 style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 700; text-transform: uppercase; margin-bottom: 6px; padding: 0 15px;">Official Channel</h4>
+                <div class="contacts-wrapper" style="padding: 10px 15px 5px; flex: none;">
+                    <h4 style="font-size: 0.76rem; color: var(--text-secondary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Official Channel</h4>
                     <div class="contacts-list">
-                        <div class="contact-item" onclick="openEsctrixOfficialChannel()" style="background: rgba(124, 58, 237, 0.12); border: 1px solid var(--accent-glow); margin: 0 10px 8px; border-radius: var(--radius-sm); cursor: pointer;">
-                            <img src="{% static 'img/logo.png' %}" style="border-radius: 50%; background: #000; padding: 2px; width: 40px; height: 40px;">
-                            <div class="contact-info">
-                                <div class="contact-name" style="color: var(--text-primary); font-weight: 700; display: flex; align-items: center; gap: 4px;">
-                                    ESCTRIX <i class="fa-solid fa-circle-check" style="color: #0066ff; font-size: 0.82rem;" title="Official Verified Channel"></i>
+                        <div class="list-item" onclick="openEsctrixOfficialChannel()" style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.18), rgba(0, 102, 255, 0.12)); border: 1px solid var(--accent); border-radius: 12px; padding: 10px 12px; box-shadow: 0 4px 15px var(--accent-subtle); transition: all 0.25s ease; cursor: pointer;">
+                            <div style="position: relative; flex-shrink: 0; margin-right: 12px;">
+                                <img src="{% static 'img/logo.png' %}" style="width: 44px; height: 44px; border-radius: 50%; background: #000; padding: 3px; border: 2px solid var(--accent); display: block; margin-right: 0;">
+                                <div style="position: absolute; bottom: -2px; right: -2px; width: 16px; height: 16px; border-radius: 50%; background: #0066ff; display: flex; align-items: center; justify-content: center; font-size: 0.62rem; color: #fff; border: 2px solid #0f1015;">
+                                    <i class="fa-solid fa-check"></i>
                                 </div>
-                                <div class="contact-status" style="color: var(--accent); font-weight: 600; font-size: 0.74rem;">System Updates & Announcements</div>
+                            </div>
+                            <div class="list-item-info" style="flex: 1; min-width: 0;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                                    <div class="list-item-title" style="color: var(--text-primary); font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 5px;">
+                                        ESCTRIX
+                                        <i class="fa-solid fa-circle-check" style="color: #0066ff; font-size: 0.85rem;" title="Official Verified Channel"></i>
+                                    </div>
+                                    <span style="font-size: 0.65rem; background: var(--accent); color: #fff; padding: 2px 7px; border-radius: 10px; font-weight: 700; text-transform: uppercase;">Official</span>
+                                </div>
+                                <div class="list-item-subtitle" style="color: var(--accent); font-weight: 500; font-size: 0.75rem; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    System Updates & Announcements
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -632,8 +643,8 @@
             avatar_index: {{ request.user.avatar_index }}
         };
     </script>
-    <script src="{% static 'js/api.js' %}?v=13"></script>
-    <script src="{% static 'js/webrtc.js' %}?v=13"></script>
-    <script src="{% static 'js/chat.js' %}?v=13"></script>
+    <script src="{% static 'js/api.js' %}?v=14"></script>
+    <script src="{% static 'js/webrtc.js' %}?v=14"></script>
+    <script src="{% static 'js/chat.js' %}?v=14"></script>
 </body>
 </html>

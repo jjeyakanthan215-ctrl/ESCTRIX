@@ -2315,19 +2315,28 @@ async function openEsctrixOfficialChannel() {
                 const bubble = document.createElement('div');
                 bubble.className = 'chat-bubble income';
                 bubble.style.maxWidth = '85%';
-                bubble.style.background = 'rgba(15, 16, 22, 0.9)';
+                bubble.style.background = 'linear-gradient(145deg, rgba(20, 22, 32, 0.95), rgba(15, 16, 24, 0.98))';
                 bubble.style.border = '1px solid var(--accent-glow)';
+                bubble.style.borderRadius = '16px';
+                bubble.style.padding = '14px 16px';
+                bubble.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.3)';
 
                 bubble.innerHTML = `
-                    <div style="display:flex; align-items:center; justify-content:space-between; width:100%; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:6px; margin-bottom:8px;">
-                        <div style="display:flex; align-items:center; gap:6px;">
-                            <img src="/static/img/logo.png" style="width:20px; height:20px; border-radius:50%;">
-                            <strong style="color:var(--accent); font-size:0.85rem;">${b.title}</strong>
+                    <div style="display:flex; align-items:center; justify-content:space-between; width:100%; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:8px; margin-bottom:10px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="width:28px; height:28px; border-radius:50%; background:#000; padding:2px; border:1px solid var(--accent); display:flex; align-items:center; justify-content:center;">
+                                <img src="/static/img/logo.png" style="width:100%; height:100%; border-radius:50%;">
+                            </div>
+                            <strong style="color:var(--text-primary); font-size:0.88rem; font-weight:700; display:flex; align-items:center; gap:4px;">
+                                ${b.title} <i class="fa-solid fa-circle-check" style="color:#0066ff; font-size:0.78rem;"></i>
+                            </strong>
                         </div>
-                        <span style="font-size:0.68rem; color:var(--text-secondary); opacity:0.7;">${b.created_at}</span>
+                        <span style="font-size:0.7rem; color:var(--text-secondary); opacity:0.8; font-weight:500;">${b.created_at}</span>
                     </div>
-                    <div style="font-size:0.84rem; color:var(--text-primary); line-height:1.4; white-space:pre-wrap;">${b.message}</div>
-                    <div style="margin-top:8px; font-size:0.7rem; color:var(--text-secondary); opacity:0.6; text-transform:uppercase;">● ${b.category}</div>
+                    <div style="font-size:0.86rem; color:var(--text-primary); line-height:1.5; white-space:pre-wrap;">${b.message}</div>
+                    <div style="margin-top:10px; display:inline-flex; align-items:center; gap:5px; font-size:0.68rem; background:rgba(124,58,237,0.15); color:var(--accent); border:1px solid var(--accent-subtle); padding:3px 9px; border-radius:12px; font-weight:700; text-transform:uppercase;">
+                        <i class="fa-solid fa-bullhorn"></i> ${b.category}
+                    </div>
                 `;
                 msgContainer.appendChild(bubble);
             });
