@@ -36,6 +36,8 @@ urlpatterns = [
     path('api/group/members/', views.api_group_members, name='api_group_members'),
     path('api/chat/history/', views.api_chat_history, name='api_chat_history'),
     path('api/group/history/', views.api_group_history, name='api_group_history'),
+    path('api/media/upload/', views.api_media_upload, name='api_media_upload'),
+
     path('api/story/create/', views.api_create_story, name='api_create_story'),
     path('api/story/list/', views.api_get_stories, name='api_get_stories'),
     path('api/story/privacy/', views.api_update_story_privacy, name='api_update_story_privacy'),
