@@ -662,15 +662,16 @@ function renderChatHistory() {
             const speedBadge = `<div style="margin-top:4px;"><span class="file-transfer-badge"><i class="fa-solid fa-bolt"></i> 1.8 MB/s • E2EE</span></div>`;
             
             if (mime.startsWith('image/')) {
-                contentHTML = `<div><img src="${url}" class="chat-media-image" onclick="window.open('${url}')" style="max-width: 250px; border-radius: 8px; cursor: pointer;">${speedBadge}</div>`;
+                contentHTML = `<div><img src="${url}" class="chat-media-image" onclick="openTelegramMediaViewer('${url}', 'image', '${m.from}')" style="max-width: 250px; border-radius: 8px; cursor: pointer;">${speedBadge}</div>`;
             } else if (mime.startsWith('video/')) {
-                contentHTML = `<div><video src="${url}" controls class="chat-media-video" style="max-width: 250px; border-radius: 8px;"></video>${speedBadge}</div>`;
+                contentHTML = `<div><video src="${url}" class="chat-media-video" onclick="openTelegramMediaViewer('${url}', 'video', '${m.from}')" style="max-width: 250px; border-radius: 8px; cursor: pointer;"></video>${speedBadge}</div>`;
             } else {
-                contentHTML = `<div><a href="${url}" target="_blank" class="chat-media-file" style="color: var(--primary-light); text-decoration: underline;"><i class="fa-solid fa-file"></i> Download Attachment</a>${speedBadge}</div>`;
+                contentHTML = `<div><button type="button" onclick="openTelegramMediaViewer('${url}', 'file', '${m.from}')" class="chat-media-file" style="background:transparent; border:none; color: var(--accent); font-weight:600; cursor:pointer; text-align:left;"><i class="fa-solid fa-file-arrow-down"></i> View & Download Attachment</button>${speedBadge}</div>`;
             }
         } else {
             contentHTML = m.text;
         }
+
 
         
         // Read Receipt Ticks (Direct message from Me)
@@ -1327,7 +1328,6 @@ async function viewChatParticipantProfile() {
         document.getElementById('modal-bio').innerText = 'Official ESCTRIX platform channel for security alerts, release notes, and system announcements.';
         document.getElementById('modal-friends-count').innerText = 'Verified';
         document.getElementById('modal-mutual-text').innerText = 'Official Channel';
-        document.getElementById('modal-birthday').innerHTML = `<i class="fa-solid fa-shield-halved" style="color:var(--accent);"></i> Platform Verified Service`;
 
         const blockBtn = document.getElementById('modal-block-btn');
         if (blockBtn) blockBtn.style.display = 'none';
@@ -1353,7 +1353,7 @@ async function viewUserProfile(username) {
     document.getElementById('modal-displayname').innerText = 'Loading...';
     document.getElementById('modal-username').innerText = `@${username}`;
     document.getElementById('modal-bio').innerText = '';
-    document.getElementById('modal-birthday').innerHTML = '';
+
     
     document.getElementById('user-profile-modal').classList.remove('hidden');
 
@@ -1368,15 +1368,7 @@ async function viewUserProfile(username) {
             // Stats mock row
             document.getElementById('modal-friends-count').innerText = data.is_friend ? '1' : '0';
             document.getElementById('modal-mutual-text').innerText = data.is_friend ? 'Mutual connection' : 'None';
-            
-            // Birthday
-            if (data.user.date_of_birth) {
-                const date = new Date(data.user.date_of_birth);
-                const options = { year: 'numeric', month: 'long', day: 'numeric' };
-                document.getElementById('modal-birthday').innerHTML = `<i class="fa-solid fa-cake-candles"></i> Birthday: ${date.toLocaleDateString('en-US', options)}`;
-            } else {
-                document.getElementById('modal-birthday').innerHTML = `<i class="fa-solid fa-cake-candles"></i> Birthday: Not updated`;
-            }
+
 
             // Friend status buttons
             const actionWrap = document.getElementById('modal-friend-action-btn-wrap');
@@ -2919,4 +2911,70 @@ async function autoSyncActiveChatHistory() {
         }
     }
 }
+
+// --- TELEGRAM-STYLE IN-APP MEDIA VIEWER ENGINE ---
+function openTelegramMediaViewer(url, type, sender) {
+    const modal = document.getElementById('telegram-media-modal');
+    const imgEl = document.getElementById('tg-media-img');
+    const videoEl = document.getElementById('tg-media-video');
+    const fileBox = document.getElementById('tg-media-file-box');
+    const downloadBtn = document.getElementById('tg-media-download-btn');
+    const senderEl = document.getElementById('tg-media-sender');
+
+    if (!modal) return;
+
+    if (senderEl) senderEl.innerText = sender ? `Shared by @${sender}` : 'Shared Media';
+
+    // Reset visibility
+    if (imgEl) imgEl.classList.add('hidden');
+    if (videoEl) { videoEl.classList.add('hidden'); videoEl.pause(); }
+    if (fileBox) fileBox.classList.add('hidden');
+
+    if (downloadBtn) {
+        downloadBtn.href = url;
+        const filename = url.split('/').pop() || 'media_file';
+        downloadBtn.setAttribute('download', filename);
+    }
+
+    if (type === 'image') {
+        if (imgEl) {
+            imgEl.src = url;
+            imgEl.classList.remove('hidden');
+        }
+    } else if (type === 'video') {
+        if (videoEl) {
+            videoEl.src = url;
+            videoEl.classList.remove('hidden');
+            videoEl.play().catch(e => {});
+        }
+    } else {
+        if (fileBox) {
+            fileBox.classList.remove('hidden');
+            const filenameEl = document.getElementById('tg-media-filename');
+            const fileDlLink = document.getElementById('tg-media-file-download-link');
+            const filename = url.split('/').pop() || 'attachment_file';
+            if (filenameEl) filenameEl.innerText = filename;
+            if (fileDlLink) {
+                fileDlLink.href = url;
+                fileDlLink.setAttribute('download', filename);
+            }
+        }
+    }
+
+    modal.classList.remove('hidden');
+}
+
+function closeTelegramMediaViewer() {
+    const modal = document.getElementById('telegram-media-modal');
+    const videoEl = document.getElementById('tg-media-video');
+    if (videoEl) videoEl.pause();
+    if (modal) modal.classList.add('hidden');
+}
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeTelegramMediaViewer();
+    }
+});
+
 

@@ -676,10 +676,8 @@
                     <h3 id="modal-displayname">Full Name</h3>
                     <p class="modal-username" id="modal-username">@username</p>
                     <p class="modal-bio" id="modal-bio">No bio description available.</p>
-                    <div class="modal-meta-row">
-                        <span id="modal-birthday"><i class="fa-solid fa-cake-candles"></i> Birthday: Not updated</span>
-                    </div>
                 </div>
+
                 <div class="ig-modal-profile-actions">
                     <div id="modal-friend-action-btn-wrap"></div>
                     <button id="modal-block-btn" class="btn-modal-action btn-danger"
@@ -855,10 +853,40 @@
                         <button type="button" class="ctx-item danger" onclick="handleCtxDeleteChat()">
                             <i class="fa-solid fa-trash-can"></i> <span>Delete Chat</span>
                         </button>
+                </div>
+
+                <!-- TELEGRAM-STYLE IN-APP MEDIA VIEWER MODAL (LIGHTBOX) -->
+                <div id="telegram-media-modal" class="telegram-media-modal hidden">
+                    <div class="tg-media-header">
+                        <div class="tg-media-info">
+                            <i class="fa-solid fa-photo-film" style="color:var(--accent);"></i>
+                            <span id="tg-media-sender">Shared Media</span>
+                        </div>
+                        <div class="tg-media-header-actions">
+                            <a id="tg-media-download-btn" href="#" download target="_blank" class="tg-media-action-btn" title="Download Media">
+                                <i class="fa-solid fa-download"></i> <span>Download</span>
+                            </a>
+                            <button type="button" class="tg-media-action-btn close-btn" onclick="closeTelegramMediaViewer()" title="Close Viewer (Esc)">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="tg-media-body">
+                        <img id="tg-media-img" src="" alt="Media preview" class="tg-media-content hidden">
+                        <video id="tg-media-video" src="" controls autoplay class="tg-media-content hidden"></video>
+                        <div id="tg-media-file-box" class="tg-media-file-box hidden">
+                            <i class="fa-solid fa-file-arrow-down" style="font-size: 3.5rem; color: var(--accent); margin-bottom: 15px;"></i>
+                            <h4 id="tg-media-filename" style="color: #fff; font-size: 1.1rem; margin-bottom: 10px;">document.pdf</h4>
+                            <a id="tg-media-file-download-link" href="#" download class="btn-placeholder-search" style="display: inline-flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-download"></i> Download File
+                            </a>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Inject Django Context -->
+
 
                 <script>
                     const CURRENT_USER = {

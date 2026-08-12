@@ -917,6 +917,17 @@ UPDATE 25: DIRECT LEFT-CLICK CONTACT OPTIONS MENU & THREE-DOTS BUTTON
       * Added dedicated three-dots options button (.btn-contact-dots) to each contact row
       * Preserved direct chat button for 1-click messaging while enabling easy access to Clear Messages, Delete Chat, Mute Notifications, Mute Calls, and View Profile
 
+------------------------------------------------------------------------
+UPDATE 26: TELEGRAM-STYLE IN-APP MEDIA VIEWER & PROFILE PRIVACY
+------------------------------------------------------------------------
+  - Telegram-Style Fullscreen In-App Media Viewer Lightbox (home.html, style.css & chat.js):
+      * Clicking chat images, videos, or attachments now opens a high-resolution Telegram-style in-app lightbox modal directly on the web page (no external browser tabs opened)
+      * Includes close button (X), direct Download button, sender metadata badge, and glassmorphic backdrop filter
+      * Keyboard Escape key shortcut support to dismiss viewer
+  - Public User Profile Privacy Update:
+      * Removed Date of Birth display from public user profile modals
+      * Date of Birth is strictly scoped to internal account verification and forgot password authentication
+
 
 ================================================================================
                     FUTURE UPGRADES & RECOMMENDED ROADMAP

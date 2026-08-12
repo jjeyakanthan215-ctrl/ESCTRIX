@@ -2480,3 +2480,121 @@ input:focus, textarea:focus, select:focus {
 .ctx-item.danger:hover {
     background: rgba(239, 68, 68, 0.15);
 }
+
+/* --- TELEGRAM-STYLE IN-APP MEDIA VIEWER MODAL --- */
+.telegram-media-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 100000;
+    background: rgba(5, 6, 10, 0.95);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    animation: fadeInModal 0.2s ease-out;
+}
+
+.tg-media-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 1200px;
+    padding: 10px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    z-index: 10;
+}
+
+.tg-media-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.tg-media-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.tg-media-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(124, 58, 237, 0.2);
+    border: 1px solid var(--accent-subtle);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.tg-media-action-btn:hover {
+    background: var(--accent);
+    box-shadow: 0 4px 15px var(--accent-glow);
+    color: #fff;
+}
+
+.tg-media-action-btn.close-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--border-color);
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.tg-media-action-btn.close-btn:hover {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: #fff;
+}
+
+.tg-media-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 1200px;
+    margin: 20px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.tg-media-content {
+    max-width: 90vw;
+    max-height: 80vh;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    object-fit: contain;
+}
+
+.tg-media-file-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(18, 19, 28, 0.9);
+    border: 1px solid var(--accent-subtle);
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
