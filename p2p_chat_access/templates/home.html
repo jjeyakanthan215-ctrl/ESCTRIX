@@ -72,11 +72,8 @@
                     <h4 style="font-size: 0.76rem; color: var(--text-secondary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Official Channel</h4>
                     <div class="contacts-list">
                         <div class="list-item" onclick="openEsctrixOfficialChannel()" style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.18), rgba(0, 102, 255, 0.12)); border: 1px solid var(--accent); border-radius: 12px; padding: 10px 12px; box-shadow: 0 4px 15px var(--accent-subtle); transition: all 0.25s ease; cursor: pointer;">
-                            <div style="position: relative; flex-shrink: 0; margin-right: 12px; width: 44px; height: 44px; border-radius: 50%; background: #08090c; border: 2px solid var(--accent); display: flex; align-items: center; justify-content: center;">
-                                <img src="{% static 'img/logo.png' %}" style="width: 85%; height: 85%; object-fit: contain; display: block;">
-                                <div style="position: absolute; bottom: -2px; right: -2px; width: 15px; height: 15px; border-radius: 50%; background: #0066ff; display: flex; align-items: center; justify-content: center; font-size: 0.58rem; color: #fff; border: 1px solid #0f1015;">
-                                    <i class="fa-solid fa-check"></i>
-                                </div>
+                            <div style="flex-shrink: 0; margin-right: 12px; width: 44px; height: 44px; border-radius: 50%; background: #08090c; border: 2px solid var(--accent); display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 4px;">
+                                <img src="{% static 'img/logo.png' %}?v=3" style="width: 100%; height: 100%; object-fit: contain; display: block; border-radius: 50%;">
                             </div>
                             <div class="list-item-info" style="flex: 1; min-width: 0;">
                                 <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
@@ -668,8 +665,8 @@
             avatar_index: {{ request.user.avatar_index }}
         };
     </script>
-    <script src="{% static 'js/api.js' %}?v=14"></script>
-    <script src="{% static 'js/webrtc.js' %}?v=14"></script>
-    <script src="{% static 'js/chat.js' %}?v=14"></script>
+    <script src="{% static 'js/api.js' %}?v=15"></script>
+    <script src="{% static 'js/webrtc.js' %}?v=15"></script>
+    <script src="{% static 'js/chat.js' %}?v=15"></script>
 </body>
 </html>

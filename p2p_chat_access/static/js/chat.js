@@ -1244,7 +1244,7 @@ async function viewChatParticipantProfile() {
         // ESCTRIX Official Channel Verified Profile Modal
         const avatarEl = document.getElementById('modal-avatar');
         if (avatarEl) {
-            avatarEl.src = '/static/img/logo.png';
+            avatarEl.src = '/static/img/logo.png?v=3';
             avatarEl.style.objectFit = 'contain';
             avatarEl.style.background = '#08090c';
             avatarEl.style.padding = '5px';
@@ -2382,7 +2382,7 @@ async function openEsctrixOfficialChannel() {
     // Header
     const avatarEl = document.getElementById('session-avatar');
     if (avatarEl) {
-        avatarEl.src = '/static/img/logo.png';
+        avatarEl.src = '/static/img/logo.png?v=3';
         avatarEl.style.objectFit = 'contain';
         avatarEl.style.background = '#08090c';
         avatarEl.style.padding = '3px';
