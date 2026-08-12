@@ -49,15 +49,32 @@ def api_guest_contact(request):
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
     return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
 
+def purge_inactive_accounts():
+    try:
+        cutoff = timezone.now() - timedelta(days=14)
+        inactive_users = CustomUser.objects.filter(
+            is_staff=False,
+            is_superuser=False
+        ).filter(
+            Q(last_login__lt=cutoff) | Q(last_login__isnull=True, date_joined__lt=cutoff)
+        )
+        if inactive_users.exists():
+            inactive_users.delete()
+    except Exception as e:
+        print("Purge error:", e)
+
 def api_login(request):
     if request.method == 'POST':
         try:
+            purge_inactive_accounts()
             data = json.loads(request.body)
             username = data.get('username')
             password = data.get('password')
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
+                user.last_login = timezone.now()
+                user.save(update_fields=['last_login'])
                 return JsonResponse({
                     'success': True,
                     'username': user.username,
@@ -72,6 +89,7 @@ def api_login(request):
 def api_register(request):
     if request.method == 'POST':
         try:
+            purge_inactive_accounts()
             data = json.loads(request.body)
             username = data.get('username')
             display_name = data.get('display_name')
@@ -94,8 +112,13 @@ def api_register(request):
                 display_name=display_name,
                 date_of_birth=dob
             )
-            login(request, user)
-            return JsonResponse({'success': True, 'username': user.username})
+            # Do NOT auto-login. Require explicit login through the created account.
+            return JsonResponse({
+                'success': True, 
+                'username': user.username,
+                'message': 'Account created successfully! Please log in with your credentials.',
+                'require_login': True
+            })
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
     return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)

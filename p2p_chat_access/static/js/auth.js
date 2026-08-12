@@ -73,7 +73,15 @@ async function handleRegister(e) {
         const data = await response.json();
         
         if (data.success) {
-            window.location.href = '/';
+            if (data.require_login) {
+                alert(data.message || 'Account created successfully! Please log in with your newly created account.');
+                switchForm('login');
+                const loginUserEl = document.getElementById('login-username');
+                if (loginUserEl) loginUserEl.value = u;
+                document.getElementById('auth-error-reg').innerText = '';
+            } else {
+                window.location.href = '/';
+            }
         } else {
             document.getElementById('auth-error-reg').innerText = data.error;
         }

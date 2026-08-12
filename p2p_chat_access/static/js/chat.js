@@ -2346,7 +2346,7 @@ async function openEsctrixOfficialChannel() {
     
     // UI panel switching
     document.getElementById('chat-placeholder').classList.add('hidden');
-    document.getElementById('active-chat-box').classList.remove('hidden');
+    document.getElementById('chat-panel').classList.remove('hidden');
     
     // Header
     const avatarEl = document.getElementById('session-avatar');
