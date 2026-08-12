@@ -161,7 +161,10 @@ function switchTab(tabId) {
     // Handle main panel display when switching main tabs
     const displayPanel = document.getElementById('settings-display-panel');
     if (tabId !== 'settings-tab') {
-        if (displayPanel) displayPanel.classList.add('hidden');
+        if (displayPanel) {
+            displayPanel.classList.add('hidden');
+            displayPanel.style.display = 'none';
+        }
         if (currentActiveChatUser || currentActiveGroupId) {
             document.getElementById('chat-panel').classList.remove('hidden');
             document.getElementById('chat-placeholder').classList.add('hidden');
@@ -189,16 +192,21 @@ function switchSettingOption(optionId) {
     document.getElementById('chat-placeholder').classList.add('hidden');
     
     const displayPanel = document.getElementById('settings-display-panel');
-    if (displayPanel) displayPanel.classList.remove('hidden');
+    if (displayPanel) {
+        displayPanel.classList.remove('hidden');
+        displayPanel.style.display = 'block';
+    }
 
     document.querySelectorAll('.setting-form-pane').forEach(el => {
         el.classList.add('hidden');
         el.classList.remove('active');
+        el.style.display = 'none';
     });
     const targetPane = document.getElementById(optionId);
     if (targetPane) {
         targetPane.classList.remove('hidden');
         targetPane.classList.add('active');
+        targetPane.style.display = 'flex';
     }
 
     // Load dynamic content for setting options
