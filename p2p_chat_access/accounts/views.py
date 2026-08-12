@@ -234,6 +234,33 @@ def api_pending_requests(request):
     } for r in requests]
     return JsonResponse({'success': True, 'requests': results})
 
+def api_get_friends(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=401)
+        
+    friendships1 = Friendship.objects.filter(user=request.user, status='accepted').select_related('friend')
+    friendships2 = Friendship.objects.filter(friend=request.user, status='accepted').select_related('user')
+
+    friends = []
+    for f in friendships1:
+        friends.append({
+            'username': f.friend.username,
+            'display_name': f.friend.display_name,
+            'avatar_index': f.friend.avatar_index,
+            'is_online': False
+        })
+    for f in friendships2:
+        friends.append({
+            'username': f.user.username,
+            'display_name': f.user.display_name,
+            'avatar_index': f.user.avatar_index,
+            'is_online': False
+        })
+
+    unique = {f['username']: f for f in friends}
+    return JsonResponse({'success': True, 'friends': list(unique.values())})
+
+
 def api_update_profile(request):
     if not request.user.is_authenticated or request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=401)

@@ -1,4 +1,5 @@
 import json
+import logging
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth import get_user_model
 from asgiref.sync import sync_to_async
@@ -8,6 +9,7 @@ from accounts.models import Friendship
 from chat.models import ChatGroup, ChatGroupMember, ChatMessage, PendingMessage, ChatGroupMessage, MessageReaction
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 class SignalingConsumer(AsyncWebsocketConsumer):
     # Class-level set to keep track of active online usernames
@@ -69,260 +71,274 @@ class SignalingConsumer(AsyncWebsocketConsumer):
                 )
 
     async def receive(self, text_data):
-        data = json.loads(text_data)
-        msg_type = data.get('type')
-        payload = data.get('data', {})
+        try:
+            data = json.loads(text_data)
+            msg_type = data.get('type')
+            payload = data.get('data', {})
 
-        # WebRTC & Chat Routing
-        target_username = payload.get('target_username')
+            logger.debug(f"[WS] {self.username} sent {msg_type}")
+
+            # WebRTC & Chat Routing
+            target_username = payload.get('target_username')
         
-        if msg_type in ['CALL_REQUEST', 'OFFER', 'ANSWER', 'ICE_CANDIDATE', 'HANG_UP']:
-            if not target_username:
-                return
+            if msg_type in ['CALL_REQUEST', 'OFFER', 'ANSWER', 'ICE_CANDIDATE', 'HANG_UP']:
+                if not target_username:
+                    return
 
-            # Check mutual friendship
-            is_friend = await self.check_friendship(self.user, target_username)
-            if not is_friend:
+                # Check mutual friendship
+                is_friend = await self.check_friendship(self.user, target_username)
+                if not is_friend:
+                    await self.send(text_data=json.dumps({
+                        'type': 'ERROR',
+                        'error': 'You can only communicate with mutual friends.'
+                    }))
+                    return
+
+                # Route to target user's group
+                target_group = f'user_{target_username}'
+                
+                forward_type = msg_type
+                if msg_type == 'CALL_REQUEST':
+                    forward_type = 'INCOMING_CALL'
+                
+                forward_data = payload.copy()
+                forward_data['from_username'] = self.username
+                if msg_type == 'CALL_REQUEST':
+                    forward_data['caller_username'] = self.username
+                    forward_data['caller_display_name'] = self.user.display_name
+
+                await self.channel_layer.group_send(
+                    target_group,
+                    {
+                        'type': 'forward_message',
+                        'msg_type': forward_type,
+                        'data': forward_data
+                    }
+                )
+                
+            elif msg_type == 'CHAT_MESSAGE':
+                if not target_username:
+                    return
+
+                is_friend = await self.check_friendship(self.user, target_username)
+                if not is_friend:
+                    await self.send(text_data=json.dumps({
+                        'type': 'ERROR',
+                        'error': 'You can only communicate with mutual friends.'
+                    }))
+                    return
+
+                encrypted_content = payload.get('encrypted_content')
+                expires_in_sec = payload.get('expires_in')  # Disappearing messages timer (seconds)
+                
+                expires_at = None
+                if expires_in_sec:
+                    expires_at = timezone.now() + timezone.timedelta(seconds=int(expires_in_sec))
+
+                # Save to Database
+                msg_id = await self.save_chat_message(self.user, target_username, encrypted_content, expires_at)
+
+                is_online = target_username in SignalingConsumer.online_users
+
+                # If recipient is offline, save to PendingMessage
+                if not is_online:
+                    await self.save_pending_message(self.user, target_username, encrypted_content)
+
+                # Send to target
+                target_group = f'user_{target_username}'
+                await self.channel_layer.group_send(
+                    target_group,
+                    {
+                        'type': 'forward_message',
+                        'msg_type': 'CHAT_MESSAGE',
+                        'data': {
+                            'id': msg_id,
+                            'from_username': self.username,
+                            'encrypted_content': encrypted_content,
+                            'timestamp': timezone.now().isoformat(),
+                            'expires_at': expires_at.isoformat() if expires_at else None
+                        }
+                    }
+                )
+
+                # Send delivery receipt if online, else just let the sender know it's stored on server
                 await self.send(text_data=json.dumps({
-                    'type': 'ERROR',
-                    'error': 'You can only communicate with mutual friends.'
-                }))
-                return
-
-            # Route to target user's group
-            target_group = f'user_{target_username}'
-            
-            forward_type = msg_type
-            if msg_type == 'CALL_REQUEST':
-                forward_type = 'INCOMING_CALL'
-            
-            forward_data = payload.copy()
-            forward_data['from_username'] = self.username
-            if msg_type == 'CALL_REQUEST':
-                forward_data['caller_username'] = self.username
-                forward_data['caller_display_name'] = self.user.display_name
-
-            await self.channel_layer.group_send(
-                target_group,
-                {
-                    'type': 'forward_message',
-                    'msg_type': forward_type,
-                    'data': forward_data
-                }
-            )
-            
-        elif msg_type == 'CHAT_MESSAGE':
-            if not target_username:
-                return
-
-            is_friend = await self.check_friendship(self.user, target_username)
-            if not is_friend:
-                await self.send(text_data=json.dumps({
-                    'type': 'ERROR',
-                    'error': 'You can only communicate with mutual friends.'
-                }))
-                return
-
-            encrypted_content = payload.get('encrypted_content')
-            expires_in_sec = payload.get('expires_in')  # Disappearing messages timer (seconds)
-            
-            expires_at = None
-            if expires_in_sec:
-                expires_at = timezone.now() + timezone.timedelta(seconds=int(expires_in_sec))
-
-            # Save to Database
-            msg_id = await self.save_chat_message(self.user, target_username, encrypted_content, expires_at)
-
-            is_online = target_username in SignalingConsumer.online_users
-
-            # If recipient is offline, save to PendingMessage
-            if not is_online:
-                await self.save_pending_message(self.user, target_username, encrypted_content)
-
-            # Send to target
-            target_group = f'user_{target_username}'
-            await self.channel_layer.group_send(
-                target_group,
-                {
-                    'type': 'forward_message',
-                    'msg_type': 'CHAT_MESSAGE',
+                    'type': 'CHAT_STATUS',
                     'data': {
                         'id': msg_id,
-                        'from_username': self.username,
+                        'status': 'delivered' if is_online else 'sent'
+                    }
+                }))
+
+            elif msg_type == 'CALL_ACCEPT':
+                caller_username = payload.get('caller_username')
+                await self.channel_layer.group_send(
+                    f'user_{caller_username}',
+                    {
+                        'type': 'forward_message',
+                        'msg_type': 'CALL_ACCEPTED',
+                        'data': {'target_username': self.username}
+                    }
+                )
+                
+            elif msg_type == 'CALL_REJECT':
+                caller_username = payload.get('caller_username')
+                await self.channel_layer.group_send(
+                    f'user_{caller_username}',
+                    {
+                        'type': 'forward_message',
+                        'msg_type': 'CALL_REJECTED',
+                        'data': {'target_username': self.username}
+                    }
+                )
+                
+            elif msg_type == 'FRIEND_LIST':
+                friends = await self.get_friends_list()
+                await self.send(text_data=json.dumps({
+                    'type': 'FRIEND_LIST_RESPONSE',
+                    'success': True,
+                    'data': {'friends': friends}
+                }))
+
+            elif msg_type == 'GROUP_MESSAGE':
+                group_id = payload.get('group_id')
+                encrypted_content = payload.get('encrypted_content')
+                expires_in_sec = payload.get('expires_in')
+                
+                if not group_id:
+                    return
+
+                is_member = await self.check_group_membership(group_id)
+                if not is_member:
+                    await self.send(text_data=json.dumps({
+                        'type': 'ERROR',
+                        'error': 'You are not a member of this group.'
+                    }))
+                    return
+
+                expires_at = None
+                if expires_in_sec:
+                    expires_at = timezone.now() + timezone.timedelta(seconds=int(expires_in_sec))
+
+                # Save group message in DB
+                msg_id = await self.save_group_message(group_id, self.user, encrypted_content, expires_at)
+
+                # Broadcast to channels group
+                await self.channel_layer.group_send(
+                    f'group_{group_id}',
+                    {
+                        'type': 'forward_group_message',
+                        'id': msg_id,
+                        'group_id': group_id,
+                        'sender': self.username,
                         'encrypted_content': encrypted_content,
                         'timestamp': timezone.now().isoformat(),
                         'expires_at': expires_at.isoformat() if expires_at else None
                     }
-                }
-            )
-
-            # Send delivery receipt if online, else just let the sender know it's stored on server
-            await self.send(text_data=json.dumps({
-                'type': 'CHAT_STATUS',
-                'data': {
-                    'id': msg_id,
-                    'status': 'delivered' if is_online else 'sent'
-                }
-            }))
-
-        elif msg_type == 'CALL_ACCEPT':
-            caller_username = payload.get('caller_username')
-            await self.channel_layer.group_send(
-                f'user_{caller_username}',
-                {
-                    'type': 'forward_message',
-                    'msg_type': 'CALL_ACCEPTED',
-                    'data': {'target_username': self.username}
-                }
-            )
-            
-        elif msg_type == 'CALL_REJECT':
-            caller_username = payload.get('caller_username')
-            await self.channel_layer.group_send(
-                f'user_{caller_username}',
-                {
-                    'type': 'forward_message',
-                    'msg_type': 'CALL_REJECTED',
-                    'data': {'target_username': self.username}
-                }
-            )
-            
-        elif msg_type == 'FRIEND_LIST':
-            friends = await self.get_friends_list()
-            await self.send(text_data=json.dumps({
-                'type': 'FRIEND_LIST_RESPONSE',
-                'success': True,
-                'data': {'friends': friends}
-            }))
-
-        elif msg_type == 'GROUP_MESSAGE':
-            group_id = payload.get('group_id')
-            encrypted_content = payload.get('encrypted_content')
-            expires_in_sec = payload.get('expires_in')
-            
-            if not group_id:
-                return
-
-            is_member = await self.check_group_membership(group_id)
-            if not is_member:
-                await self.send(text_data=json.dumps({
-                    'type': 'ERROR',
-                    'error': 'You are not a member of this group.'
-                }))
-                return
-
-            expires_at = None
-            if expires_in_sec:
-                expires_at = timezone.now() + timezone.timedelta(seconds=int(expires_in_sec))
-
-            # Save group message in DB
-            msg_id = await self.save_group_message(group_id, self.user, encrypted_content, expires_at)
-
-            # Broadcast to channels group
-            await self.channel_layer.group_send(
-                f'group_{group_id}',
-                {
-                    'type': 'forward_group_message',
-                    'id': msg_id,
-                    'group_id': group_id,
-                    'sender': self.username,
-                    'encrypted_content': encrypted_content,
-                    'timestamp': timezone.now().isoformat(),
-                    'expires_at': expires_at.isoformat() if expires_at else None
-                }
-            )
-
-        elif msg_type == 'JOIN_GROUP':
-            group_id = payload.get('group_id')
-            if group_id and await self.check_group_membership(group_id):
-                await self.channel_layer.group_add(
-                    f'group_{group_id}',
-                    self.channel_name
                 )
 
-        # Advanced Feature: Typing Indicators
-        elif msg_type == 'TYPING':
-            is_typing = payload.get('is_typing', False)
-            group_id = payload.get('group_id')
-
-            if group_id:
-                if await self.check_group_membership(group_id):
-                    await self.channel_layer.group_send(
+            elif msg_type == 'JOIN_GROUP':
+                group_id = payload.get('group_id')
+                if group_id and await self.check_group_membership(group_id):
+                    await self.channel_layer.group_add(
                         f'group_{group_id}',
-                        {
-                            'type': 'forward_group_typing',
-                            'group_id': group_id,
-                            'sender': self.username,
-                            'is_typing': is_typing
-                        }
+                        self.channel_name
                     )
-            elif target_username:
-                await self.channel_layer.group_send(
-                    f'user_{target_username}',
-                    {
-                        'type': 'forward_message',
-                        'msg_type': 'TYPING',
-                        'data': {
-                            'from_username': self.username,
-                            'is_typing': is_typing
-                        }
-                    }
-                )
 
-        # Advanced Feature: Read Receipts
-        elif msg_type == 'READ_RECEIPT':
-            message_id = payload.get('message_id')
-            message_type = payload.get('message_type', 'direct') # direct or group
+            # Advanced Feature: Typing Indicators
+            elif msg_type == 'TYPING':
+                is_typing = payload.get('is_typing', False)
+                group_id = payload.get('group_id')
 
-            await self.mark_message_as_read(message_id, message_type)
-            
-            if message_type == 'direct' and target_username:
-                await self.channel_layer.group_send(
-                    f'user_{target_username}',
-                    {
-                        'type': 'forward_message',
-                        'msg_type': 'READ_RECEIPT',
-                        'data': {
-                            'message_id': message_id,
-                            'reader': self.username
-                        }
-                    }
-                )
-
-        # Advanced Feature: Reactions
-        elif msg_type == 'MESSAGE_REACTION':
-            message_id = payload.get('message_id')
-            message_type = payload.get('message_type', 'direct')
-            emoji = payload.get('emoji')
-            group_id = payload.get('group_id')
-
-            if message_id and emoji:
-                await self.save_message_reaction(message_id, message_type, emoji)
-
-                if message_type == 'group' and group_id:
-                    await self.channel_layer.group_send(
-                        f'group_{group_id}',
-                        {
-                            'type': 'forward_group_reaction',
-                            'message_id': message_id,
-                            'group_id': group_id,
-                            'sender': self.username,
-                            'emoji': emoji
-                        }
-                    )
-                elif message_type == 'direct' and target_username:
+                if group_id:
+                    if await self.check_group_membership(group_id):
+                        await self.channel_layer.group_send(
+                            f'group_{group_id}',
+                            {
+                                'type': 'forward_group_typing',
+                                'group_id': group_id,
+                                'sender': self.username,
+                                'is_typing': is_typing
+                            }
+                        )
+                elif target_username:
                     await self.channel_layer.group_send(
                         f'user_{target_username}',
                         {
                             'type': 'forward_message',
-                            'msg_type': 'MESSAGE_REACTION',
+                            'msg_type': 'TYPING',
                             'data': {
-                                'message_id': message_id,
                                 'from_username': self.username,
-                                'emoji': emoji
+                                'is_typing': is_typing
                             }
                         }
                     )
+
+            # Advanced Feature: Read Receipts
+            elif msg_type == 'READ_RECEIPT':
+                message_id = payload.get('message_id')
+                message_type = payload.get('message_type', 'direct') # direct or group
+
+                await self.mark_message_as_read(message_id, message_type)
+                
+                if message_type == 'direct' and target_username:
+                    await self.channel_layer.group_send(
+                        f'user_{target_username}',
+                        {
+                            'type': 'forward_message',
+                            'msg_type': 'READ_RECEIPT',
+                            'data': {
+                                'message_id': message_id,
+                                'reader': self.username
+                            }
+                        }
+                    )
+
+            # Advanced Feature: Reactions
+            elif msg_type == 'MESSAGE_REACTION':
+                message_id = payload.get('message_id')
+                message_type = payload.get('message_type', 'direct')
+                emoji = payload.get('emoji')
+                group_id = payload.get('group_id')
+
+                if message_id and emoji:
+                    await self.save_message_reaction(message_id, message_type, emoji)
+
+                    if message_type == 'group' and group_id:
+                        await self.channel_layer.group_send(
+                            f'group_{group_id}',
+                            {
+                                'type': 'forward_group_reaction',
+                                'message_id': message_id,
+                                'group_id': group_id,
+                                'sender': self.username,
+                                'emoji': emoji
+                            }
+                        )
+                    elif message_type == 'direct' and target_username:
+                        await self.channel_layer.group_send(
+                            f'user_{target_username}',
+                            {
+                                'type': 'forward_message',
+                                'msg_type': 'MESSAGE_REACTION',
+                                'data': {
+                                    'message_id': message_id,
+                                    'from_username': self.username,
+                                    'emoji': emoji
+                                }
+                            }
+                        )
+
+        except Exception as e:
+            logger.error(f"[WS] Error processing message from {self.username}: {e}", exc_info=True)
+            try:
+                await self.send(text_data=json.dumps({
+                    'type': 'ERROR',
+                    'error': f'Server error: {str(e)}'
+                }))
+            except Exception:
+                pass
+
 
     async def forward_message(self, event):
         await self.send(text_data=json.dumps({

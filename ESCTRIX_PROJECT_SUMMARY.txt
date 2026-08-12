@@ -855,6 +855,50 @@ UPDATE 19: CANCEL FRIEND REQUEST & REMOVE FRIEND (UNFRIEND)
       * Search results & Profile Modal buttons updated with Cancel and Unfriend actions
       * Real-time activity log notification triggers on request cancellation or unfriend
 
+------------------------------------------------------------------------
+UPDATE 20: WEBSOCKET SIGNALING ERROR HANDLING & CLIENT RESILIENCE
+------------------------------------------------------------------------
+  - Server-Side Exception Catching & Logging (chat/consumers.py):
+      * Wrapped SignalingConsumer.receive in comprehensive try-except blocks
+      * Prevents silent socket failures during database queries, friendship checks, and JSON parsing
+      * Sends structured error messages back to the client and logs exceptions via standard logger
+  - Client-Side WebSocket Error Handling (static/js/api.js):
+      * Added ws.onerror event listener and try-catch JSON parsing inside onmessage handler
+      * Displays toast notifications when server sends ERROR payloads
+      * Improved socket connection resilience and reconnect handling
+
+------------------------------------------------------------------------
+UPDATE 21: GLOBAL CLOUD DEPLOYMENT READY ARCHITECTURE
+------------------------------------------------------------------------
+  - Public Web & Multi-Platform Compatibility (Render, Koyeb, Railway, Docker):
+      * Configured dynamic CSRF_TRUSTED_ORIGINS in settings.py for cloud domains (*.onrender.com, *.koyeb.app, *.railway.app, *.vercel.app)
+      * Configured environment variable overrides for SECRET_KEY, DEBUG, ALLOWED_HOSTS, and DATABASE_URL (via dj_database_url)
+      * Created Dockerfile & .dockerignore for zero-configuration container deployments
+      * Created render.yaml blueprint for automated Render.com cloud deployment
+      * Verified client-side WebSocket URL auto-derivation (wss:// protocol for HTTPS)
+
+------------------------------------------------------------------------
+UPDATE 22: HYBRID REST & WEBSOCKET FRIENDS LIST LOADER
+------------------------------------------------------------------------
+  - Dual-Channel Friends List Fetching (accounts/views.py & chat.js):
+      * Built REST API endpoint GET /api/friends/ to instantly load accepted friends on page load via HTTP
+      * Registered URL pattern path('api/friends/', views.api_get_friends)
+      * Integrated loadFriendsList() helper in chat.js executed on DOMContentLoaded
+      * Added friendly empty state placeholder when user has no added contacts yet
+      * Preserved real-time status updates via WebSocket FRIEND_LIST_RESPONSE
+
+------------------------------------------------------------------------
+UPDATE 23: WHATSAPP / TELEGRAM VOICE NOTE RECORDER & FILE SPEED ENGINE
+------------------------------------------------------------------------
+  - WhatsApp-Style Voice Note Recording & Preview Overlay Bar (home.html & chat.js):
+      * Added live seconds timer counter (00:01, 00:02...) with pulsing red recording indicator
+      * Built audio preview stage allowing users to play back their recorded voice note before sending
+      * Included Discard (trash icon) and Send (paper plane) controls
+  - Telegram-Style Chat Audio Player & File Transfer Badges:
+      * Rendered voice notes with play/pause button, audio waveform progress line, duration counter, file size, and transfer speed tag (1.8 MB/s • E2EE)
+      * Added file transfer speed badges to all media attachments
+
+
 ================================================================================
                     FUTURE UPGRADES & RECOMMENDED ROADMAP
 ================================================================================

@@ -19,6 +19,8 @@ urlpatterns = [
     path('api/friend-request/decline/', views.api_decline_friend_request, name='api_decline_friend_request'),
     path('api/friend/remove/', views.api_remove_friend, name='api_remove_friend'),
     path('api/friend-requests/pending/', views.api_pending_requests, name='api_pending_requests'),
+    path('api/friends/', views.api_get_friends, name='api_get_friends'),
+
     path('api/profile/update/', views.api_update_profile, name='api_update_profile'),
     path('api/profile/change-password/', views.api_change_password, name='api_change_password'),
     path('api/forgot-password/', views.api_forgot_password, name='api_forgot_password'),

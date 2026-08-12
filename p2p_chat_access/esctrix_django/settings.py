@@ -8,11 +8,25 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure--2#*xr0!m2b&&h(2u^9i&86+o6*+)-gi=q!v-a7!z%2%+veo$7'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure--2#*xr0!m2b&&h(2u^9i&86+o6*+)-gi=q!v-a7!z%2%+veo$7')
 
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
 ALLOWED_HOSTS = ['*']
+
+
+# Trusted Origins for Cloud Deployment (Render, Koyeb, Railway, Vercel proxy, etc.)
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.onrender.com',
+    'https://*.koyeb.app',
+    'https://*.railway.app',
+    'https://*.vercel.app',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
+if os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
+    CSRF_TRUSTED_ORIGINS.append(f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}")
+
 
 # Application definition
 
@@ -92,6 +106,17 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+if os.environ.get('DATABASE_URL'):
+    try:
+        import dj_database_url
+        DATABASES['default'] = dj_database_url.config(
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    except ImportError:
+        pass
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

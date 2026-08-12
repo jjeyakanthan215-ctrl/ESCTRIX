@@ -18,7 +18,9 @@ const apiEvents = {
 };
 
 function connectWebSocket() {
-    if (ws) ws.close();
+    if (ws) {
+        try { ws.close(); } catch(e) {}
+    }
     ws = new WebSocket(SERVER_URL);
 
     ws.onopen = () => {
@@ -27,12 +29,21 @@ function connectWebSocket() {
     };
 
     ws.onmessage = (event) => {
-        const response = JSON.parse(event.data);
-        handleServerMessage(response);
+        try {
+            const response = JSON.parse(event.data);
+            handleServerMessage(response);
+        } catch (e) {
+            console.error("Failed to parse WebSocket message:", e, event.data);
+        }
     };
 
-    ws.onclose = () => {
-        console.log("Disconnected. Reconnecting in 3s...");
+    ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+    };
+
+    ws.onclose = (event) => {
+        console.log("Disconnected (code:", event.code, "). Reconnecting in 3s...");
+        ws = null;
         setTimeout(connectWebSocket, 3000);
     };
 }
@@ -91,6 +102,10 @@ function handleServerMessage(msg) {
             break;
         case 'HANG_UP':
             apiEvents.onCallHangup(msg.data);
+            break;
+        case 'ERROR':
+            console.error("Server error:", msg.error || msg.data);
+            showToast('Connection Error', msg.error || 'Something went wrong', 'error');
             break;
     }
 }

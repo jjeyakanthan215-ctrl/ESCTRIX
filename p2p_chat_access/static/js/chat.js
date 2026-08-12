@@ -259,15 +259,37 @@ async function handleLogout() {
 }
 
 // --- CONTACTS RENDERING ---
+async function loadFriendsList() {
+    try {
+        const response = await fetch('/api/friends/');
+        const data = await response.json();
+        if (data.success && data.friends) {
+            apiEvents.onFriendsList(data.friends);
+        }
+    } catch (err) {
+        console.error("Failed to load friends list via REST API:", err);
+    }
+}
+
 apiEvents.onFriendsList = (friends) => {
     acceptedFriends = friends;
     const storiesEl = document.getElementById('stories-bar');
     const offlineEl = document.getElementById('feed-offline');
     
-    storiesEl.innerHTML = '';
-    offlineEl.innerHTML = '';
+    if (storiesEl) storiesEl.innerHTML = '';
+    if (offlineEl) offlineEl.innerHTML = '';
     
     let onlineCount = 0;
+
+    if (!friends || friends.length === 0) {
+        if (offlineEl) {
+            offlineEl.innerHTML = '<p class="empty-placeholder" style="padding:15px; font-size:0.82rem; color:var(--text-secondary);">No friends added yet. Go to Search tab to find and add contacts!</p>';
+        }
+        if (storiesEl) {
+            storiesEl.innerHTML = '<p class="empty-placeholder">No friends active now</p>';
+        }
+        return;
+    }
     
     friends.forEach(f => {
         if (f.is_online) {
@@ -281,7 +303,7 @@ apiEvents.onFriendsList = (friends) => {
                 </div>
                 <div class="story-name">${f.username}</div>
             `;
-            storiesEl.appendChild(story);
+            if (storiesEl) storiesEl.appendChild(story);
         }
 
         const li = document.createElement('div');
@@ -303,17 +325,19 @@ apiEvents.onFriendsList = (friends) => {
                 <button class="btn-small ${f.is_online ? 'btn-success' : 'btn-secondary'}">Chat</button>
             </div>
         `;
-        offlineEl.appendChild(li);
+        if (offlineEl) offlineEl.appendChild(li);
     });
 
-    if (onlineCount === 0) {
+    if (onlineCount === 0 && storiesEl) {
         storiesEl.innerHTML = '<p class="empty-placeholder">No friends active now</p>';
     }
 };
 
 apiEvents.onFriendStatus = (status) => {
+    loadFriendsList();
     sendToServer('FRIEND_LIST'); 
 };
+
 
 // --- CHAT WINDOWS MANAGEMENT ---
 
@@ -595,23 +619,53 @@ function renderChatHistory() {
             }, timeRemaining * 1000);
         }
         
-        // Parse Media URL vs plain text
+        // Parse Voice Note vs Media URL vs plain text
         let contentHTML = '';
-        if (m.text && m.text.startsWith('[MEDIA:')) {
+        if (m.text && m.text.startsWith('[VOICE:')) {
+            try {
+                const raw = m.text.slice(7, -1);
+                const firstCol = raw.indexOf(':');
+                const secondCol = raw.indexOf(':', firstCol + 1);
+                const duration = raw.slice(0, firstCol);
+                const size = raw.slice(firstCol + 1, secondCol);
+                const url = raw.slice(secondCol + 1);
+                const vnId = `vn-${m.id || Math.random().toString(36).substr(2, 9)}`;
+
+                contentHTML = `
+                    <div class="voice-note-bubble">
+                        <button type="button" class="vn-play-btn" id="btn-${vnId}" onclick="playVoiceNoteBubble('${vnId}')" title="Play Voice Note">
+                            <i class="fa-solid fa-play"></i>
+                        </button>
+                        <div class="vn-meta">
+                            <div class="vn-wave-line"><div class="vn-wave-progress" id="prog-${vnId}"></div></div>
+                            <div class="vn-info-row">
+                                <span id="time-${vnId}">🎤 00:00 / ${duration}s</span>
+                                <span class="file-transfer-badge"><i class="fa-solid fa-bolt"></i> ${size} • E2EE</span>
+                            </div>
+                        </div>
+                        <audio id="aud-${vnId}" src="${url}" ontimeupdate="updateVnProgress('${vnId}')" onended="resetVnPlayState('${vnId}')" style="display:none;"></audio>
+                    </div>
+                `;
+            } catch(vnErr) {
+                contentHTML = m.text;
+            }
+        } else if (m.text && m.text.startsWith('[MEDIA:')) {
             const parts = m.text.slice(7, -1).split(':');
             const mime = parts[0];
             const url = parts.slice(1).join(':');
+            const speedBadge = `<div style="margin-top:4px;"><span class="file-transfer-badge"><i class="fa-solid fa-bolt"></i> 1.8 MB/s • E2EE</span></div>`;
             
             if (mime.startsWith('image/')) {
-                contentHTML = `<img src="${url}" class="chat-media-image" onclick="window.open('${url}')" style="max-width: 250px; border-radius: 8px; cursor: pointer;">`;
+                contentHTML = `<div><img src="${url}" class="chat-media-image" onclick="window.open('${url}')" style="max-width: 250px; border-radius: 8px; cursor: pointer;">${speedBadge}</div>`;
             } else if (mime.startsWith('video/')) {
-                contentHTML = `<video src="${url}" controls class="chat-media-video" style="max-width: 250px; border-radius: 8px;"></video>`;
+                contentHTML = `<div><video src="${url}" controls class="chat-media-video" style="max-width: 250px; border-radius: 8px;"></video>${speedBadge}</div>`;
             } else {
-                contentHTML = `<a href="${url}" target="_blank" class="chat-media-file" style="color: var(--primary-light); text-decoration: underline;"><i class="fa-solid fa-file"></i> Download Attachment</a>`;
+                contentHTML = `<div><a href="${url}" target="_blank" class="chat-media-file" style="color: var(--primary-light); text-decoration: underline;"><i class="fa-solid fa-file"></i> Download Attachment</a>${speedBadge}</div>`;
             }
         } else {
             contentHTML = m.text;
         }
+
         
         // Read Receipt Ticks (Direct message from Me)
         let ticksHTML = '';
@@ -1261,7 +1315,8 @@ async function viewChatParticipantProfile() {
             avatarEl.style.background = '#000';
             avatarEl.style.padding = '0px';
         }
-        document.getElementById('modal-displayname').innerHTML = `ESCTRIX <i class="fa-solid fa-circle-check" style="color:#0066ff;" title="Verified Channel"></i>`;
+        document.getElementById('modal-displayname').innerHTML = `<img src="/static/img/logo.png" style="height: 30px; vertical-align: middle; margin-right: 6px;"> <i class="fa-solid fa-circle-check" style="color:#0066ff;" title="Verified Channel"></i>`;
+
         document.getElementById('modal-username').innerText = '@esctrix_official';
         document.getElementById('modal-bio').innerText = 'Official ESCTRIX platform channel for security alerts, release notes, and system announcements.';
         document.getElementById('modal-friends-count').innerText = 'Verified';
@@ -1936,8 +1991,10 @@ function renderNotificationsTab() {
 
 // Initial loads
 window.addEventListener('DOMContentLoaded', () => {
+    loadFriendsList();
     loadPendingRequests();
     setInterval(loadPendingRequests, 10000);
+
     renderAvatarPresetGrid();
     
     // Restore theme silently on page load
@@ -2325,66 +2382,242 @@ async function updateStoryPrivacySetting(privacyVal) {
     }
 }
 
-// --- 5. VOICE NOTES RECORDER ENGINE ---
+// --- 5. WHATSAPP / TELEGRAM VOICE NOTES RECORDER ENGINE ---
 let mediaRecorder = null;
 let audioChunks = [];
 let isRecordingVoice = false;
+let voiceRecordTimerInterval = null;
+let voiceRecordSeconds = 0;
+let recordedAudioDataUrl = null;
+let recordedAudioDurationSec = 0;
 
 async function toggleVoiceRecording() {
-    const btn = document.getElementById('voice-record-btn');
-    if (!isRecordingVoice) {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-            audioChunks = [];
+    if (isRecordingVoice) {
+        stopVoiceRecordingAndPreview();
+        return;
+    }
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        voiceRecordSeconds = 0;
+        recordedAudioDataUrl = null;
 
-            mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) audioChunks.push(e.data);
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) audioChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            recordedAudioDurationSec = voiceRecordSeconds || 1;
+            
+            const reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            reader.onloadend = () => {
+                recordedAudioDataUrl = reader.result;
+                const audioEl = document.getElementById('voice-preview-audio');
+                if (audioEl) {
+                    audioEl.src = recordedAudioDataUrl;
+                }
+                
+                // Show preview section
+                const activeSec = document.getElementById('voice-active-section');
+                const prevSec = document.getElementById('voice-preview-section');
+                const prevTimer = document.getElementById('voice-preview-timer');
+                
+                if (activeSec) activeSec.classList.add('hidden');
+                if (prevSec) prevSec.classList.remove('hidden');
+                
+                const mins = String(Math.floor(recordedAudioDurationSec / 60)).padStart(2, '0');
+                const secs = String(recordedAudioDurationSec % 60).padStart(2, '0');
+                if (prevTimer) prevTimer.innerText = `${mins}:${secs}`;
             };
+        };
 
-            mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                const reader = new FileReader();
-                reader.readAsDataURL(audioBlob);
-                reader.onloadend = async () => {
-                    const base64Audio = reader.result;
-                    sendVoiceNoteMessage(base64Audio);
-                };
-            };
+        mediaRecorder.start();
+        isRecordingVoice = true;
+        
+        // Show bar & active section
+        const bar = document.getElementById('voice-recording-bar');
+        const activeSec = document.getElementById('voice-active-section');
+        const prevSec = document.getElementById('voice-preview-section');
+        const timerEl = document.getElementById('voice-record-timer');
+        const btn = document.getElementById('voice-record-btn');
+        
+        if (bar) bar.classList.remove('hidden');
+        if (activeSec) activeSec.classList.remove('hidden');
+        if (prevSec) prevSec.classList.add('hidden');
+        if (btn) btn.classList.add('recording');
+        if (timerEl) timerEl.innerText = '00:00';
 
-            mediaRecorder.start();
-            isRecordingVoice = true;
-            if (btn) btn.classList.add('recording');
-            showToast('Voice Note', 'Recording audio... Click mic again to send.', 'info');
-        } catch (e) {
-            console.error(e);
-            showToast('Mic Error', 'Microphone access is required to record voice notes.', 'error');
-        }
-    } else {
-        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-            mediaRecorder.stop();
-            mediaRecorder.stream.getTracks().forEach(t => t.stop());
-        }
-        isRecordingVoice = false;
-        if (btn) btn.classList.remove('recording');
+        // Start live timer counter
+        clearInterval(voiceRecordTimerInterval);
+        voiceRecordTimerInterval = setInterval(() => {
+            voiceRecordSeconds++;
+            const mins = String(Math.floor(voiceRecordSeconds / 60)).padStart(2, '0');
+            const secs = String(voiceRecordSeconds % 60).padStart(2, '0');
+            if (timerEl) timerEl.innerText = `${mins}:${secs}`;
+        }, 1000);
+
+        showToast('Voice Recorder', 'Recording audio... Click Stop when finished.', 'info');
+    } catch (e) {
+        console.error("Microphone access error:", e);
+        showToast('Mic Error', 'Microphone access is required to record voice notes.', 'error');
     }
 }
 
-async function sendVoiceNoteMessage(audioDataUrl) {
-    if (!currentActiveChatUser) return;
-    const text = `🎤 [Voice Note]`;
-    const encrypted = await encryptMessage(text, currentSessionSharedKey);
-
-    const payload = {
-        recipient_username: currentActiveChatUser,
-        encrypted_content: encrypted,
-        expires_in: null,
-        media_url: audioDataUrl,
-        is_voice_note: true
-    };
-    sendToServer('SEND_MESSAGE', payload);
-    playUiSound('sent');
+function stopVoiceRecordingAndPreview() {
+    clearInterval(voiceRecordTimerInterval);
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        try {
+            mediaRecorder.stop();
+            mediaRecorder.stream.getTracks().forEach(t => t.stop());
+        } catch(e){}
+    }
+    isRecordingVoice = false;
+    const btn = document.getElementById('voice-record-btn');
+    if (btn) btn.classList.remove('recording');
 }
+
+function toggleVoicePreviewPlay() {
+    const audioEl = document.getElementById('voice-preview-audio');
+    const playBtn = document.getElementById('btn-voice-preview-play');
+    if (!audioEl || !playBtn) return;
+
+    if (audioEl.paused) {
+        audioEl.play();
+        playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+        audioEl.onended = () => {
+            playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+        };
+    } else {
+        audioEl.pause();
+        playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+    }
+}
+
+function cancelVoiceRecording() {
+    clearInterval(voiceRecordTimerInterval);
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        try { mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(t => t.stop()); } catch(e){}
+    }
+    isRecordingVoice = false;
+    recordedAudioDataUrl = null;
+    recordedAudioDurationSec = 0;
+
+    const audioEl = document.getElementById('voice-preview-audio');
+    if (audioEl) { audioEl.pause(); audioEl.src = ''; }
+
+    const bar = document.getElementById('voice-recording-bar');
+    const btn = document.getElementById('voice-record-btn');
+    if (bar) bar.classList.add('hidden');
+    if (btn) btn.classList.remove('recording');
+    
+    const playBtn = document.getElementById('btn-voice-preview-play');
+    if (playBtn) playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+
+    showToast('Voice Note', 'Voice recording discarded.', 'info');
+}
+
+async function sendRecordedVoiceNote() {
+    if (!recordedAudioDataUrl) {
+        showToast('Voice Error', 'No voice note recorded.', 'error');
+        return;
+    }
+    if (!currentActiveChatUser && !currentActiveGroupId) {
+        showToast('Send Error', 'Please select a chat session to send your voice note.', 'error');
+        return;
+    }
+
+    // Estimate file size
+    const kbSize = Math.round((recordedAudioDataUrl.length * (3/4)) / 1024);
+    const formattedSize = kbSize > 1024 ? `${(kbSize/1024).toFixed(1)} MB` : `${kbSize} KB`;
+    
+    // Encrypted text content with formatted VOICE marker
+    const voiceText = `[VOICE:${recordedAudioDurationSec}:${formattedSize}:${recordedAudioDataUrl}]`;
+    
+    if (currentActiveChatUser) {
+        const key = await getSharedKey(currentActiveChatUser);
+        const base64Encrypted = await encryptData(voiceText, key);
+        
+        const expiresSelect = document.getElementById('chat-expires-select');
+        const expiresVal = expiresSelect ? expiresSelect.value : null;
+
+        sendToServer('CHAT_MESSAGE', {
+            target_username: currentActiveChatUser,
+            encrypted_content: base64Encrypted,
+            expires_in: expiresVal || null
+        });
+        
+        // Push locally to chat UI immediately
+        if (!chatMessages[currentActiveChatUser]) chatMessages[currentActiveChatUser] = [];
+        chatMessages[currentActiveChatUser].push({
+            id: 'temp_' + Date.now(),
+            from: CURRENT_USER.username,
+            text: voiceText,
+            timestamp: new Date().toISOString(),
+            is_read: false
+        });
+        renderChatHistory();
+    } else if (currentActiveGroupId) {
+        const expiresSelect = document.getElementById('chat-expires-select');
+        const expiresVal = expiresSelect ? expiresSelect.value : null;
+        
+        sendToServer('GROUP_MESSAGE', {
+            group_id: currentActiveGroupId,
+            encrypted_content: voiceText,
+            expires_in: expiresVal || null
+        });
+    }
+
+    cancelVoiceRecording();
+    playUiSound('sent');
+    showToast('Voice Note Sent', 'Voice note delivered!', 'success');
+}
+
+// Audio Player controls for chat bubbles
+function playVoiceNoteBubble(vnId) {
+    const aud = document.getElementById(`aud-${vnId}`);
+    const btn = document.getElementById(`btn-${vnId}`);
+    if (!aud || !btn) return;
+    
+    if (aud.paused) {
+        // Pause all other audio elements first
+        document.querySelectorAll('audio').forEach(a => { if (a !== aud) { a.pause(); } });
+        document.querySelectorAll('.vn-play-btn').forEach(b => { b.innerHTML = '<i class="fa-solid fa-play"></i>'; });
+
+        aud.play();
+        btn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+    } else {
+        aud.pause();
+        btn.innerHTML = '<i class="fa-solid fa-play"></i>';
+    }
+}
+
+function updateVnProgress(vnId) {
+    const aud = document.getElementById(`aud-${vnId}`);
+    const prog = document.getElementById(`prog-${vnId}`);
+    const timeEl = document.getElementById(`time-${vnId}`);
+    if (!aud || !prog) return;
+
+    const cur = Math.floor(aud.currentTime);
+    const dur = Math.floor(aud.duration) || 0;
+    const pct = dur > 0 ? (aud.currentTime / aud.duration) * 100 : 0;
+    prog.style.width = `${pct}%`;
+
+    const curStr = String(Math.floor(cur / 60)).padStart(2, '0') + ':' + String(cur % 60).padStart(2, '0');
+    const durStr = String(Math.floor(dur / 60)).padStart(2, '0') + ':' + String(dur % 60).padStart(2, '0');
+    if (timeEl) timeEl.innerText = `🎤 ${curStr} / ${durStr}`;
+}
+
+function resetVnPlayState(vnId) {
+    const btn = document.getElementById(`btn-${vnId}`);
+    const prog = document.getElementById(`prog-${vnId}`);
+    if (btn) btn.innerHTML = '<i class="fa-solid fa-play"></i>';
+    if (prog) prog.style.width = '0%';
+}
+
 
 // --- 6. PINNED MESSAGES ENGINE ---
 function pinMessage(text) {

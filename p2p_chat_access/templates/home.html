@@ -18,9 +18,9 @@
         <!-- SIDEBAR NAVIGATION (Instagram Style) -->
         <aside class="ig-navigation-sidebar">
             <div class="ig-nav-header">
-                <img src="{% static 'img/logo.png' %}" alt="ESCTRIX logo">
-                <span>ESCTRIX</span>
+                <img src="{% static 'img/logo.png' %}" alt="ESCTRIX logo" style="height: 38px; width: auto; object-fit: contain;">
             </div>
+
 
             <nav class="ig-nav-menu">
                 <button class="ig-nav-item active" onclick="switchTab('chats-tab')">
@@ -298,7 +298,40 @@
 
                 <!-- Chat input area -->
                 <div class="chat-input-row">
+                    <!-- Voice Recording & Preview Bar -->
+                    <div id="voice-recording-bar" class="voice-recording-bar hidden">
+                        <!-- Active Recording State -->
+                        <div id="voice-active-section" class="voice-bar-section">
+                            <div class="recording-dot-pulsing"></div>
+                            <span id="voice-record-timer" class="voice-timer">00:00</span>
+                            <span style="font-size:0.75rem; color:var(--text-secondary);">Recording voice note...</span>
+                            <button type="button" class="btn-voice-stop" onclick="stopVoiceRecordingAndPreview()" title="Stop & Preview">
+                                <i class="fa-solid fa-square"></i> Stop
+                            </button>
+                        </div>
+
+                        <!-- Preview & Playback State -->
+                        <div id="voice-preview-section" class="voice-bar-section hidden">
+                            <button type="button" class="btn-voice-preview-play" id="btn-voice-preview-play" onclick="toggleVoicePreviewPlay()" title="Play Preview">
+                                <i class="fa-solid fa-play"></i>
+                            </button>
+                            <div class="voice-preview-info">
+                                <span id="voice-preview-timer" class="voice-timer">00:00</span>
+                                <span class="voice-preview-label">Voice Note Preview (Click Play to Listen)</span>
+                            </div>
+                            <audio id="voice-preview-audio" style="display:none;"></audio>
+                            
+                            <button type="button" class="btn-voice-cancel" onclick="cancelVoiceRecording()" title="Discard Voice Note">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                            <button type="button" class="btn-voice-send" onclick="sendRecordedVoiceNote()" title="Send Voice Note">
+                                <i class="fa-solid fa-paper-plane"></i> Send
+                            </button>
+                        </div>
+                    </div>
+
                     <form class="chat-send-form" onsubmit="sendChatMessage(event)">
+
                         <button type="button" class="btn-chat-attach" onclick="triggerFileInput()" title="Attach File">
                             <i class="fa-solid fa-paperclip"></i>
                         </button>
@@ -801,11 +834,12 @@
                 <!-- Inject Django Context -->
                 <script>
                     const CURRENT_USER = {
-                        username: "{{ request.user.username }}",
-                        display_name: "{{ request.user.display_name }}",
-                        avatar_index: {{ request.user.avatar_index }}
-        };
+                        username: "{{ request.user.username|escapejs }}",
+                        display_name: "{{ request.user.display_name|escapejs }}",
+                        avatar_index: "{{ request.user.avatar_index|default:0|escapejs }}"
+                    };
                 </script>
+
                 <script src="{% static 'js/api.js' %}?v=15"></script>
                 <script src="{% static 'js/webrtc.js' %}?v=15"></script>
                 <script src="{% static 'js/chat.js' %}?v=15"></script>
