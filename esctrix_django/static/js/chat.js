@@ -191,9 +191,15 @@ function switchSettingOption(optionId) {
     const displayPanel = document.getElementById('settings-display-panel');
     if (displayPanel) displayPanel.classList.remove('hidden');
 
-    document.querySelectorAll('.setting-form-pane').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.setting-form-pane').forEach(el => {
+        el.classList.add('hidden');
+        el.classList.remove('active');
+    });
     const targetPane = document.getElementById(optionId);
-    if (targetPane) targetPane.classList.remove('hidden');
+    if (targetPane) {
+        targetPane.classList.remove('hidden');
+        targetPane.classList.add('active');
+    }
 
     // Load dynamic content for setting options
     if (optionId === 'set-avatar') {

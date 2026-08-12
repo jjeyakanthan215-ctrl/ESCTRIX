@@ -1086,13 +1086,13 @@ input:focus, textarea:focus, select:focus {
 }
 
 .setting-form-pane {
-    display: none;
-}
-
-.setting-form-pane.active {
     display: flex;
     flex-direction: column;
     gap: 15px;
+}
+
+.setting-form-pane.hidden {
+    display: none !important;
 }
 
 .setting-form-pane h3 {
