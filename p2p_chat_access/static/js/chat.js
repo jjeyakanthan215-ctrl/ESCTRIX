@@ -1238,8 +1238,32 @@ async function submitCreateGroup() {
 let modalProfileUsername = null;
 
 async function viewChatParticipantProfile() {
-    if (!currentActiveChatUser) return;
-    viewUserProfile(currentActiveChatUser);
+    if (currentActiveChatUser) {
+        viewUserProfile(currentActiveChatUser);
+    } else {
+        // ESCTRIX Official Channel Verified Profile Modal
+        const avatarEl = document.getElementById('modal-avatar');
+        if (avatarEl) {
+            avatarEl.src = '/static/img/logo.png';
+            avatarEl.style.objectFit = 'cover';
+        }
+        document.getElementById('modal-displayname').innerHTML = `ESCTRIX <i class="fa-solid fa-circle-check" style="color:#0066ff;" title="Verified Channel"></i>`;
+        document.getElementById('modal-username').innerText = '@esctrix_official';
+        document.getElementById('modal-bio').innerText = 'Official ESCTRIX platform channel for security alerts, release notes, and system announcements.';
+        document.getElementById('modal-friends-count').innerText = 'Verified';
+        document.getElementById('modal-mutual-text').innerText = 'Official Channel';
+        document.getElementById('modal-birthday').innerHTML = `<i class="fa-solid fa-shield-halved" style="color:var(--accent);"></i> Platform Verified Service`;
+
+        const actionWrap = document.getElementById('modal-friend-action-btn-wrap');
+        if (actionWrap) {
+            actionWrap.innerHTML = `
+                <button type="button" class="btn-modal-action" style="background: rgba(0,102,255,0.2); border: 1px solid #0066ff; color: #fff; cursor: default;">
+                    <i class="fa-solid fa-check"></i> Subscribed Channel
+                </button>
+            `;
+        }
+        document.getElementById('user-profile-modal').classList.remove('hidden');
+    }
 }
 
 async function viewUserProfile(username) {
