@@ -6,7 +6,7 @@
 Project Name    : ESCTRIX
 Project Type    : Secure Web Chat Application (E2EE)
 Platform        : Django (Python) Web Application
-Location        : d:\Chipher\esctrix_django\
+Location        : d:\Chipher\p2p_chat_access\
 Date            : August 2026
 Admin Username  : Esctrix215
 Admin Password  : Jerry215
