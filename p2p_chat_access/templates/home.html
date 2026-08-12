@@ -84,7 +84,10 @@
                                         ESCTRIX
                                         <i class="fa-solid fa-circle-check" style="color: #0066ff; font-size: 0.85rem;" title="Official Verified Channel"></i>
                                     </div>
-                                    <span style="font-size: 0.65rem; background: var(--accent); color: #fff; padding: 2px 7px; border-radius: 10px; font-weight: 700; text-transform: uppercase;">Official</span>
+                                    <div style="display: flex; align-items: center; gap: 5px;">
+                                        <span id="esctrix-official-badge" class="unread-badge hidden" style="background: #0066ff; color: #fff; font-size: 0.68rem; padding: 2px 7px; border-radius: 10px; font-weight: 700;">1</span>
+                                        <span style="font-size: 0.65rem; background: var(--accent); color: #fff; padding: 2px 7px; border-radius: 10px; font-weight: 700; text-transform: uppercase;">Official</span>
+                                    </div>
                                 </div>
                                 <div class="list-item-subtitle" style="color: var(--accent); font-weight: 500; font-size: 0.75rem; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                     System Updates & Announcements
@@ -362,6 +365,19 @@
                         <button type="button" class="btn-ig-submit" onclick="savePasscodePin()" style="padding: 9px 14px;">Set PIN</button>
                         <button type="button" class="btn-ig-submit bg-danger" onclick="disablePasscodePin()" style="padding: 9px 14px;">Disable</button>
                     </div>
+
+                    <!-- Story Privacy Settings -->
+                    <h4 style="margin-top: 25px; margin-bottom: 8px; font-size: 0.9rem; font-weight: 700; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                        <i class="fa-solid fa-eye" style="color: var(--accent);"></i> 24h Story Privacy Access
+                    </h4>
+                    <p class="setting-desc">Choose default visibility settings for your 24-hour status stories.</p>
+                    <div style="display: flex; gap: 8px; align-items: center; margin-top: 10px;">
+                        <select id="setting-story-privacy" onchange="updateStoryPrivacySetting(this.value)" style="flex: 1; padding: 10px; background: #121212; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; font-size: 0.85rem;">
+                            <option value="friends" selected>My Contacts / Mutual Friends Only</option>
+                            <option value="public">Public / Everyone on Platform</option>
+                            <option value="private">Private / Only Me</option>
+                        </select>
+                    </div>
                 </div>
 
                 <!-- Sub Option: Block List -->
@@ -583,8 +599,16 @@
                     <input type="text" id="story-caption-input" placeholder="Write a story update (max 280 chars)..." maxlength="280">
                 </div>
                 <div class="input-group" style="margin-top: 10px;">
-                    <label style="font-size: 0.78rem; color: var(--text-secondary);">Image Attachment (Optional)</label>
-                    <input type="file" id="story-file-input" accept="image/*" style="width: 100%; padding: 8px; background: #121212; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; margin-top: 4px;">
+                    <label style="font-size: 0.78rem; color: var(--text-secondary);">Photo or Video Attachment (Optional)</label>
+                    <input type="file" id="story-file-input" accept="image/*,video/*" style="width: 100%; padding: 8px; background: #121212; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; margin-top: 4px;">
+                </div>
+                <div class="input-group" style="margin-top: 10px;">
+                    <label style="font-size: 0.78rem; color: var(--text-secondary);">Story Privacy</label>
+                    <select id="story-privacy-select" style="width: 100%; padding: 8px; background: #121212; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; margin-top: 4px;">
+                        <option value="friends" selected>My Contacts / Mutual Friends Only</option>
+                        <option value="public">Public / Everyone</option>
+                        <option value="private">Private / Only Me</option>
+                    </select>
                 </div>
                 <button class="btn-create-group-action" onclick="submitNewStory()" style="margin-top: 15px;">Publish Story</button>
             </div>
@@ -603,6 +627,7 @@
                 </div>
                 <div id="story-viewer-body" style="width: 100%; min-height: 180px; background: rgba(0,0,0,0.4); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; text-align: center;">
                     <img id="story-viewer-image" style="max-width: 100%; max-height: 220px; border-radius: 8px; margin-bottom: 10px; display: none;">
+                    <video id="story-viewer-video" controls autoplay loop style="max-width: 100%; max-height: 220px; border-radius: 8px; margin-bottom: 10px; display: none;"></video>
                     <p id="story-viewer-caption" style="font-size: 1rem; color: #fff; font-weight: 500;"></p>
                 </div>
             </div>

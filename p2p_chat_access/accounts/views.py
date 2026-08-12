@@ -682,18 +682,24 @@ def api_create_story(request):
         data = json.loads(request.body)
         caption = data.get('caption', '').strip()
         media_data = data.get('media_data', '').strip()
+        media_type = data.get('media_type', 'image').strip()
         bg_color = data.get('bg_color', '#7c3aed').strip()
+        privacy = data.get('privacy', request.user.story_privacy).strip()
         
+        is_global = request.user.is_staff or request.user.is_superuser
         expires = timezone.now() + timedelta(hours=24)
         
         story = UserStory.objects.create(
             user=request.user,
             caption=caption,
             media_data=media_data,
+            media_type=media_type,
             bg_color=bg_color,
+            is_global=is_global,
+            privacy=privacy,
             expires_at=expires
         )
-        return JsonResponse({'success': True, 'story_id': story.id})
+        return JsonResponse({'success': True, 'story_id': story.id, 'is_global': is_global})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
@@ -702,20 +708,24 @@ def api_get_stories(request):
         return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=401)
     
     now = timezone.now()
-    # Get user's accepted friends
     friend_ids_1 = list(Friendship.objects.filter(user=request.user, status='accepted').values_list('friend_id', flat=True))
     friend_ids_2 = list(Friendship.objects.filter(friend=request.user, status='accepted').values_list('user_id', flat=True))
-    
-    all_user_ids = set(friend_ids_1).union(set(friend_ids_2))
-    all_user_ids.add(request.user.id)
+    friend_ids = set(friend_ids_1).union(set(friend_ids_2))
     
     stories = UserStory.objects.filter(
-        user_id__in=all_user_ids,
+        Q(is_global=True) |
+        Q(user=request.user) |
+        (Q(user_id__in=friend_ids) & ~Q(privacy='private')) |
+        Q(privacy='public'),
         expires_at__gt=now
     ).select_related('user').order_by('-created_at')
     
+    seen_ids = set()
     results = []
     for s in stories:
+        if s.id in seen_ids:
+            continue
+        seen_ids.add(s.id)
         results.append({
             'id': s.id,
             'username': s.user.username,
@@ -723,12 +733,30 @@ def api_get_stories(request):
             'avatar_index': s.user.avatar_index,
             'caption': s.caption,
             'media_data': s.media_data,
+            'media_type': s.media_type,
             'bg_color': s.bg_color,
+            'is_global': s.is_global,
+            'privacy': s.privacy,
             'created_at': s.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'is_self': s.user.id == request.user.id
+            'is_self': s.user.id == request.user.id,
+            'is_admin': s.user.is_staff or s.user.is_superuser
         })
         
     return JsonResponse({'success': True, 'stories': results})
+
+def api_update_story_privacy(request):
+    if not request.user.is_authenticated or request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=401)
+    try:
+        data = json.loads(request.body)
+        privacy = data.get('story_privacy', 'friends').strip()
+        if privacy not in ['friends', 'public', 'private']:
+            privacy = 'friends'
+        request.user.story_privacy = privacy
+        request.user.save()
+        return JsonResponse({'success': True, 'story_privacy': privacy})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 def api_get_system_broadcasts(request):
     if not request.user.is_authenticated:

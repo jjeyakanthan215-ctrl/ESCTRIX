@@ -11,6 +11,8 @@ class CustomUser(AbstractUser):
     username_last_changed = models.DateTimeField(null=True, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
 
+    story_privacy = models.CharField(max_length=20, default='friends')
+
     def __str__(self):
         return self.username
 
@@ -90,7 +92,10 @@ class UserStory(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='stories')
     caption = models.CharField(max_length=280, blank=True, default='')
     media_data = models.TextField(blank=True, default='')
+    media_type = models.CharField(max_length=20, default='image') # text, image, video
     bg_color = models.CharField(max_length=20, default='#7c3aed')
+    is_global = models.BooleanField(default=False)
+    privacy = models.CharField(max_length=20, default='friends')
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
 
@@ -98,7 +103,7 @@ class UserStory(models.Model):
         return timezone.now() < self.expires_at
 
     def __str__(self):
-        return f"Story by {self.user.username} (expires {self.expires_at})"
+        return f"Story by {self.user.username} (type: {self.media_type}, global: {self.is_global})"
 
 class SystemBroadcast(models.Model):
     title = models.CharField(max_length=150, default="ESCTRIX System Update")

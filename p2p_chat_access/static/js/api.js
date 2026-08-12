@@ -100,7 +100,7 @@ connectWebSocket();
 // ==========================================
 // IN-APP TOAST NOTIFICATION SYSTEM
 // ==========================================
-function showToast(title, message, type = 'info', duration = 3500) {
+function showToast(title, message, type = 'info', duration = 3500, clickHandler = null, avatarUrl = null) {
     if (message === undefined) {
         message = title;
         title = type === 'error' ? 'Error' : (type === 'success' ? 'Success' : 'Notification');
@@ -115,11 +115,26 @@ function showToast(title, message, type = 'info', duration = 3500) {
     
     const toast = document.createElement('div');
     toast.className = `esctrix-toast toast-${type}`;
+    if (clickHandler) {
+        toast.style.cursor = 'pointer';
+        toast.onclick = (e) => {
+            if (e.target.tagName !== 'BUTTON') {
+                clickHandler();
+                toast.remove();
+            }
+        };
+    }
     
     let iconHTML = '<i class="fa-solid fa-bell" style="color:var(--text-active);"></i>';
-    if (type === 'success') iconHTML = '<i class="fa-solid fa-circle-check" style="color:#4cd964;"></i>';
-    else if (type === 'error') iconHTML = '<i class="fa-solid fa-circle-exclamation" style="color:#ed4956;"></i>';
-    else if (type === 'info') iconHTML = '<i class="fa-solid fa-user-plus" style="color:#00d2ff;"></i>';
+    if (avatarUrl) {
+        iconHTML = `<img src="${avatarUrl}" style="width:32px; height:32px; border-radius:50%;">`;
+    } else if (type === 'success') {
+        iconHTML = '<i class="fa-solid fa-circle-check" style="color:#4cd964;"></i>';
+    } else if (type === 'error') {
+        iconHTML = '<i class="fa-solid fa-circle-exclamation" style="color:#ed4956;"></i>';
+    } else if (type === 'info') {
+        iconHTML = '<i class="fa-solid fa-comment-dots" style="color:#00d2ff;"></i>';
+    }
     
     toast.innerHTML = `
         <div class="toast-icon">${iconHTML}</div>

@@ -472,6 +472,15 @@ async function reactToMessage(messageId, msgType, emoji) {
     });
 }
 
+async function openChatByUsername(targetUsername) {
+    switchTab('chats-tab');
+    let f = acceptedFriends.find(u => u.username === targetUsername);
+    if (!f) {
+        f = { username: targetUsername, display_name: targetUsername, avatar_index: 0, is_online: true };
+    }
+    openChat(f);
+}
+
 // --- OPEN CHAT (1-ON-1) ---
 async function openChat(friend) {
     currentActiveChatUser = friend.username;
@@ -729,6 +738,14 @@ apiEvents.onChatMessage = async (msg) => {
         
         if (currentActiveChatUser === sender) {
             renderChatHistory();
+        } else {
+            playUiSound('received');
+            const friendObj = acceptedFriends.find(f => f.username === sender);
+            const avatarSeed = friendObj ? friendObj.avatar_index : 0;
+            const displayName = friendObj ? friendObj.display_name : sender;
+            const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
+            
+            showToast(displayName, text.length > 50 ? text.substring(0, 48) + '...' : text, 'info', 5000, () => openChatByUsername(sender), avatarUrl);
         }
     } catch (e) {
         console.error("Failed to decrypt message", e);
@@ -1870,6 +1887,11 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!sessionStorage.getItem('esctrix_login_logged')) {
         sessionStorage.setItem('esctrix_login_logged', '1');
         saveNotification('Session Authenticated', 'Logged in to ESCTRIX session', 'success', 'fa-key');
+        
+        const officialBadge = document.getElementById('esctrix-official-badge');
+        if (officialBadge) officialBadge.classList.remove('hidden');
+        
+        showToast('Welcome to ESCTRIX', 'Check the ESCTRIX Official channel for platform release updates!', 'info', 5000, () => openEsctrixOfficialChannel());
     }
     
     updateNotificationBadge();
@@ -2138,9 +2160,16 @@ async function submitNewStory() {
     const caption = document.getElementById('story-caption-input').value.trim();
     const fileInput = document.getElementById('story-file-input');
     let mediaData = '';
+    let mediaType = 'text';
 
     if (fileInput && fileInput.files.length > 0) {
         const file = fileInput.files[0];
+        if (file.type.startsWith('video/')) {
+            mediaType = 'video';
+        } else if (file.type.startsWith('image/')) {
+            mediaType = 'image';
+        }
+        
         mediaData = await new Promise((resolve) => {
             const reader = new FileReader();
             reader.onload = (e) => resolve(e.target.result);
@@ -2148,8 +2177,10 @@ async function submitNewStory() {
         });
     }
 
+    const privacy = document.getElementById('story-privacy-select')?.value || 'friends';
+
     if (!caption && !mediaData) {
-        showToast('Story Error', 'Please enter a caption or attach an image.', 'error');
+        showToast('Story Error', 'Please enter a caption or attach a photo/video.', 'error');
         return;
     }
 
@@ -2160,11 +2191,11 @@ async function submitNewStory() {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrftoken
             },
-            body: JSON.stringify({ caption, media_data: mediaData })
+            body: JSON.stringify({ caption, media_data: mediaData, media_type: mediaType, privacy: privacy })
         });
         const data = await response.json();
         if (data.success) {
-            showToast('Story Published', 'Your 24h status story is live!', 'success');
+            showToast('Story Published', data.is_global ? 'Admin Global Story published to all users!' : 'Your 24h status story is live!', 'success');
             saveNotification('Story Published', 'Published a 24-hour status story', 'info', 'fa-circle-plus');
             closeAddStoryModal();
             document.getElementById('story-caption-input').value = '';
@@ -2179,24 +2210,56 @@ async function submitNewStory() {
 }
 
 function viewStory(s) {
-    document.getElementById('story-viewer-name').innerText = s.display_name;
+    document.getElementById('story-viewer-name').innerHTML = `${s.display_name} ${s.is_global || s.is_admin ? '<i class="fa-solid fa-circle-check" style="color:#0066ff; font-size:0.78rem;" title="Official Admin Story"></i>' : ''}`;
     document.getElementById('story-viewer-time').innerText = s.created_at;
     document.getElementById('story-viewer-avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${s.avatar_index}`;
     document.getElementById('story-viewer-caption').innerText = s.caption || '';
 
     const imgEl = document.getElementById('story-viewer-image');
-    if (s.media_data) {
+    const vidEl = document.getElementById('story-viewer-video');
+
+    if (s.media_type === 'video' && s.media_data) {
+        imgEl.style.display = 'none';
+        vidEl.src = s.media_data;
+        vidEl.style.display = 'block';
+    } else if (s.media_type === 'image' && s.media_data) {
+        vidEl.style.display = 'none';
         imgEl.src = s.media_data;
         imgEl.style.display = 'block';
     } else {
         imgEl.style.display = 'none';
+        vidEl.style.display = 'none';
     }
 
     document.getElementById('story-viewer-modal').classList.remove('hidden');
 }
 
 function closeStoryViewer() {
+    const vidEl = document.getElementById('story-viewer-video');
+    if (vidEl) {
+        vidEl.pause();
+        vidEl.src = '';
+    }
     document.getElementById('story-viewer-modal').classList.add('hidden');
+}
+
+async function updateStoryPrivacySetting(privacyVal) {
+    try {
+        const response = await fetch('/api/story/privacy/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ story_privacy: privacyVal })
+        });
+        const data = await response.json();
+        if (data.success) {
+            showToast('Privacy Updated', `24h Story visibility updated to: ${privacyVal}`, 'success');
+        }
+    } catch (e) {
+        console.error(e);
+    }
 }
 
 // --- 5. VOICE NOTES RECORDER ENGINE ---
@@ -2291,6 +2354,9 @@ async function openEsctrixOfficialChannel() {
     
     document.getElementById('session-name').innerHTML = `ESCTRIX <i class="fa-solid fa-circle-check" style="color:#0066ff; font-size:0.88rem;" title="Official Verified Channel"></i>`;
     document.getElementById('session-status').innerText = 'Official System Updates & Announcements';
+
+    const officialBadge = document.getElementById('esctrix-official-badge');
+    if (officialBadge) officialBadge.classList.add('hidden');
 
     // Hide direct call buttons for system channel
     const callBtns = document.querySelectorAll('.chat-header-actions .btn-call-action');
