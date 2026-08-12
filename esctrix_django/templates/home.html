@@ -226,6 +226,9 @@
 
             <!-- Settings Sub Option Details Panel (Shows forms corresponding to chosen settings option) -->
             <div id="settings-display-panel" class="ig-settings-forms-wrapper hidden">
+                <button type="button" class="mobile-settings-back-btn mobile-back-btn" onclick="mobileBackToSettingsNav()" style="margin-bottom: 15px; background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 12px; border-radius: var(--radius-sm); font-size: 0.82rem; cursor: pointer;">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Settings
+                </button>
                 
                 <!-- Sub Option: Profile Picture / Animated Avatars -->
                 <div id="set-avatar" class="setting-form-pane active">
@@ -273,7 +276,10 @@
                             <input type="password" id="old-password" placeholder="Current Password" required>
                         </div>
                         <div class="input-group">
-                            <input type="password" id="new-password" placeholder="New Password" required>
+                            <input type="password" id="new-password" placeholder="New Password (min 8 characters)" required>
+                        </div>
+                        <div class="input-group">
+                            <input type="password" id="confirm-password" placeholder="Confirm New Password" required>
                         </div>
                         <button type="submit" class="btn-ig-submit bg-danger">Update Password</button>
                     </form>

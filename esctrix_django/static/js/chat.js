@@ -153,10 +153,23 @@ function switchTab(tabId) {
         if (mob) mob.classList.add('active');
     }
 
-    // Toggle panels visibility
+    // Toggle sub-panel tab content visibility
     document.querySelectorAll('.ig-tab-content').forEach(el => el.classList.add('hidden'));
     const target = document.getElementById(tabId);
     if (target) target.classList.remove('hidden');
+
+    // Handle main panel display when switching main tabs
+    const displayPanel = document.getElementById('settings-display-panel');
+    if (tabId !== 'settings-tab') {
+        if (displayPanel) displayPanel.classList.add('hidden');
+        if (currentActiveChatUser || currentActiveGroupId) {
+            document.getElementById('chat-panel').classList.remove('hidden');
+            document.getElementById('chat-placeholder').classList.add('hidden');
+        } else {
+            document.getElementById('chat-panel').classList.add('hidden');
+            document.getElementById('chat-placeholder').classList.remove('hidden');
+        }
+    }
 
     // On mobile, show sub-panel and hide main content
     const sub = document.querySelector('.ig-sub-panel');
@@ -176,14 +189,16 @@ function switchSettingOption(optionId) {
     document.getElementById('chat-placeholder').classList.add('hidden');
     
     const displayPanel = document.getElementById('settings-display-panel');
-    displayPanel.classList.remove('hidden');
+    if (displayPanel) displayPanel.classList.remove('hidden');
 
     document.querySelectorAll('.setting-form-pane').forEach(el => el.classList.add('hidden'));
     const targetPane = document.getElementById(optionId);
     if (targetPane) targetPane.classList.remove('hidden');
 
-    // If block list, load it
-    if (optionId === 'set-blocklist') {
+    // Load dynamic content for setting options
+    if (optionId === 'set-avatar') {
+        renderAvatarPresetGrid();
+    } else if (optionId === 'set-blocklist') {
         loadBlockList();
     } else if (optionId === 'set-help') {
         loadHelpTickets();
@@ -203,6 +218,13 @@ function switchSettingOption(optionId) {
     if (sub) sub.classList.add('mobile-hidden');
     const main = document.querySelector('.ig-main-content');
     if (main) main.classList.add('mobile-active');
+}
+
+function mobileBackToSettingsNav() {
+    const sub = document.querySelector('.ig-sub-panel');
+    if (sub) sub.classList.remove('mobile-hidden');
+    const main = document.querySelector('.ig-main-content');
+    if (main) main.classList.remove('mobile-active');
 }
 
 // --- LOGOUT ---
@@ -876,8 +898,10 @@ async function saveAvatarSeedOnly() {
         });
         const data = await response.json();
         if (data.success) {
-            showToast('Avatar Updated', 'Avatar updated successfully!', 'success');
-            setTimeout(() => window.location.reload(), 1000);
+            CURRENT_USER.avatar_index = a;
+            const profilePreview = document.getElementById('profile-avatar-preview');
+            if (profilePreview) profilePreview.src = `https://api.dicebear.com/7.x/${currentAvatarStyle}/svg?seed=${a}`;
+            showToast('Avatar Saved', 'Your new profile avatar has been saved!', 'success');
         } else {
             showToast('Avatar Error', data.error || 'Failed to update avatar', 'error');
         }
@@ -890,9 +914,24 @@ async function changePassword(e) {
     e.preventDefault();
     const oldP = document.getElementById('old-password').value;
     const newP = document.getElementById('new-password').value;
+    const confirmP = document.getElementById('confirm-password') ? document.getElementById('confirm-password').value : newP;
     const status = document.getElementById('password-status');
     
-    status.innerText = 'Updating...';
+    if (newP !== confirmP) {
+        status.innerText = 'New passwords do not match.';
+        status.style.color = 'var(--danger)';
+        showToast('Password Error', 'New passwords do not match.', 'error');
+        return;
+    }
+
+    if (!newP || newP.length < 8) {
+        status.innerText = 'New password must be at least 8 characters long.';
+        status.style.color = 'var(--danger)';
+        showToast('Password Error', 'New password must be at least 8 characters long.', 'error');
+        return;
+    }
+
+    status.innerText = 'Updating password...';
     status.style.color = 'var(--text-primary)';
     
     try {
@@ -908,14 +947,17 @@ async function changePassword(e) {
         if (data.success) {
             status.innerText = 'Password changed successfully!';
             status.style.color = 'var(--success)';
+            showToast('Password Changed', 'Your password was updated successfully!', 'success');
             document.getElementById('password-form').reset();
         } else {
-            status.innerText = data.error;
+            status.innerText = data.error || 'Failed to change password.';
             status.style.color = 'var(--danger)';
+            showToast('Password Error', data.error || 'Failed to change password.', 'error');
         }
     } catch (err) {
         status.innerText = 'Error connecting to server';
         status.style.color = 'var(--danger)';
+        showToast('Network Error', 'Error connecting to server.', 'error');
     }
 }
 

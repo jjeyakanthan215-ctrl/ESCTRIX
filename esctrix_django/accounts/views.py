@@ -216,16 +216,11 @@ def api_update_profile(request):
         return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=401)
     try:
         data = json.loads(request.body)
-        username = data.get('username')
-        display_name = data.get('display_name')
-        bio = data.get('bio', '')
-        avatar_index = data.get('avatar_index')
-        dob_str = data.get('date_of_birth')
-        
         user = request.user
         
         # Username update and validation
-        if username:
+        if 'username' in data and data['username']:
+            username = data['username']
             new_username = username.lower().strip()
             if new_username != user.username:
                 # Validation checks
@@ -255,22 +250,27 @@ def api_update_profile(request):
                 user.username = new_username
                 user.username_last_changed = timezone.now()
                 
-        if display_name:
-            user.display_name = display_name
-        user.bio = bio
-        if avatar_index is not None:
-            user.avatar_index = int(avatar_index)
+        if 'display_name' in data and data['display_name']:
+            user.display_name = data['display_name'].strip()
             
-        if dob_str:
-            try:
-                user.date_of_birth = datetime.strptime(dob_str, '%Y-%m-%d').date()
-            except ValueError:
-                return JsonResponse({'success': False, 'error': 'Invalid date of birth format. Use YYYY-MM-DD'}, status=400)
-        elif 'date_of_birth' in data:
-            user.date_of_birth = None
+        if 'bio' in data:
+            user.bio = data['bio'].strip() if data['bio'] else ''
+            
+        if 'avatar_index' in data and data['avatar_index'] is not None:
+            user.avatar_index = int(data['avatar_index'])
+            
+        if 'date_of_birth' in data:
+            dob_str = data['date_of_birth']
+            if dob_str:
+                try:
+                    user.date_of_birth = datetime.strptime(dob_str, '%Y-%m-%d').date()
+                except ValueError:
+                    return JsonResponse({'success': False, 'error': 'Invalid date of birth format. Use YYYY-MM-DD'}, status=400)
+            else:
+                user.date_of_birth = None
             
         user.save()
-        return JsonResponse({'success': True, 'username': user.username})
+        return JsonResponse({'success': True, 'username': user.username, 'avatar_index': user.avatar_index})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
