@@ -325,8 +325,12 @@ apiEvents.onFriendsList = (friends) => {
                 <button class="btn-small ${f.is_online ? 'btn-success' : 'btn-secondary'}">Chat</button>
             </div>
         `;
-        if (offlineEl) offlineEl.appendChild(li);
+        if (offlineEl) {
+            offlineEl.appendChild(li);
+            attachContactLongPress(li, f.username);
+        }
     });
+
 
     if (onlineCount === 0 && storiesEl) {
         storiesEl.innerHTML = '<p class="empty-placeholder">No friends active now</p>';
@@ -2714,3 +2718,203 @@ async function openEsctrixOfficialChannel() {
         msgContainer.innerHTML = '<p class="empty-placeholder text-danger">Error loading announcements.</p>';
     }
 }
+
+// --- CONTACT LONG PRESS & CONTEXT MENU ENGINE ---
+let currentContextMenuUsername = null;
+
+function attachContactLongPress(el, username) {
+    if (!el) return;
+    let pressTimer = null;
+
+    const startPress = (e) => {
+        pressTimer = setTimeout(() => {
+            openContactContextMenu(username, e);
+        }, 500);
+    };
+
+    const cancelPress = () => {
+        if (pressTimer) clearTimeout(pressTimer);
+    };
+
+    el.addEventListener('touchstart', startPress, { passive: true });
+    el.addEventListener('touchend', cancelPress);
+    el.addEventListener('touchmove', cancelPress);
+    
+    el.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        openContactContextMenu(username, e);
+    });
+}
+
+function openContactContextMenu(username, e) {
+    currentContextMenuUsername = username;
+    const menu = document.getElementById('contact-context-menu');
+    const nameEl = document.getElementById('ctx-target-name');
+    if (!menu) return;
+
+    if (nameEl) nameEl.innerText = `@${username}`;
+
+    const isMutedNotif = isUserNotifMuted(username);
+    const isMutedCall = isUserCallMuted(username);
+
+    const notifLabel = document.getElementById('ctx-mute-notif-label');
+    const callLabel = document.getElementById('ctx-mute-call-label');
+    if (notifLabel) notifLabel.innerText = isMutedNotif ? 'Unmute Notifications' : 'Mute Notifications';
+    if (callLabel) callLabel.innerText = isMutedCall ? 'Unmute Calls' : 'Mute Calls';
+
+    let x = e ? (e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 100)) : 100;
+    let y = e ? (e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 200)) : 200;
+
+    if (x + 240 > window.innerWidth) x = window.innerWidth - 250;
+    if (y + 260 > window.innerHeight) y = window.innerHeight - 270;
+
+    menu.style.left = `${Math.max(10, x)}px`;
+    menu.style.top = `${Math.max(10, y)}px`;
+    menu.classList.remove('hidden');
+}
+
+function closeContactContextMenu() {
+    const menu = document.getElementById('contact-context-menu');
+    if (menu) menu.classList.add('hidden');
+}
+
+function handleCtxOpenChat() {
+    closeContactContextMenu();
+    if (currentContextMenuUsername) {
+        openChatByUsername(currentContextMenuUsername);
+    }
+}
+
+function handleCtxViewProfile() {
+    closeContactContextMenu();
+    if (currentContextMenuUsername) {
+        viewUserProfile(currentContextMenuUsername);
+    }
+}
+
+function getMutedNotifUsers() {
+    try {
+        return JSON.parse(localStorage.getItem('esctrix_muted_notifs') || '[]');
+    } catch(e) { return []; }
+}
+
+function isUserNotifMuted(username) {
+    return getMutedNotifUsers().includes(username);
+}
+
+function handleCtxToggleMuteNotifs() {
+    closeContactContextMenu();
+    if (!currentContextMenuUsername) return;
+    
+    let muted = getMutedNotifUsers();
+    if (muted.includes(currentContextMenuUsername)) {
+        muted = muted.filter(u => u !== currentContextMenuUsername);
+        showToast('Notifications Unmuted', `Notifications unmuted for @${currentContextMenuUsername}`, 'info');
+    } else {
+        muted.push(currentContextMenuUsername);
+        showToast('Notifications Muted', `Notifications muted for @${currentContextMenuUsername}`, 'info');
+    }
+    localStorage.setItem('esctrix_muted_notifs', JSON.stringify(muted));
+}
+
+function getMutedCallUsers() {
+    try {
+        return JSON.parse(localStorage.getItem('esctrix_muted_calls') || '[]');
+    } catch(e) { return []; }
+}
+
+function isUserCallMuted(username) {
+    return getMutedCallUsers().includes(username);
+}
+
+function handleCtxToggleMuteCalls() {
+    closeContactContextMenu();
+    if (!currentContextMenuUsername) return;
+    
+    let muted = getMutedCallUsers();
+    if (muted.includes(currentContextMenuUsername)) {
+        muted = muted.filter(u => u !== currentContextMenuUsername);
+        showToast('Calls Unmuted', `Incoming calls unmuted for @${currentContextMenuUsername}`, 'info');
+    } else {
+        muted.push(currentContextMenuUsername);
+        showToast('Calls Muted', `Incoming calls muted for @${currentContextMenuUsername}`, 'info');
+    }
+    localStorage.setItem('esctrix_muted_calls', JSON.stringify(muted));
+}
+
+function handleCtxClearChat() {
+    closeContactContextMenu();
+    if (!currentContextMenuUsername) return;
+    
+    if (confirm(`Are you sure you want to clear all chat messages with @${currentContextMenuUsername}?`)) {
+        chatMessages[currentContextMenuUsername] = [];
+        if (currentActiveChatUser === currentContextMenuUsername) {
+            renderChatHistory();
+        }
+        showToast('Chat Cleared', `Messages cleared with @${currentContextMenuUsername}`, 'info');
+    }
+}
+
+function handleCtxDeleteChat() {
+    closeContactContextMenu();
+    if (!currentContextMenuUsername) return;
+    
+    if (confirm(`Delete conversation with @${currentContextMenuUsername}?`)) {
+        delete chatMessages[currentContextMenuUsername];
+        if (currentActiveChatUser === currentContextMenuUsername) {
+            closeChat();
+        }
+        showToast('Chat Deleted', `Conversation deleted with @${currentContextMenuUsername}`, 'info');
+    }
+}
+
+// Close context menu when clicking outside
+window.addEventListener('click', (e) => {
+    const menu = document.getElementById('contact-context-menu');
+    if (menu && !menu.contains(e.target) && !e.target.closest('.list-item')) {
+        menu.classList.add('hidden');
+    }
+});
+
+// --- REAL-TIME CHAT HISTORY AUTO-SYNCING POLLER ---
+async function autoSyncActiveChatHistory() {
+    if (!currentActiveChatUser && !currentActiveGroupId) return;
+    
+    if (currentActiveChatUser) {
+        try {
+            const response = await fetch(`/api/chat/history/?target_username=${encodeURIComponent(currentActiveChatUser)}`);
+            const data = await response.json();
+            if (data.success && data.messages) {
+                const existing = chatMessages[currentActiveChatUser] || [];
+                const key = await getSharedKey(currentActiveChatUser);
+                let hasNew = false;
+                
+                for (const m of data.messages) {
+                    if (!existing.some(em => em.id === m.id)) {
+                        try {
+                            const text = await decryptData(m.encrypted_content, key);
+                            existing.push({
+                                id: m.id,
+                                from: m.from_username,
+                                text: text,
+                                timestamp: m.timestamp,
+                                is_read: m.is_read,
+                                expires_at: m.expires_at,
+                                reactions: m.reactions
+                            });
+                            hasNew = true;
+                        } catch(decErr) {}
+                    }
+                }
+                
+                if (hasNew) {
+                    chatMessages[currentActiveChatUser] = existing;
+                    renderChatHistory();
+                }
+            }
+        } catch (err) {
+            console.error("Auto sync history error:", err);
+        }
+    }
+}
+

@@ -898,6 +898,17 @@ UPDATE 23: WHATSAPP / TELEGRAM VOICE NOTE RECORDER & FILE SPEED ENGINE
       * Rendered voice notes with play/pause button, audio waveform progress line, duration counter, file size, and transfer speed tag (1.8 MB/s • E2EE)
       * Added file transfer speed badges to all media attachments
 
+------------------------------------------------------------------------
+UPDATE 24: CONTACT LONG PRESS CONTEXT MENU & REAL-TIME AUTO SYNC POLLER
+------------------------------------------------------------------------
+  - Long Press & Right-Click Context Menu (home.html, style.css & chat.js):
+      * Added 500ms long press touch gesture (mobile) and desktop right-click context menu on all contact items
+      * Context menu actions: Clear Messages, Delete Chat, Mute/Unmute Notifications, Mute/Unmute Calls, Open Chat, View Profile
+      * Connected Mute Calls filter to webrtc.js to suppress incoming call overlays when call muting is enabled
+  - Real-Time Chat History Background Syncing:
+      * Integrated autoSyncActiveChatHistory() poller executing every 3 seconds
+      * Automatically decrypts and appends new incoming messages in real time without requiring manual force page reloads
+
 
 ================================================================================
                     FUTURE UPGRADES & RECOMMENDED ROADMAP

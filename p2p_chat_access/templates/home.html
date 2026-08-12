@@ -828,10 +828,38 @@
                         <button class="pin-key" onclick="clearPinKey()"><i class="fa-solid fa-delete-left"></i></button>
                         <button class="pin-key" onclick="pressPinKey('0')">0</button>
                         <button class="pin-key" onclick="submitPinUnlock()"><i class="fa-solid fa-check"></i></button>
+                </div>
+
+                <!-- CONTACT LONG PRESS & RIGHT CLICK CONTEXT MENU -->
+                <div id="contact-context-menu" class="contact-context-menu hidden">
+                    <div class="context-menu-header">
+                        <span id="ctx-target-name">@username</span>
+                        <button type="button" class="close-ctx-btn" onclick="closeContactContextMenu()"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div class="context-menu-items">
+                        <button type="button" class="ctx-item" onclick="handleCtxOpenChat()">
+                            <i class="fa-regular fa-paper-plane"></i> <span>Open Chat</span>
+                        </button>
+                        <button type="button" class="ctx-item" onclick="handleCtxViewProfile()">
+                            <i class="fa-regular fa-circle-user"></i> <span>View Profile</span>
+                        </button>
+                        <button type="button" class="ctx-item" onclick="handleCtxToggleMuteNotifs()">
+                            <i class="fa-solid fa-bell-slash" id="ctx-mute-notif-icon"></i> <span id="ctx-mute-notif-label">Mute Notifications</span>
+                        </button>
+                        <button type="button" class="ctx-item" onclick="handleCtxToggleMuteCalls()">
+                            <i class="fa-solid fa-phone-slash" id="ctx-mute-call-icon"></i> <span id="ctx-mute-call-label">Mute Calls</span>
+                        </button>
+                        <button type="button" class="ctx-item danger" onclick="handleCtxClearChat()">
+                            <i class="fa-solid fa-broom"></i> <span>Clear Messages</span>
+                        </button>
+                        <button type="button" class="ctx-item danger" onclick="handleCtxDeleteChat()">
+                            <i class="fa-solid fa-trash-can"></i> <span>Delete Chat</span>
+                        </button>
                     </div>
                 </div>
 
                 <!-- Inject Django Context -->
+
                 <script>
                     const CURRENT_USER = {
                         username: "{{ request.user.username|escapejs }}",

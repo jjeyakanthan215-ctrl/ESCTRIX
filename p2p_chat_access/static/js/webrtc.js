@@ -52,10 +52,16 @@ async function startCall(type) {
 
 // 2. Incoming Call from Server
 apiEvents.onIncomingCall = (data) => {
+    if (typeof isUserCallMuted === 'function' && isUserCallMuted(data.caller_username)) {
+        console.log(`Incoming call from @${data.caller_username} muted.`);
+        try { sendToServer('CALL_REJECT', { caller_username: data.caller_username }); } catch(e){}
+        return;
+    }
     currentCallPeer = data.caller_username;
     document.getElementById('incoming-name').innerText = data.caller_username;
     incomingModal.classList.remove('hidden');
 };
+
 
 function acceptCall() {
     incomingModal.classList.add('hidden');
