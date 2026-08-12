@@ -1245,7 +1245,9 @@ async function viewChatParticipantProfile() {
         const avatarEl = document.getElementById('modal-avatar');
         if (avatarEl) {
             avatarEl.src = '/static/img/logo.png';
-            avatarEl.style.objectFit = 'cover';
+            avatarEl.style.objectFit = 'contain';
+            avatarEl.style.background = '#08090c';
+            avatarEl.style.padding = '5px';
         }
         document.getElementById('modal-displayname').innerHTML = `ESCTRIX <i class="fa-solid fa-circle-check" style="color:#0066ff;" title="Verified Channel"></i>`;
         document.getElementById('modal-username').innerText = '@esctrix_official';
@@ -2374,7 +2376,12 @@ async function openEsctrixOfficialChannel() {
     
     // Header
     const avatarEl = document.getElementById('session-avatar');
-    if (avatarEl) avatarEl.src = '/static/img/logo.png';
+    if (avatarEl) {
+        avatarEl.src = '/static/img/logo.png';
+        avatarEl.style.objectFit = 'contain';
+        avatarEl.style.background = '#08090c';
+        avatarEl.style.padding = '3px';
+    }
     
     document.getElementById('session-name').innerHTML = `ESCTRIX <i class="fa-solid fa-circle-check" style="color:#0066ff; font-size:0.88rem;" title="Official Verified Channel"></i>`;
     document.getElementById('session-status').innerText = 'Official System Updates & Announcements';
