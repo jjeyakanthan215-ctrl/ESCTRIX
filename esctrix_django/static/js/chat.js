@@ -1571,8 +1571,15 @@ async function loadHelpTickets() {
     }
 }
 
-// --- APP CHAT THEME SELECTOR ---
+// --- APP CHAT THEME SELECTOR & CUSTOM COLOR PALETTE ---
 function changeAppTheme(themeName) {
+    // Clear inline custom style overrides
+    document.documentElement.style.removeProperty('--accent');
+    document.documentElement.style.removeProperty('--accent-hover');
+    document.documentElement.style.removeProperty('--text-active');
+    document.documentElement.style.removeProperty('--accent-glow');
+    document.documentElement.style.removeProperty('--accent-subtle');
+
     if (themeName === 'default') {
         document.documentElement.removeAttribute('data-theme');
         localStorage.removeItem('esctrix_theme');
@@ -1590,6 +1597,69 @@ function changeAppTheme(themeName) {
     if (activeCard) {
         activeCard.style.border = '2px solid var(--accent)';
     }
+
+    showToast('Theme Updated', `Theme changed to ${themeName.toUpperCase()}`, 'success');
+}
+
+function applyCustomColorTheme(hexColor) {
+    if (!hexColor || !hexColor.startsWith('#')) return;
+    
+    document.documentElement.setAttribute('data-theme', 'custom');
+    document.documentElement.style.setProperty('--accent', hexColor);
+    document.documentElement.style.setProperty('--accent-hover', adjustColorBrightness(hexColor, -15));
+    document.documentElement.style.setProperty('--text-active', adjustColorBrightness(hexColor, 25));
+    document.documentElement.style.setProperty('--accent-glow', hexToRgba(hexColor, 0.35));
+    document.documentElement.style.setProperty('--accent-subtle', hexToRgba(hexColor, 0.15));
+    
+    localStorage.setItem('esctrix_theme', hexColor);
+
+    // Update UI color picker input and hex text input
+    const picker = document.getElementById('custom-color-picker');
+    if (picker) picker.value = hexColor;
+    
+    const dot = document.getElementById('custom-color-preview-dot');
+    if (dot) dot.style.background = hexColor;
+    
+    const hexInput = document.getElementById('custom-hex-input');
+    if (hexInput) hexInput.value = hexColor;
+
+    // Reset card highlight borders
+    document.querySelectorAll('.theme-card').forEach(card => {
+        card.style.border = '1px solid var(--border-color)';
+    });
+
+    showToast('Custom Theme', `Theme color updated to ${hexColor.toUpperCase()}`, 'success');
+}
+
+function hexToRgba(hex, alpha) {
+    let c = hex.replace('#', '');
+    if (c.length === 3) c = c.split('').map(x => x + x).join('');
+    const num = parseInt(c, 16);
+    const r = (num >> 16) & 255;
+    const g = (num >> 8) & 255;
+    const b = num & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function adjustColorBrightness(hex, percent) {
+    let c = hex.replace('#', '');
+    if (c.length === 3) c = c.split('').map(x => x + x).join('');
+    let num = parseInt(c, 16);
+    let amt = Math.round(2.55 * percent);
+    let R = (num >> 16) + amt;
+    let G = (num >> 8 & 0x00FF) + amt;
+    let B = (num & 0x0000FF) + amt;
+    return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 + (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 + (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+}
+
+// Restore saved theme on load
+const savedTheme = localStorage.getItem('esctrix_theme');
+if (savedTheme) {
+    if (savedTheme.startsWith('#')) {
+        applyCustomColorTheme(savedTheme);
+    } else {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    }
 }
 
 // Initial loads
@@ -1597,6 +1667,12 @@ window.addEventListener('DOMContentLoaded', () => {
     loadPendingRequests();
     setInterval(loadPendingRequests, 10000);
     renderAvatarPresetGrid();
+    
+    // Restore inputs if custom color is saved
+    const saved = localStorage.getItem('esctrix_theme');
+    if (saved && saved.startsWith('#')) {
+        applyCustomColorTheme(saved);
+    }
 });
 
 // --- ANIMATED AVATAR PICKER GALLERY ---

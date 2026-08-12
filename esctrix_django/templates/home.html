@@ -319,31 +319,66 @@
                 <!-- Sub Option: Theme Settings -->
                 <div id="set-theme" class="setting-form-pane hidden">
                     <h3>Select Chat Theme</h3>
-                    <p class="setting-desc">Personalize the styling and accent colors of your chat workspace.</p>
+                    <p class="setting-desc">Personalize your chat workspace with preset themes or create your custom color theme.</p>
                     
-                    <div class="theme-selection-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px;">
+                    <h4 style="margin-top: 15px; font-size: 0.9rem; font-weight: 600; color: var(--text-secondary);">Preset Themes</h4>
+                    <div class="theme-selection-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 10px;">
                         <!-- Cyber Purple (Default) -->
-                        <div class="theme-card" id="theme-card-default" onclick="changeAppTheme('default')" style="background: #0f1012; border: 2px solid var(--accent); border-radius: var(--radius-sm); padding: 15px; cursor: pointer; text-align: center; transition: transform 0.2s;">
-                            <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #00d2ff, #7c3aed); margin: 0 auto 10px;"></div>
-                            <span style="font-weight: 600; font-size: 0.85rem;">Cyber Purple (Default)</span>
+                        <div class="theme-card" id="theme-card-default" onclick="changeAppTheme('default')" style="background: #0f1012; border: 2px solid var(--accent); border-radius: var(--radius-sm); padding: 12px; cursor: pointer; text-align: center; transition: transform 0.2s;">
+                            <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #00d2ff, #7c3aed); margin: 0 auto 8px;"></div>
+                            <span style="font-weight: 600; font-size: 0.82rem;">Cyber Purple (Default)</span>
                         </div>
                         
                         <!-- Sunset Rose -->
-                        <div class="theme-card" id="theme-card-sunset" onclick="changeAppTheme('sunset')" style="background: #0f1012; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 15px; cursor: pointer; text-align: center; transition: transform 0.2s;">
-                            <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #dc2743, #cc2366); margin: 0 auto 10px;"></div>
-                            <span style="font-weight: 600; font-size: 0.85rem;">Sunset Rose</span>
+                        <div class="theme-card" id="theme-card-sunset" onclick="changeAppTheme('sunset')" style="background: #0f1012; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; cursor: pointer; text-align: center; transition: transform 0.2s;">
+                            <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #dc2743, #cc2366); margin: 0 auto 8px;"></div>
+                            <span style="font-weight: 600; font-size: 0.82rem;">Sunset Rose</span>
                         </div>
                         
                         <!-- Emerald Forest -->
-                        <div class="theme-card" id="theme-card-emerald" onclick="changeAppTheme('emerald')" style="background: #0f1012; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 15px; cursor: pointer; text-align: center; transition: transform 0.2s;">
-                            <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #11998e, #38ef7d); margin: 0 auto 10px;"></div>
-                            <span style="font-weight: 600; font-size: 0.85rem;">Emerald Forest</span>
+                        <div class="theme-card" id="theme-card-emerald" onclick="changeAppTheme('emerald')" style="background: #0f1012; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; cursor: pointer; text-align: center; transition: transform 0.2s;">
+                            <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #11998e, #38ef7d); margin: 0 auto 8px;"></div>
+                            <span style="font-weight: 600; font-size: 0.82rem;">Emerald Forest</span>
                         </div>
                         
                         <!-- Crimson Glow -->
-                        <div class="theme-card" id="theme-card-crimson" onclick="changeAppTheme('crimson')" style="background: #0f1012; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 15px; cursor: pointer; text-align: center; transition: transform 0.2s;">
-                            <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #cb2d3e, #ef473a); margin: 0 auto 10px;"></div>
-                            <span style="font-weight: 600; font-size: 0.85rem;">Crimson Glow</span>
+                        <div class="theme-card" id="theme-card-crimson" onclick="changeAppTheme('crimson')" style="background: #0f1012; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; cursor: pointer; text-align: center; transition: transform 0.2s;">
+                            <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #cb2d3e, #ef473a); margin: 0 auto 8px;"></div>
+                            <span style="font-weight: 600; font-size: 0.82rem;">Crimson Glow</span>
+                        </div>
+                    </div>
+
+                    <!-- CUSTOM COLOR PALETTE PICKER SECTION -->
+                    <div class="custom-theme-box" style="margin-top: 25px; padding: 18px; background: #0f1015; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                        <h4 style="font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-eye-dropper" style="color: var(--accent);"></i> Custom Color Palette Wheel
+                        </h4>
+                        <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px;">Pick any custom color from the circle palette wheel below or choose a quick swatch.</p>
+
+                        <!-- Circular Color Palette Input -->
+                        <div style="display: flex; align-items: center; gap: 15px; margin-top: 15px;">
+                            <div class="color-picker-circle-wrapper" style="position: relative; width: 50px; height: 50px; border-radius: 50%; background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red); padding: 4px; cursor: pointer; box-shadow: 0 0 14px var(--accent-glow);">
+                                <input type="color" id="custom-color-picker" value="#7c3aed" oninput="applyCustomColorTheme(this.value)" onchange="applyCustomColorTheme(this.value)" style="opacity: 0; width: 100%; height: 100%; cursor: pointer; border-radius: 50%;">
+                                <div id="custom-color-preview-dot" style="position: absolute; inset: 4px; border-radius: 50%; background: var(--accent); pointer-events: none; border: 2px solid #fff;"></div>
+                            </div>
+                            <div>
+                                <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-primary); display: block;">Selected Color Code</span>
+                                <input type="text" id="custom-hex-input" value="#7c3aed" oninput="if(/^#[0-9A-Fa-f]{6}$/.test(this.value)) applyCustomColorTheme(this.value)" style="background: #06070a; border: 1px solid var(--border-color); color: var(--text-primary); padding: 5px 10px; font-size: 0.82rem; border-radius: 4px; width: 110px; text-transform: uppercase; margin-top: 4px;">
+                            </div>
+                        </div>
+
+                        <!-- Quick Color Swatches Row -->
+                        <div style="margin-top: 15px;">
+                            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Quick Color Swatches</span>
+                            <div style="display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap;">
+                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#0066ff')" style="width: 28px; height: 28px; border-radius: 50%; background: #0066ff; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;" title="Electric Blue"></button>
+                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#00f2fe')" style="width: 28px; height: 28px; border-radius: 50%; background: #00f2fe; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;" title="Neon Cyan"></button>
+                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#00ff88')" style="width: 28px; height: 28px; border-radius: 50%; background: #00ff88; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;" title="Emerald Green"></button>
+                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#ffb700')" style="width: 28px; height: 28px; border-radius: 50%; background: #ffb700; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;" title="Amber Gold"></button>
+                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#ff007f')" style="width: 28px; height: 28px; border-radius: 50%; background: #ff007f; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;" title="Hot Pink"></button>
+                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#8b5cf6')" style="width: 28px; height: 28px; border-radius: 50%; background: #8b5cf6; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;" title="Violet Purple"></button>
+                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#ef4444')" style="width: 28px; height: 28px; border-radius: 50%; background: #ef4444; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;" title="Ruby Red"></button>
+                            </div>
                         </div>
                     </div>
                 </div>
