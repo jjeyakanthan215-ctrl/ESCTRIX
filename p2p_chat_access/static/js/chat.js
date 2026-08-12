@@ -1244,10 +1244,10 @@ async function viewChatParticipantProfile() {
         // ESCTRIX Official Channel Verified Profile Modal
         const avatarEl = document.getElementById('modal-avatar');
         if (avatarEl) {
-            avatarEl.src = '/static/img/logo.png?v=3';
+            avatarEl.src = '/static/img/logo.png?v=4';
             avatarEl.style.objectFit = 'contain';
-            avatarEl.style.background = '#08090c';
-            avatarEl.style.padding = '5px';
+            avatarEl.style.background = 'rgba(124, 58, 237, 0.15)';
+            avatarEl.style.padding = '6px';
         }
         document.getElementById('modal-displayname').innerHTML = `ESCTRIX <i class="fa-solid fa-circle-check" style="color:#0066ff;" title="Verified Channel"></i>`;
         document.getElementById('modal-username').innerText = '@esctrix_official';
@@ -2382,9 +2382,9 @@ async function openEsctrixOfficialChannel() {
     // Header
     const avatarEl = document.getElementById('session-avatar');
     if (avatarEl) {
-        avatarEl.src = '/static/img/logo.png?v=3';
+        avatarEl.src = '/static/img/logo.png?v=4';
         avatarEl.style.objectFit = 'contain';
-        avatarEl.style.background = '#08090c';
+        avatarEl.style.background = 'rgba(124, 58, 237, 0.15)';
         avatarEl.style.padding = '3px';
     }
     
