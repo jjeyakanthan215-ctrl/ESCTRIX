@@ -1258,14 +1258,34 @@ async function viewUserProfile(username) {
             const actionWrap = document.getElementById('modal-friend-action-btn-wrap');
             actionWrap.innerHTML = '';
             const friendBtn = document.createElement('button');
-            friendBtn.className = 'btn-modal-action btn-primary';
             
             if (data.is_friend) {
-                friendBtn.innerText = 'Friends';
-                friendBtn.disabled = true;
+                friendBtn.innerText = 'Unfriend';
+                friendBtn.className = 'btn-modal-action btn-danger';
+                friendBtn.onclick = () => {
+                    removeFriend(username);
+                    closeUserProfileModal();
+                };
+                actionWrap.appendChild(friendBtn);
+            } else if (data.is_request_sent) {
+                friendBtn.innerText = 'Cancel Request';
+                friendBtn.className = 'btn-modal-action btn-secondary';
+                friendBtn.onclick = () => {
+                    cancelFriendRequest(username);
+                    closeUserProfileModal();
+                };
+                actionWrap.appendChild(friendBtn);
+            } else if (data.is_request_received) {
+                friendBtn.innerText = 'Accept Request';
+                friendBtn.className = 'btn-modal-action btn-success';
+                friendBtn.onclick = () => {
+                    acceptFriendRequest(username);
+                    closeUserProfileModal();
+                };
                 actionWrap.appendChild(friendBtn);
             } else {
                 friendBtn.innerText = 'Add Friend';
+                friendBtn.className = 'btn-modal-action btn-primary';
                 friendBtn.onclick = () => {
                     sendFriendRequest(username);
                     closeUserProfileModal();
@@ -1359,11 +1379,16 @@ async function searchUsers(query) {
                 if (u.status === 'none') {
                     buttonHTML = `<button class="btn-small" onclick="sendFriendRequest('${u.username}')">Add</button>`;
                 } else if (u.status === 'sent') {
-                    buttonHTML = `<button class="btn-small btn-secondary" disabled>Sent</button>`;
+                    buttonHTML = `<button class="btn-small btn-secondary" onclick="cancelFriendRequest('${u.username}')" title="Cancel Request">Cancel</button>`;
                 } else if (u.status === 'received') {
                     buttonHTML = `<button class="btn-small" onclick="acceptFriendRequest('${u.username}')">Accept</button>`;
                 } else if (u.status === 'friends') {
-                    buttonHTML = `<button class="btn-small btn-secondary" onclick="viewUserProfile('${u.username}')">Profile</button>`;
+                    buttonHTML = `
+                        <div style="display:flex; gap:4px;">
+                            <button class="btn-small btn-secondary" onclick="viewUserProfile('${u.username}')">Profile</button>
+                            <button class="btn-small btn-danger" onclick="removeFriend('${u.username}')" title="Unfriend"><i class="fa-solid fa-user-minus"></i></button>
+                        </div>
+                    `;
                 }
                 
                 div.innerHTML = `
@@ -1399,6 +1424,57 @@ async function sendFriendRequest(targetUsername) {
             debounceSearch();
         } else {
             showToast('Friend Request Error', data.error, 'error');
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function cancelFriendRequest(targetUsername) {
+    try {
+        const response = await fetch('/api/friend-request/cancel/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ target_username: targetUsername })
+        });
+        const data = await response.json();
+        if (data.success) {
+            showToast('Friend Request', `Friend request to @${targetUsername} cancelled.`, 'info');
+            saveNotification('Request Cancelled', `Cancelled friend request to @${targetUsername}`, 'info', 'fa-user-xmark');
+            debounceSearch();
+            sendToServer('FRIEND_LIST');
+        } else {
+            showToast('Friend Request Error', data.error || 'Failed to cancel request', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function removeFriend(targetUsername) {
+    try {
+        const response = await fetch('/api/friend/remove/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ target_username: targetUsername })
+        });
+        const data = await response.json();
+        if (data.success) {
+            showToast('Friend Removed', `Removed @${targetUsername} from your friends list.`, 'info');
+            saveNotification('Friend Removed', `Removed @${targetUsername} from friends list`, 'info', 'fa-user-minus');
+            debounceSearch();
+            sendToServer('FRIEND_LIST');
+            if (currentActiveChatUser === targetUsername) {
+                closeChat();
+            }
+        } else {
+            showToast('Friendship Error', data.error || 'Failed to remove friend', 'error');
         }
     } catch (err) {
         console.error(err);

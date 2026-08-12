@@ -293,6 +293,36 @@ def api_change_password(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
+def api_cancel_friend_request(request):
+    if not request.user.is_authenticated or request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=401)
+    try:
+        data = json.loads(request.body)
+        target_username = data.get('target_username')
+        target_user = CustomUser.objects.get(username=target_username)
+        
+        Friendship.objects.filter(
+            user=request.user, friend=target_user, status='pending'
+        ).delete()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+def api_remove_friend(request):
+    if not request.user.is_authenticated or request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=401)
+    try:
+        data = json.loads(request.body)
+        target_username = data.get('target_username')
+        target_user = CustomUser.objects.get(username=target_username)
+        
+        Friendship.objects.filter(
+            Q(user=request.user, friend=target_user) | Q(user=target_user, friend=request.user)
+        ).delete()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
 def api_get_user_profile(request):
     if not request.user.is_authenticated:
         return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=401)
@@ -302,6 +332,8 @@ def api_get_user_profile(request):
         is_friend = Friendship.objects.filter(
             Q(user=request.user, friend=u, status='accepted') | Q(user=u, friend=request.user, status='accepted')
         ).exists()
+        is_request_sent = Friendship.objects.filter(user=request.user, friend=u, status='pending').exists()
+        is_request_received = Friendship.objects.filter(user=u, friend=request.user, status='pending').exists()
         is_blocked = BlockList.objects.filter(user=request.user, blocked_user=u).exists()
         
         return JsonResponse({
@@ -314,6 +346,8 @@ def api_get_user_profile(request):
                 'date_of_birth': u.date_of_birth.strftime('%Y-%m-%d') if u.date_of_birth else None,
             },
             'is_friend': is_friend,
+            'is_request_sent': is_request_sent,
+            'is_request_received': is_request_received,
             'is_blocked': is_blocked
         })
     except CustomUser.DoesNotExist:
