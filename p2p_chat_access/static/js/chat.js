@@ -6,6 +6,7 @@ let currentActiveChatUser = null;
 let currentActiveGroupId = null;
 let notifiedRequests = new Set();
 let isInitialLoad = true;
+let acceptedFriends = [];
 
 let chatMessages = {}; // Local history for 1-on-1: {username: [{from, text, timestamp}]}
 let groupMessages = {}; // Local history for groups: {group_id: [{from, text, timestamp}]}
@@ -259,6 +260,7 @@ async function handleLogout() {
 
 // --- CONTACTS RENDERING ---
 apiEvents.onFriendsList = (friends) => {
+    acceptedFriends = friends;
     const storiesEl = document.getElementById('stories-bar');
     const offlineEl = document.getElementById('feed-offline');
     
