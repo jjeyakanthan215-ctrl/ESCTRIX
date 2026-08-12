@@ -928,6 +928,17 @@ UPDATE 26: TELEGRAM-STYLE IN-APP MEDIA VIEWER & PROFILE PRIVACY
       * Removed Date of Birth display from public user profile modals
       * Date of Birth is strictly scoped to internal account verification and forgot password authentication
 
+------------------------------------------------------------------------
+UPDATE 27: UI POLISH & MOBILE RESPONSIVENESS FIXES
+------------------------------------------------------------------------
+  - 3-Dot Options & Context Menu Polish (chat.js):
+      * Added global document click listener to smoothly close the 3-dot context menu when tapping outside the menu area, preventing UI locks on mobile and desktop
+  - Official Chat Mobile Rendering Fix (chat.js):
+      * Updated openEsctrixOfficialChannel() logic to inject mobile-specific CSS classes, ensuring the Official System Updates channel displays properly over the mobile friend list
+  - Profile Icon & Settings Enhancements (home.html):
+      * Display user's selected Animated Avatar directly inside the mobile bottom navigation bar instead of a generic silhouette icon
+      * Added a dedicated highlighted "Logout" button natively within the settings sub-navigation pane for streamlined account access
+
 
 ================================================================================
                     FUTURE UPGRADES & RECOMMENDED ROADMAP
