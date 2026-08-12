@@ -856,4 +856,17 @@ UPDATE 19: CANCEL FRIEND REQUEST & REMOVE FRIEND (UNFRIEND)
       * Real-time activity log notification triggers on request cancellation or unfriend
 
 ================================================================================
+                    FUTURE UPGRADES & RECOMMENDED ROADMAP
+================================================================================
+
+  1. 🎤 Voice Notes & Audio Messages (Web Audio Recorder + AES-GCM encrypted playback)
+  2. 📹 WebRTC Full Voice & Video Calling UI (Full-screen call overlays & mute controls)
+  3. 🔒 In-App Passcode / PIN Lock (4-digit security PIN on session return)
+  4. 📸 Instagram-Style 24-Hour Stories (Encrypted photo/text disappearing status updates)
+  5. 📱 PWA Native App Installation (Manifest.json + Service Worker for mobile home screen)
+  6. 📌 Message Pinning & Starred Messages (Pin important messages to header)
+  7. 🔊 UI Audio Effects & Controls (Customizable message send/receive chimes)
+
+================================================================================
                                  END OF DOCUMENT
+
