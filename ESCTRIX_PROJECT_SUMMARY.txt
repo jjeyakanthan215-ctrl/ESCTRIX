@@ -805,5 +805,55 @@ UPDATE 14: IN-APP TOAST NOTIFICATIONS & ANIMATED AVATARS GALLERY
       * 🎲 Randomize Avatar button: generates random seeds with spin animation
       * Fills and saves avatar_index seamlessly
 
+------------------------------------------------------------------------
+UPDATE 15: SETTINGS SYSTEM NAVIGATION & PARTIAL UPDATE REFACTOR
+------------------------------------------------------------------------
+  - Settings Navigation & Workspace Toggling:
+      * Fixed pane visibility rules so switching main tabs automatically hides
+        settings forms and restores active chat panels or placeholders
+      * Explicit inline display controls for 100% reliable pane rendering
+  - Partial Profile Update Protection:
+      * Updated api_update_profile view so single field updates (e.g. avatar seed)
+        do not overwrite existing bio or date of birth values
+  - Change Password Security:
+      * Added Confirm Password validation field and 8-character min length check
+
+------------------------------------------------------------------------
+UPDATE 16: INTERACTIVE CUSTOM COLOR PALETTE CIRCLE PICKER
+------------------------------------------------------------------------
+  - Circular Color Palette Wheel Picker (Settings > Chat Theme):
+      * Added a circular color wheel picker to choose any custom accent color
+      * Hex code text input with real-time preview and validation
+      * 7 vibrant quick swatches (Electric Blue, Neon Cyan, Emerald Green,
+        Amber Gold, Hot Pink, Violet, Ruby Red)
+      * Dynamic CSS variable updates (--accent, --accent-hover, --text-active,
+        --accent-glow, --accent-subtle) saved to localStorage
+
+------------------------------------------------------------------------
+UPDATE 17: HORIZONTALLY SCROLLABLE AVATAR STYLE TABS
+------------------------------------------------------------------------
+  - Style Tabs Horizontal Navigation Controls:
+      * Left (<) and Right (>) arrow buttons to scroll through style categories
+      * Custom styled horizontal scrollbar matching current accent theme
+      * Touch-swipe support and non-wrapping flex items for all screen sizes
+
+------------------------------------------------------------------------
+UPDATE 18: PERSISTENT ACCOUNT ACTIVITY & SECURITY LOG ENGINE
+------------------------------------------------------------------------
+  - Account & Security Activity Log (Notifications Tab):
+      * Logs key account events: session logins, password changes, profile edits,
+        avatar updates, support tickets, and friend requests
+      * Clear Log button to wipe activity history
+      * Silent theme restoration on page load to prevent duplicate toast alerts
+      * Activity badge notification dot updates dynamically
+
+------------------------------------------------------------------------
+UPDATE 19: CANCEL FRIEND REQUEST & REMOVE FRIEND (UNFRIEND)
+------------------------------------------------------------------------
+  - Cancel Sent Request & Unfriend Features:
+      * Backend APIs: POST /api/friend-request/cancel/ and POST /api/friend/remove/
+      * Search results & Profile Modal buttons updated with Cancel and Unfriend actions
+      * Real-time activity log notification triggers on request cancellation or unfriend
+
 ================================================================================
                                  END OF DOCUMENT
