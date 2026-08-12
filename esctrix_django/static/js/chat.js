@@ -1488,11 +1488,7 @@ async function loadPendingRequests() {
     }
 }
 
-// Restore saved theme on load
-const savedTheme = localStorage.getItem('esctrix_theme');
-if (savedTheme) {
-    document.documentElement.setAttribute('data-theme', savedTheme);
-}
+
 
 // --- HELP DESK SUPPORT SYSTEM ---
 async function submitHelpTicket(e) {
