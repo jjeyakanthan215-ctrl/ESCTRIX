@@ -738,8 +738,9 @@ def api_get_stories(request):
     stories = UserStory.objects.filter(
         Q(is_global=True) |
         Q(user=request.user) |
-        (Q(user_id__in=friend_ids) & ~Q(privacy='private')) |
-        Q(privacy='public'),
+        Q(user_id__in=friend_ids) |
+        Q(privacy='public') |
+        Q(privacy='friends'),
         expires_at__gt=now
     ).select_related('user').order_by('-created_at')
     

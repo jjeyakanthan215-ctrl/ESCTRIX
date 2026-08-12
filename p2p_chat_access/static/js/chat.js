@@ -1256,6 +1256,9 @@ async function viewChatParticipantProfile() {
         document.getElementById('modal-mutual-text').innerText = 'Official Channel';
         document.getElementById('modal-birthday').innerHTML = `<i class="fa-solid fa-shield-halved" style="color:var(--accent);"></i> Platform Verified Service`;
 
+        const blockBtn = document.getElementById('modal-block-btn');
+        if (blockBtn) blockBtn.style.display = 'none';
+
         const actionWrap = document.getElementById('modal-friend-action-btn-wrap');
         if (actionWrap) {
             actionWrap.innerHTML = `
@@ -1269,6 +1272,8 @@ async function viewChatParticipantProfile() {
 }
 
 async function viewUserProfile(username) {
+    const blockBtn = document.getElementById('modal-block-btn');
+    if (blockBtn) blockBtn.style.display = 'block';
     modalProfileUsername = username;
     
     // Set loading preview state
