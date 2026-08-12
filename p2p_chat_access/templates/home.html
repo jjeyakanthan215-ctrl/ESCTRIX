@@ -204,6 +204,12 @@
                     <button class="setting-nav-item" onclick="switchSettingOption('set-theme')">
                         <i class="fa-solid fa-palette"></i> Chat Theme
                     </button>
+                    <form method="post" action="{% url 'logout' %}" style="margin-top: 15px;">
+                        {% csrf_token %}
+                        <button type="submit" class="setting-nav-item" style="color: var(--danger); width: 100%; justify-content: flex-start; border: 1px solid rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05);">
+                            <i class="fa-solid fa-right-from-bracket"></i> Logout
+                        </button>
+                    </form>
                 </div>
             </div>
 
@@ -656,7 +662,7 @@
                 <i class="fa-solid fa-gear"></i>
             </button>
             <button class="mob-nav-item" onclick="switchTab('profile-tab')">
-                <i class="fa-regular fa-circle-user"></i>
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ request.user.avatar_index }}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
             </button>
         </nav>
 
@@ -896,9 +902,9 @@
                     };
                 </script>
 
-                <script src="{% static 'js/api.js' %}?v=16"></script>
-                <script src="{% static 'js/webrtc.js' %}?v=16"></script>
-                <script src="{% static 'js/chat.js' %}?v=16"></script>
+                <script src="{% static 'js/api.js' %}?v=17"></script>
+                <script src="{% static 'js/webrtc.js' %}?v=17"></script>
+                <script src="{% static 'js/chat.js' %}?v=17"></script>
 
 </body>
 

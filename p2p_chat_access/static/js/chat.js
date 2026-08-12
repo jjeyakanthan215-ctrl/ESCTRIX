@@ -2666,6 +2666,12 @@ async function openEsctrixOfficialChannel() {
     const msgContainer = document.getElementById('chat-messages');
     msgContainer.innerHTML = '<p class="empty-placeholder">Loading official updates...</p>';
 
+    // On mobile, show chat full width
+    const sub = document.querySelector('.ig-sub-panel');
+    if (sub) sub.classList.add('mobile-hidden');
+    const main = document.querySelector('.ig-main-content');
+    if (main) main.classList.add('mobile-active');
+
     try {
         const response = await fetch('/api/system/broadcasts/');
         const data = await response.json();
@@ -2977,4 +2983,16 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
+    window.addEventListener('online', () => {
+        if (!ws || ws.readyState !== WebSocket.OPEN) connectWebSocket();
+    });
 
+// Close context menus when clicking outside
+document.addEventListener('click', (e) => {
+    const contactMenu = document.getElementById('contact-context-menu');
+    if (contactMenu && !contactMenu.classList.contains('hidden')) {
+        if (!contactMenu.contains(e.target) && !e.target.closest('.btn-contact-dots') && !e.target.closest('.list-item')) {
+            closeContactContextMenu();
+        }
+    }
+});
