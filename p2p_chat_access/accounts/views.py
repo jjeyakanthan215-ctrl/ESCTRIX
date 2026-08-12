@@ -6,7 +6,7 @@ import json
 import re
 from datetime import timedelta, datetime
 from django.utils import timezone
-from .models import CustomUser, Friendship, BlockList, HelpTicket, GuestContactRequest
+from .models import CustomUser, Friendship, BlockList, HelpTicket, GuestContactRequest, UserStory
 from chat.models import ChatGroup, ChatGroupMember, ChatMessage, ChatGroupMessage, MessageReaction
 
 @ensure_csrf_cookie
@@ -674,6 +674,61 @@ def api_check_username(request):
         
     exists = CustomUser.objects.filter(username__iexact=username).exists()
     return JsonResponse({'available': not exists})
+
+def api_create_story(request):
+    if not request.user.is_authenticated or request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=401)
+    try:
+        data = json.loads(request.body)
+        caption = data.get('caption', '').strip()
+        media_data = data.get('media_data', '').strip()
+        bg_color = data.get('bg_color', '#7c3aed').strip()
+        
+        expires = timezone.now() + timedelta(hours=24)
+        
+        story = UserStory.objects.create(
+            user=request.user,
+            caption=caption,
+            media_data=media_data,
+            bg_color=bg_color,
+            expires_at=expires
+        )
+        return JsonResponse({'success': True, 'story_id': story.id})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+def api_get_stories(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=401)
+    
+    now = timezone.now()
+    # Get user's accepted friends
+    friend_ids_1 = list(Friendship.objects.filter(user=request.user, status='accepted').values_list('friend_id', flat=True))
+    friend_ids_2 = list(Friendship.objects.filter(friend=request.user, status='accepted').values_list('user_id', flat=True))
+    
+    all_user_ids = set(friend_ids_1).union(set(friend_ids_2))
+    all_user_ids.add(request.user.id)
+    
+    stories = UserStory.objects.filter(
+        user_id__in=all_user_ids,
+        expires_at__gt=now
+    ).select_related('user').order_by('-created_at')
+    
+    results = []
+    for s in stories:
+        results.append({
+            'id': s.id,
+            'username': s.user.username,
+            'display_name': s.user.display_name,
+            'avatar_index': s.user.avatar_index,
+            'caption': s.caption,
+            'media_data': s.media_data,
+            'bg_color': s.bg_color,
+            'created_at': s.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'is_self': s.user.id == request.user.id
+        })
+        
+    return JsonResponse({'success': True, 'stories': results})
 
 
 

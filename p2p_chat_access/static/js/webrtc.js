@@ -188,4 +188,77 @@ apiEvents.onCallHangup = (data) => {
     endCall(true); // Remote user hung up
 };
 
+// --- CALL CONTROLS: MUTE, CAMERA, SCREEN SHARE ---
+let isMicMuted = false;
+let isCameraOff = false;
+let isScreenSharing = false;
+
+function toggleMuteMic() {
+    if (!localStream) return;
+    const audioTrack = localStream.getAudioTracks()[0];
+    if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        isMicMuted = !audioTrack.enabled;
+        const btn = document.getElementById('call-btn-mute');
+        if (btn) {
+            btn.classList.toggle('active', isMicMuted);
+            btn.innerHTML = isMicMuted ? '<i class="fa-solid fa-microphone-slash"></i>' : '<i class="fa-solid fa-microphone"></i>';
+        }
+        showToast('Call Control', isMicMuted ? 'Microphone Muted' : 'Microphone Unmuted', 'info');
+    }
+}
+
+function toggleVideoCamera() {
+    if (!localStream) return;
+    const videoTrack = localStream.getVideoTracks()[0];
+    if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        isCameraOff = !videoTrack.enabled;
+        const btn = document.getElementById('call-btn-cam');
+        if (btn) {
+            btn.classList.toggle('active', isCameraOff);
+            btn.innerHTML = isCameraOff ? '<i class="fa-solid fa-video-slash"></i>' : '<i class="fa-solid fa-video"></i>';
+        }
+        showToast('Call Control', isCameraOff ? 'Camera Disabled' : 'Camera Enabled', 'info');
+    }
+}
+
+async function shareScreenStream() {
+    if (!peerConnection) return;
+    try {
+        if (!isScreenSharing) {
+            const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            const screenTrack = screenStream.getVideoTracks()[0];
+            
+            const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+            if (sender) {
+                sender.replaceTrack(screenTrack);
+            }
+            if (localVideoEl) localVideoEl.srcObject = screenStream;
+            isScreenSharing = true;
+            
+            screenTrack.onended = () => {
+                stopScreenShare();
+            };
+            showToast('Screen Share', 'Screen sharing started', 'info');
+        } else {
+            stopScreenShare();
+        }
+    } catch (e) {
+        console.error("Screen share error", e);
+    }
+}
+
+function stopScreenShare() {
+    if (!peerConnection || !localStream) return;
+    const videoTrack = localStream.getVideoTracks()[0];
+    const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+    if (sender && videoTrack) {
+        sender.replaceTrack(videoTrack);
+    }
+    if (localVideoEl) localVideoEl.srcObject = localStream;
+    isScreenSharing = false;
+    showToast('Screen Share', 'Screen sharing stopped', 'info');
+}
+
 window.addEventListener('DOMContentLoaded', initWebRTC);

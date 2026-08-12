@@ -6,9 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESCTRIX | Messages & Connections</title>
     <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
+    <link rel="manifest" href="{% static 'manifest.json' %}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=10">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=11">
 </head>
 <body>
     <div id="app" class="ig-app-layout">
@@ -54,11 +55,16 @@
                 <div class="panel-title-header">
                     <h3>Messages</h3>
                 </div>
-                <!-- Online Friends Stories -->
-                <div class="stories-wrapper">
-                    <h4>Active Friends</h4>
-                    <div class="stories-bar" id="stories-bar">
-                        <!-- Injected via JS -->
+                <!-- 24-Hour Stories Bar -->
+                <div class="stories-wrapper" style="padding-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding: 0 15px;">
+                        <h4 style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 700; text-transform: uppercase;">24h Stories</h4>
+                        <button type="button" onclick="openAddStoryModal()" style="background: transparent; border: none; color: var(--accent); font-size: 0.76rem; font-weight: 700; cursor: pointer;">
+                            <i class="fa-solid fa-plus"></i> Add Story
+                        </button>
+                    </div>
+                    <div class="stories-tray-container" id="stories-tray">
+                        <!-- Story circles injected here -->
                     </div>
                 </div>
                 <!-- Offline Friends List -->
@@ -212,6 +218,15 @@
                     </div>
                 </div>
 
+                <!-- Pinned Message Banner -->
+                <div id="pinned-message-banner" class="pinned-message-banner hidden">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-thumbtack" style="color: var(--accent);"></i>
+                        <span id="pinned-message-text" style="font-weight: 600;">Pinned Message</span>
+                    </div>
+                    <button type="button" onclick="unpinCurrentMessage()" style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+
                 <!-- Chat history messages container -->
                 <div id="chat-messages" class="tg-chat-box-background">
                     <!-- Chat bubbles injected here -->
@@ -222,6 +237,9 @@
                     <form class="chat-send-form" onsubmit="sendChatMessage(event)">
                         <button type="button" class="btn-chat-attach" onclick="triggerFileInput()" title="Attach File">
                             <i class="fa-solid fa-paperclip"></i>
+                        </button>
+                        <button type="button" class="btn-chat-attach voice-record-btn" id="voice-record-btn" onclick="toggleVoiceRecording()" title="Record Voice Note">
+                            <i class="fa-solid fa-microphone"></i>
                         </button>
                         <input type="file" id="chat-file-input" style="display:none" onchange="uploadAndSendFile()">
                         <input type="text" id="chat-input" placeholder="Message..." autocomplete="off" required oninput="handleTypingIndicator()">
@@ -306,6 +324,17 @@
                         <button type="submit" class="btn-ig-submit bg-danger">Update Password</button>
                     </form>
                     <p id="password-status" class="setting-status-text"></p>
+
+                    <!-- Passcode PIN Lock Setup -->
+                    <h4 style="margin-top: 25px; margin-bottom: 8px; font-size: 0.9rem; font-weight: 700; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                        <i class="fa-solid fa-lock" style="color: var(--accent);"></i> In-App Passcode PIN Lock
+                    </h4>
+                    <p class="setting-desc">Set a 4-digit security PIN. When leaving or returning to the app, a passcode overlay requires your PIN to reveal chats.</p>
+                    <div style="display: flex; gap: 8px; align-items: center; margin-top: 10px;">
+                        <input type="password" id="pin-lock-input" maxlength="4" placeholder="4-Digit PIN" style="width: 120px; padding: 9px; text-align: center; font-size: 1.1rem; letter-spacing: 4px; background: #121212; border: 1px solid var(--border-color); color: #fff; border-radius: 4px;">
+                        <button type="button" class="btn-ig-submit" onclick="savePasscodePin()" style="padding: 9px 14px;">Set PIN</button>
+                        <button type="button" class="btn-ig-submit bg-danger" onclick="disablePasscodePin()" style="padding: 9px 14px;">Disable</button>
+                    </div>
                 </div>
 
                 <!-- Sub Option: Block List -->
@@ -497,8 +526,11 @@
                     <video id="remote-video" autoplay playsinline></video>
                     <video id="local-video" autoplay playsinline muted></video>
                 </div>
-                <div class="call-controls" id="call-actions-active">
-                    <button class="btn-call-end" onclick="endCall()"><i class="fa-solid fa-phone-slash"></i></button>
+                <div class="call-controls-bar" id="call-actions-active">
+                    <button class="call-ctrl-btn" id="call-btn-mute" onclick="toggleMuteMic()" title="Mute Microphone"><i class="fa-solid fa-microphone"></i></button>
+                    <button class="call-ctrl-btn" id="call-btn-cam" onclick="toggleVideoCamera()" title="Toggle Camera"><i class="fa-solid fa-video"></i></button>
+                    <button class="call-ctrl-btn" id="call-btn-share" onclick="shareScreenStream()" title="Share Screen"><i class="fa-solid fa-desktop"></i></button>
+                    <button class="call-ctrl-btn btn-call-end" onclick="endCall()" style="background:#ef4444;" title="End Call"><i class="fa-solid fa-phone-slash"></i></button>
                 </div>
             </div>
         </div>
@@ -513,10 +545,68 @@
                     <button class="btn-incoming-decline" onclick="rejectCall()"><i class="fa-solid fa-xmark"></i> Decline</button>
                     <button class="btn-incoming-accept" onclick="acceptCall()"><i class="fa-solid fa-phone"></i> Accept</button>
                 </div>
+        <!-- ADD STORY MODAL -->
+        <div id="add-story-modal" class="modal hidden">
+            <div class="ig-group-modal-content">
+                <div class="modal-header-row">
+                    <h3>Add 24h Status Story</h3>
+                    <button class="close-modal-btn" onclick="closeAddStoryModal()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="group-input-wrap">
+                    <input type="text" id="story-caption-input" placeholder="Write a story update (max 280 chars)..." maxlength="280">
+                </div>
+                <div class="input-group" style="margin-top: 10px;">
+                    <label style="font-size: 0.78rem; color: var(--text-secondary);">Image Attachment (Optional)</label>
+                    <input type="file" id="story-file-input" accept="image/*" style="width: 100%; padding: 8px; background: #121212; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; margin-top: 4px;">
+                </div>
+                <button class="btn-create-group-action" onclick="submitNewStory()" style="margin-top: 15px;">Publish Story</button>
             </div>
         </div>
 
-    </div>
+        <!-- STORY VIEWER OVERLAY MODAL -->
+        <div id="story-viewer-modal" class="modal hidden">
+            <div class="ig-call-overlay" style="max-width: 360px; padding: 25px; border-radius: 16px;">
+                <button class="close-modal-btn" onclick="closeStoryViewer()" style="position: absolute; top: 15px; right: 15px;"><i class="fa-solid fa-xmark"></i></button>
+                <div style="display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 12px;">
+                    <img id="story-viewer-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=0" style="width: 40px; height: 40px; border-radius: 50%;">
+                    <div>
+                        <strong id="story-viewer-name" style="font-size: 0.9rem; color: #fff; display: block;">Username</strong>
+                        <span id="story-viewer-time" style="font-size: 0.7rem; color: var(--text-secondary);">Time</span>
+                    </div>
+                </div>
+                <div id="story-viewer-body" style="width: 100%; min-height: 180px; background: rgba(0,0,0,0.4); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; text-align: center;">
+                    <img id="story-viewer-image" style="max-width: 100%; max-height: 220px; border-radius: 8px; margin-bottom: 10px; display: none;">
+                    <p id="story-viewer-caption" style="font-size: 1rem; color: #fff; font-weight: 500;"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- PIN LOCK OVERLAY -->
+        <div id="pin-lock-overlay" class="pin-lock-overlay hidden">
+            <img src="{% static 'img/logo.png' %}" style="width: 54px; height: 54px;">
+            <h3 style="color: #fff; font-weight: 700; font-size: 1.2rem;">ESCTRIX Passcode Lock</h3>
+            <p style="color: var(--text-secondary); font-size: 0.82rem;">Enter your 4-digit PIN to access chats</p>
+            <div class="pin-dots-row">
+                <div class="pin-dot" id="dot-1"></div>
+                <div class="pin-dot" id="dot-2"></div>
+                <div class="pin-dot" id="dot-3"></div>
+                <div class="pin-dot" id="dot-4"></div>
+            </div>
+            <div class="pin-keypad">
+                <button class="pin-key" onclick="pressPinKey('1')">1</button>
+                <button class="pin-key" onclick="pressPinKey('2')">2</button>
+                <button class="pin-key" onclick="pressPinKey('3')">3</button>
+                <button class="pin-key" onclick="pressPinKey('4')">4</button>
+                <button class="pin-key" onclick="pressPinKey('5')">5</button>
+                <button class="pin-key" onclick="pressPinKey('6')">6</button>
+                <button class="pin-key" onclick="pressPinKey('7')">7</button>
+                <button class="pin-key" onclick="pressPinKey('8')">8</button>
+                <button class="pin-key" onclick="pressPinKey('9')">9</button>
+                <button class="pin-key" onclick="clearPinKey()"><i class="fa-solid fa-delete-left"></i></button>
+                <button class="pin-key" onclick="pressPinKey('0')">0</button>
+                <button class="pin-key" onclick="submitPinUnlock()"><i class="fa-solid fa-check"></i></button>
+            </div>
+        </div>
 
     <!-- Inject Django Context -->
     <script>

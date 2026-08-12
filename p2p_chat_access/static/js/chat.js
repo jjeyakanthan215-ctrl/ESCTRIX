@@ -1871,6 +1871,7 @@ window.addEventListener('DOMContentLoaded', () => {
     
     updateNotificationBadge();
     renderNotificationsTab();
+    loadStoriesTray();
 });
 
 // --- ANIMATED AVATAR PICKER GALLERY ---
@@ -1941,4 +1942,333 @@ function scrollAvatarTabs(amount) {
     if (container) {
         container.scrollBy({ left: amount, behavior: 'smooth' });
     }
+}
+
+// --- 1. PWA REGISTRATION & INSTALLATION ---
+let deferredPrompt = null;
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/js/sw.js').catch(err => console.log('SW registration failed:', err));
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const installBtn = document.getElementById('pwa-install-btn');
+    if (installBtn) installBtn.style.display = 'block';
+});
+
+function triggerPwaInstall() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+            showToast('PWA Install', 'ESCTRIX app installed successfully!', 'success');
+        }
+        deferredPrompt = null;
+    });
+}
+
+// --- 2. UI SOUND SYNTHESIZER ENGINE (Web Audio API) ---
+let soundEnabled = localStorage.getItem('esctrix_sound_enabled') !== 'false';
+
+function toggleSoundEffects() {
+    soundEnabled = !soundEnabled;
+    localStorage.setItem('esctrix_sound_enabled', soundEnabled);
+    const btn = document.getElementById('sound-toggle-btn');
+    if (btn) {
+        btn.innerHTML = soundEnabled ? '<i class="fa-solid fa-volume-high"></i> UI Sound Effects: Enabled' : '<i class="fa-solid fa-volume-xmark"></i> UI Sound Effects: Disabled';
+    }
+    showToast('Audio Settings', soundEnabled ? 'UI sound effects enabled' : 'UI sound effects muted', 'info');
+}
+
+function playUiSound(type) {
+    if (!soundEnabled) return;
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        const now = ctx.currentTime;
+        if (type === 'sent') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+            osc.start(now);
+            osc.stop(now + 0.12);
+        } else if (type === 'received') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.start(now);
+            osc.stop(now + 0.15);
+        }
+    } catch (e) {
+        // AudioContext silent fallback
+    }
+}
+
+// --- 3. PASSCODE / PIN LOCK ENGINE ---
+let enteredPin = '';
+
+function savePasscodePin() {
+    const input = document.getElementById('pin-lock-input');
+    const val = input ? input.value.trim() : '';
+    if (val.length !== 4 || isNaN(val)) {
+        showToast('PIN Error', 'Please enter a valid 4-digit numeric PIN.', 'error');
+        return;
+    }
+    localStorage.setItem(`esctrix_pin_${CURRENT_USER.username}`, btoa(val));
+    showToast('Security Updated', '4-Digit Passcode PIN Lock enabled!', 'success');
+    saveNotification('Passcode Lock', 'In-App Passcode PIN Lock enabled', 'security', 'fa-lock');
+    if (input) input.value = '';
+}
+
+function disablePasscodePin() {
+    localStorage.removeItem(`esctrix_pin_${CURRENT_USER.username}`);
+    showToast('Security Updated', 'Passcode PIN Lock disabled.', 'info');
+    saveNotification('Passcode Lock', 'In-App Passcode PIN Lock disabled', 'security', 'fa-lock-open');
+}
+
+function checkAutoPinLock() {
+    const savedPin = localStorage.getItem(`esctrix_pin_${CURRENT_USER.username}`);
+    if (savedPin) {
+        const overlay = document.getElementById('pin-lock-overlay');
+        if (overlay) overlay.classList.remove('hidden');
+    }
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        checkAutoPinLock();
+    }
+});
+
+function pressPinKey(digit) {
+    if (enteredPin.length < 4) {
+        enteredPin += digit;
+        updatePinDots();
+    }
+}
+
+function clearPinKey() {
+    enteredPin = enteredPin.slice(0, -1);
+    updatePinDots();
+}
+
+function updatePinDots() {
+    for (let i = 1; i <= 4; i++) {
+        const dot = document.getElementById(`dot-${i}`);
+        if (dot) {
+            dot.classList.toggle('filled', i <= enteredPin.length);
+        }
+    }
+}
+
+function submitPinUnlock() {
+    const savedPin = localStorage.getItem(`esctrix_pin_${CURRENT_USER.username}`);
+    if (!savedPin) return;
+    if (btoa(enteredPin) === savedPin) {
+        document.getElementById('pin-lock-overlay').classList.add('hidden');
+        enteredPin = '';
+        updatePinDots();
+        showToast('Unlocked', 'Passcode verified successfully!', 'success');
+    } else {
+        showToast('Incorrect PIN', 'Passcode incorrect. Try again.', 'error');
+        enteredPin = '';
+        updatePinDots();
+    }
+}
+
+// --- 4. 24-HOUR STORIES ENGINE ---
+async function loadStoriesTray() {
+    const tray = document.getElementById('stories-tray');
+    if (!tray) return;
+    
+    try {
+        const response = await fetch('/api/story/list/');
+        const data = await response.json();
+        
+        if (data.success) {
+            tray.innerHTML = '';
+            if (data.stories.length === 0) {
+                tray.innerHTML = '<span style="font-size:0.75rem; color:var(--text-secondary); opacity:0.7;">No active 24h stories</span>';
+                return;
+            }
+            
+            data.stories.forEach(s => {
+                const item = document.createElement('div');
+                item.className = 'story-circle-item';
+                item.onclick = () => viewStory(s);
+                
+                item.innerHTML = `
+                    <div class="story-avatar-wrap">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${s.avatar_index}">
+                    </div>
+                    <span class="story-username">${s.is_self ? 'You' : s.display_name}</span>
+                `;
+                tray.appendChild(item);
+            });
+        }
+    } catch (e) {
+        console.error("Stories load error", e);
+    }
+}
+
+function openAddStoryModal() {
+    document.getElementById('add-story-modal').classList.remove('hidden');
+}
+
+function closeAddStoryModal() {
+    document.getElementById('add-story-modal').classList.add('hidden');
+}
+
+async function submitNewStory() {
+    const caption = document.getElementById('story-caption-input').value.trim();
+    const fileInput = document.getElementById('story-file-input');
+    let mediaData = '';
+
+    if (fileInput && fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        mediaData = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    if (!caption && !mediaData) {
+        showToast('Story Error', 'Please enter a caption or attach an image.', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/story/create/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ caption, media_data: mediaData })
+        });
+        const data = await response.json();
+        if (data.success) {
+            showToast('Story Published', 'Your 24h status story is live!', 'success');
+            saveNotification('Story Published', 'Published a 24-hour status story', 'info', 'fa-circle-plus');
+            closeAddStoryModal();
+            document.getElementById('story-caption-input').value = '';
+            if (fileInput) fileInput.value = '';
+            loadStoriesTray();
+        } else {
+            showToast('Story Error', data.error, 'error');
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+function viewStory(s) {
+    document.getElementById('story-viewer-name').innerText = s.display_name;
+    document.getElementById('story-viewer-time').innerText = s.created_at;
+    document.getElementById('story-viewer-avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${s.avatar_index}`;
+    document.getElementById('story-viewer-caption').innerText = s.caption || '';
+
+    const imgEl = document.getElementById('story-viewer-image');
+    if (s.media_data) {
+        imgEl.src = s.media_data;
+        imgEl.style.display = 'block';
+    } else {
+        imgEl.style.display = 'none';
+    }
+
+    document.getElementById('story-viewer-modal').classList.remove('hidden');
+}
+
+function closeStoryViewer() {
+    document.getElementById('story-viewer-modal').classList.add('hidden');
+}
+
+// --- 5. VOICE NOTES RECORDER ENGINE ---
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecordingVoice = false;
+
+async function toggleVoiceRecording() {
+    const btn = document.getElementById('voice-record-btn');
+    if (!isRecordingVoice) {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) audioChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const reader = new FileReader();
+                reader.readAsDataURL(audioBlob);
+                reader.onloadend = async () => {
+                    const base64Audio = reader.result;
+                    sendVoiceNoteMessage(base64Audio);
+                };
+            };
+
+            mediaRecorder.start();
+            isRecordingVoice = true;
+            if (btn) btn.classList.add('recording');
+            showToast('Voice Note', 'Recording audio... Click mic again to send.', 'info');
+        } catch (e) {
+            console.error(e);
+            showToast('Mic Error', 'Microphone access is required to record voice notes.', 'error');
+        }
+    } else {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+            mediaRecorder.stream.getTracks().forEach(t => t.stop());
+        }
+        isRecordingVoice = false;
+        if (btn) btn.classList.remove('recording');
+    }
+}
+
+async function sendVoiceNoteMessage(audioDataUrl) {
+    if (!currentActiveChatUser) return;
+    const text = `🎤 [Voice Note]`;
+    const encrypted = await encryptMessage(text, currentSessionSharedKey);
+
+    const payload = {
+        recipient_username: currentActiveChatUser,
+        encrypted_content: encrypted,
+        expires_in: null,
+        media_url: audioDataUrl,
+        is_voice_note: true
+    };
+    sendToServer('SEND_MESSAGE', payload);
+    playUiSound('sent');
+}
+
+// --- 6. PINNED MESSAGES ENGINE ---
+function pinMessage(text) {
+    const banner = document.getElementById('pinned-message-banner');
+    const textEl = document.getElementById('pinned-message-text');
+    if (banner && textEl) {
+        textEl.innerText = text;
+        banner.classList.remove('hidden');
+        showToast('Pinned Message', 'Message pinned to chat header.', 'info');
+    }
+}
+
+function unpinCurrentMessage() {
+    const banner = document.getElementById('pinned-message-banner');
+    if (banner) banner.classList.add('hidden');
 }

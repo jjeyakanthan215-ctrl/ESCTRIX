@@ -1,0 +1,22 @@
+{
+  "name": "ESCTRIX - Encrypted P2P Messaging",
+  "short_name": "ESCTRIX",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f13",
+  "theme_color": "#7c3aed",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/static/img/logo.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/img/favicon.png",
+      "sizes": "64x64 32x32 16x16",
+      "type": "image/png"
+    }
+  ]
+}

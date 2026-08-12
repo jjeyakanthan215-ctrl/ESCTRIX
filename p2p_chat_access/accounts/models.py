@@ -85,3 +85,17 @@ class GuestContactRequest(models.Model):
 
     def __str__(self):
         return f"[{self.get_status_display()}] {self.get_issue_display()} — {self.name or 'Guest'}"
+
+class UserStory(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='stories')
+    caption = models.CharField(max_length=280, blank=True, default='')
+    media_data = models.TextField(blank=True, default='')
+    bg_color = models.CharField(max_length=20, default='#7c3aed')
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    def is_active(self):
+        return timezone.now() < self.expires_at
+
+    def __str__(self):
+        return f"Story by {self.user.username} (expires {self.expires_at})"
