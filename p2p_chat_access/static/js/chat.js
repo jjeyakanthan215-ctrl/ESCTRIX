@@ -4,6 +4,8 @@
 
 let currentActiveChatUser = null;
 let currentActiveGroupId = null;
+let notifiedRequests = new Set();
+let isInitialLoad = true;
 
 let chatMessages = {}; // Local history for 1-on-1: {username: [{from, text, timestamp}]}
 let groupMessages = {}; // Local history for groups: {group_id: [{from, text, timestamp}]}
@@ -278,20 +280,28 @@ apiEvents.onFriendsList = (friends) => {
                 <div class="story-name">${f.username}</div>
             `;
             storiesEl.appendChild(story);
-        } else {
-            const li = document.createElement('div');
-            li.className = 'list-item';
-            li.onclick = () => openChat(f);
-            li.innerHTML = `
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${f.avatar_index}">
-                <div class="list-item-info">
-                    <div class="list-item-title">${f.display_name}</div>
-                    <div class="list-item-subtitle">@${f.username}</div>
-                </div>
-                <button class="btn-small btn-secondary">Chat</button>
-            `;
-            offlineEl.appendChild(li);
         }
+
+        const li = document.createElement('div');
+        li.className = 'list-item';
+        li.onclick = () => openChat(f);
+        
+        const statusBadge = f.is_online 
+            ? `<span style="font-size:0.65rem; background:rgba(34,197,94,0.15); color:#22c55e; border:1px solid rgba(34,197,94,0.3); padding:2px 8px; border-radius:10px; font-weight:600;">Online</span>`
+            : `<span style="font-size:0.65rem; background:rgba(255,255,255,0.05); color:var(--text-secondary); padding:2px 8px; border-radius:10px;">Offline</span>`;
+
+        li.innerHTML = `
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${f.avatar_index}">
+            <div class="list-item-info">
+                <div class="list-item-title">${f.display_name}</div>
+                <div class="list-item-subtitle">@${f.username}</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                ${statusBadge}
+                <button class="btn-small ${f.is_online ? 'btn-success' : 'btn-secondary'}">Chat</button>
+            </div>
+        `;
+        offlineEl.appendChild(li);
     });
 
     if (onlineCount === 0) {
@@ -1244,10 +1254,10 @@ async function viewChatParticipantProfile() {
         // ESCTRIX Official Channel Verified Profile Modal
         const avatarEl = document.getElementById('modal-avatar');
         if (avatarEl) {
-            avatarEl.src = '/static/img/logo.png?v=4';
-            avatarEl.style.objectFit = 'contain';
-            avatarEl.style.background = 'rgba(124, 58, 237, 0.15)';
-            avatarEl.style.padding = '6px';
+            avatarEl.src = '/static/img/logo.png?v=5';
+            avatarEl.style.objectFit = 'cover';
+            avatarEl.style.background = '#000';
+            avatarEl.style.padding = '0px';
         }
         document.getElementById('modal-displayname').innerHTML = `ESCTRIX <i class="fa-solid fa-circle-check" style="color:#0066ff;" title="Verified Channel"></i>`;
         document.getElementById('modal-username').innerText = '@esctrix_official';
@@ -1311,6 +1321,16 @@ async function viewUserProfile(username) {
             const friendBtn = document.createElement('button');
             
             if (data.is_friend) {
+                const messageBtn = document.createElement('button');
+                messageBtn.innerText = 'Message';
+                messageBtn.className = 'btn-modal-action btn-success';
+                messageBtn.style.marginRight = '8px';
+                messageBtn.onclick = () => {
+                    closeUserProfileModal();
+                    openChatByUsername(username);
+                };
+                actionWrap.appendChild(messageBtn);
+
                 friendBtn.innerText = 'Unfriend';
                 friendBtn.className = 'btn-modal-action btn-danger';
                 friendBtn.onclick = () => {
@@ -1599,6 +1619,15 @@ async function loadPendingRequests() {
             }
             
             data.requests.forEach(r => {
+                if (!notifiedRequests.has(r.username)) {
+                    notifiedRequests.add(r.username);
+                    if (!isInitialLoad) {
+                        const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.avatar_index}`;
+                        showToast('New Friend Request', `${r.display_name} (@${r.username}) sent you a friend request!`, 'info', 6000, () => switchTab('notifications-tab'), avatarUrl);
+                        playUiSound('received');
+                    }
+                }
+
                 const div = document.createElement('div');
                 div.className = 'list-item';
                 div.innerHTML = `
@@ -1614,6 +1643,7 @@ async function loadPendingRequests() {
                 `;
                 listEl.appendChild(div);
             });
+            isInitialLoad = false;
         }
     } catch (err) {
         console.error("Error loading pending requests", err);
@@ -2382,10 +2412,10 @@ async function openEsctrixOfficialChannel() {
     // Header
     const avatarEl = document.getElementById('session-avatar');
     if (avatarEl) {
-        avatarEl.src = '/static/img/logo.png?v=4';
-        avatarEl.style.objectFit = 'contain';
-        avatarEl.style.background = 'rgba(124, 58, 237, 0.15)';
-        avatarEl.style.padding = '3px';
+        avatarEl.src = '/static/img/logo.png?v=5';
+        avatarEl.style.objectFit = 'cover';
+        avatarEl.style.background = '#000';
+        avatarEl.style.padding = '0px';
     }
     
     document.getElementById('session-name').innerHTML = `ESCTRIX <i class="fa-solid fa-circle-check" style="color:#0066ff; font-size:0.88rem;" title="Official Verified Channel"></i>`;

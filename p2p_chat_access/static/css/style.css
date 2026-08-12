@@ -498,7 +498,7 @@ input:focus, textarea:focus, select:focus {
     background-color: var(--bg-hover);
 }
 
-.list-item img {
+.list-item > img {
     width: 44px;
     height: 44px;
     border-radius: 50%;

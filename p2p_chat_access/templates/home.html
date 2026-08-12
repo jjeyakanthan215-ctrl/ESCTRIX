@@ -1,6 +1,7 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,6 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'css/style.css' %}?v=11">
 </head>
+
 <body>
     <div id="app" class="ig-app-layout">
         <!-- SIDEBAR NAVIGATION (Instagram Style) -->
@@ -19,7 +21,7 @@
                 <img src="{% static 'img/logo.png' %}" alt="ESCTRIX logo">
                 <span>ESCTRIX</span>
             </div>
-            
+
             <nav class="ig-nav-menu">
                 <button class="ig-nav-item active" onclick="switchTab('chats-tab')">
                     <i class="fa-regular fa-paper-plane"></i> <span>Messages</span>
@@ -49,7 +51,7 @@
 
         <!-- SUB-PANEL AREA (Chats list, Search result, Settings tabs list, etc.) -->
         <div class="ig-sub-panel">
-            
+
             <!-- Chats Tab -->
             <div id="chats-tab" class="ig-tab-content active">
                 <div class="panel-title-header">
@@ -57,9 +59,13 @@
                 </div>
                 <!-- 24-Hour Stories Bar -->
                 <div class="stories-wrapper" style="padding-bottom: 10px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding: 0 15px;">
-                        <h4 style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 700; text-transform: uppercase;">24h Stories</h4>
-                        <button type="button" onclick="openAddStoryModal()" style="background: transparent; border: none; color: var(--accent); font-size: 0.76rem; font-weight: 700; cursor: pointer;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding: 0 15px;">
+                        <h4
+                            style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 700; text-transform: uppercase;">
+                            24h Stories</h4>
+                        <button type="button" onclick="openAddStoryModal()"
+                            style="background: transparent; border: none; color: var(--accent); font-size: 0.76rem; font-weight: 700; cursor: pointer;">
                             <i class="fa-solid fa-plus"></i> Add Story
                         </button>
                     </div>
@@ -69,24 +75,35 @@
                 </div>
                 <!-- Official ESCTRIX Channel -->
                 <div class="contacts-wrapper" style="padding: 10px 15px 5px; flex: none;">
-                    <h4 style="font-size: 0.76rem; color: var(--text-secondary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Official Channel</h4>
+                    <h4
+                        style="font-size: 0.76rem; color: var(--text-secondary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+                        Official Channel</h4>
                     <div class="contacts-list">
-                        <div class="list-item" onclick="openEsctrixOfficialChannel()" style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.18), rgba(0, 102, 255, 0.12)); border: 1px solid var(--accent); border-radius: 12px; padding: 10px 12px; box-shadow: 0 4px 15px var(--accent-subtle); transition: all 0.25s ease; cursor: pointer;">
-                            <div style="flex-shrink: 0; margin-right: 12px; width: 44px; height: 44px; border-radius: 50%; background: rgba(124, 58, 237, 0.15); border: 2px solid var(--accent); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px var(--accent-glow);">
-                                <img src="{% static 'img/logo.png' %}?v=4" style="width: 28px; height: 28px; object-fit: contain; display: block;">
+                        <div class="list-item" onclick="openEsctrixOfficialChannel()"
+                            style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.18), rgba(0, 102, 255, 0.12)); border: 1px solid var(--accent); border-radius: 12px; padding: 10px 12px; box-shadow: 0 4px 15px var(--accent-subtle); transition: all 0.25s ease; cursor: pointer;">
+                            <div
+                                style="flex-shrink: 0; margin-right: 12px; width: 44px; height: 44px; border-radius: 50%; background: #000; border: 2px solid var(--accent); overflow: hidden; box-shadow: 0 0 12px var(--accent-glow);">
+                                <img src="{% static 'img/logo.png' %}?v=5"
+                                    style="width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%;">
                             </div>
                             <div class="list-item-info" style="flex: 1; min-width: 0;">
-                                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                                    <div class="list-item-title" style="color: var(--text-primary); font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 5px;">
+                                <div
+                                    style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                                    <div class="list-item-title"
+                                        style="color: var(--text-primary); font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 5px;">
                                         ESCTRIX
-                                        <i class="fa-solid fa-circle-check" style="color: #0066ff; font-size: 0.85rem;" title="Official Verified Channel"></i>
+                                        <i class="fa-solid fa-circle-check" style="color: #0066ff; font-size: 0.85rem;"
+                                            title="Official Verified Channel"></i>
                                     </div>
                                     <div style="display: flex; align-items: center; gap: 5px;">
-                                        <span id="esctrix-official-badge" class="unread-badge hidden" style="background: #0066ff; color: #fff; font-size: 0.68rem; padding: 2px 7px; border-radius: 10px; font-weight: 700;">1</span>
-                                        <span style="font-size: 0.65rem; background: var(--accent); color: #fff; padding: 2px 7px; border-radius: 10px; font-weight: 700; text-transform: uppercase;">Official</span>
+                                        <span id="esctrix-official-badge" class="unread-badge hidden"
+                                            style="background: #0066ff; color: #fff; font-size: 0.68rem; padding: 2px 7px; border-radius: 10px; font-weight: 700;">1</span>
+                                        <span
+                                            style="font-size: 0.65rem; background: var(--accent); color: #fff; padding: 2px 7px; border-radius: 10px; font-weight: 700; text-transform: uppercase;">Official</span>
                                     </div>
                                 </div>
-                                <div class="list-item-subtitle" style="color: var(--accent); font-weight: 500; font-size: 0.75rem; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                <div class="list-item-subtitle"
+                                    style="color: var(--accent); font-weight: 500; font-size: 0.75rem; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                     Official System Updates & Announcements
                                 </div>
                             </div>
@@ -96,7 +113,7 @@
 
                 <!-- Friends List -->
                 <div class="contacts-wrapper">
-                    <h4>Contacts</h4>
+                    <h4>Friends List</h4>
                     <div id="feed-offline" class="contacts-list">
                         <!-- Injected via JS -->
                     </div>
@@ -134,16 +151,21 @@
 
             <!-- Notifications Tab -->
             <div id="notifications-tab" class="ig-tab-content hidden">
-                <div class="panel-title-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="panel-title-header"
+                    style="display: flex; justify-content: space-between; align-items: center;">
                     <h3>Notifications</h3>
-                    <button type="button" onclick="clearAllNotifications()" style="background: transparent; border: none; color: var(--text-secondary); font-size: 0.78rem; cursor: pointer; padding: 4px 8px;" title="Clear Activity Log">
+                    <button type="button" onclick="clearAllNotifications()"
+                        style="background: transparent; border: none; color: var(--text-secondary); font-size: 0.78rem; cursor: pointer; padding: 4px 8px;"
+                        title="Clear Activity Log">
                         <i class="fa-solid fa-trash-can"></i> Clear Log
                     </button>
                 </div>
 
                 <!-- Pending Friend Requests Sub-Section -->
                 <div style="padding: 10px 15px 0;">
-                    <h4 style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">Friend Requests</h4>
+                    <h4
+                        style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">
+                        Friend Requests</h4>
                     <div id="request-list" class="requests-list">
                         <!-- Friend requests injected here -->
                     </div>
@@ -151,8 +173,11 @@
 
                 <!-- Account & Security Activity Log Sub-Section -->
                 <div style="padding: 15px 15px 0; border-top: 1px solid var(--border-color); margin-top: 15px;">
-                    <h4 style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">Account & Security Activity</h4>
-                    <div id="notifications-tab-container" class="notifications-list-container" style="display: flex; flex-direction: column; gap: 8px;">
+                    <h4
+                        style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">
+                        Account & Security Activity</h4>
+                    <div id="notifications-tab-container" class="notifications-list-container"
+                        style="display: flex; flex-direction: column; gap: 8px;">
                         <!-- Persistent notifications injected here -->
                     </div>
                 </div>
@@ -189,7 +214,8 @@
                 </div>
                 <div class="profile-tab-wrapper">
                     <div class="profile-avatar-row">
-                        <img id="profile-avatar-preview" src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ request.user.avatar_index }}">
+                        <img id="profile-avatar-preview"
+                            src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ request.user.avatar_index }}">
                         <div>
                             <h4 id="profile-preview-displayname">{{ request.user.display_name }}</h4>
                             <p>@{{ request.user.username }}</p>
@@ -202,22 +228,28 @@
                     <form id="profile-form" class="profile-edit-form" onsubmit="updateProfile(event)">
                         <div class="input-group">
                             <label>Username</label>
-                            <input type="text" id="edit-username" value="{{ request.user.username }}" required placeholder="Your unique username">
+                            <input type="text" id="edit-username" value="{{ request.user.username }}" required
+                                placeholder="Your unique username">
                         </div>
                         <div class="input-group">
                             <label>Display Name (Profile Name)</label>
-                            <input type="text" id="edit-displayname" value="{{ request.user.display_name }}" required placeholder="Your public display name" oninput="document.getElementById('profile-preview-displayname').innerText = this.value">
+                            <input type="text" id="edit-displayname" value="{{ request.user.display_name }}" required
+                                placeholder="Your public display name"
+                                oninput="document.getElementById('profile-preview-displayname').innerText = this.value">
                         </div>
                         <div class="input-group">
                             <label>Bio</label>
-                            <textarea id="edit-bio" rows="3" placeholder="Write something about yourself...">{{ request.user.bio }}</textarea>
+                            <textarea id="edit-bio" rows="3"
+                                placeholder="Write something about yourself...">{{ request.user.bio }}</textarea>
                         </div>
                         <div class="input-group">
                             <label>Date of Birth</label>
-                            <input type="date" id="edit-dob" value="{% if request.user.date_of_birth %}{{ request.user.date_of_birth|date:'Y-m-d' }}{% endif %}">
+                            <input type="date" id="edit-dob"
+                                value="{% if request.user.date_of_birth %}{{ request.user.date_of_birth|date:'Y-m-d' }}{% endif %}">
                         </div>
                         <button type="submit" class="btn-ig-submit">Save Profile Changes</button>
-                        <p id="profile-status" style="margin-top:10px; font-size:0.82rem; color:var(--success); font-weight:600;"></p>
+                        <p id="profile-status"
+                            style="margin-top:10px; font-size:0.82rem; color:var(--success); font-weight:600;"></p>
                     </form>
                 </div>
             </div>
@@ -227,7 +259,7 @@
 
         <!-- MAIN MAIN FEED / CONTENT CHAT WINDOW -->
         <main class="ig-main-content">
-            
+
             <!-- Chat Window Panel -->
             <div id="chat-panel" class="ig-chat-panel hidden">
                 <div class="chat-header">
@@ -239,9 +271,12 @@
                         </div>
                     </div>
                     <div class="chat-header-actions">
-                        <button class="btn-call-action" onclick="startCall('audio')" title="Voice Call"><i class="fa-solid fa-phone"></i></button>
-                        <button class="btn-call-action" onclick="startCall('video')" title="Video Call"><i class="fa-solid fa-video"></i></button>
-                        <button class="btn-call-action mobile-back-btn" onclick="closeChat()" title="Close Chat"><i class="fa-solid fa-arrow-left"></i></button>
+                        <button class="btn-call-action" onclick="startCall('audio')" title="Voice Call"><i
+                                class="fa-solid fa-phone"></i></button>
+                        <button class="btn-call-action" onclick="startCall('video')" title="Video Call"><i
+                                class="fa-solid fa-video"></i></button>
+                        <button class="btn-call-action mobile-back-btn" onclick="closeChat()" title="Close Chat"><i
+                                class="fa-solid fa-arrow-left"></i></button>
                     </div>
                 </div>
 
@@ -251,7 +286,9 @@
                         <i class="fa-solid fa-thumbtack" style="color: var(--accent);"></i>
                         <span id="pinned-message-text" style="font-weight: 600;">Pinned Message</span>
                     </div>
-                    <button type="button" onclick="unpinCurrentMessage()" style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+                    <button type="button" onclick="unpinCurrentMessage()"
+                        style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer;"><i
+                            class="fa-solid fa-xmark"></i></button>
                 </div>
 
                 <!-- Chat history messages container -->
@@ -265,12 +302,14 @@
                         <button type="button" class="btn-chat-attach" onclick="triggerFileInput()" title="Attach File">
                             <i class="fa-solid fa-paperclip"></i>
                         </button>
-                        <button type="button" class="btn-chat-attach voice-record-btn" id="voice-record-btn" onclick="toggleVoiceRecording()" title="Record Voice Note">
+                        <button type="button" class="btn-chat-attach voice-record-btn" id="voice-record-btn"
+                            onclick="toggleVoiceRecording()" title="Record Voice Note">
                             <i class="fa-solid fa-microphone"></i>
                         </button>
                         <input type="file" id="chat-file-input" style="display:none" onchange="uploadAndSendFile()">
-                        <input type="text" id="chat-input" placeholder="Message..." autocomplete="off" required oninput="handleTypingIndicator()">
-                        
+                        <input type="text" id="chat-input" placeholder="Message..." autocomplete="off" required
+                            oninput="handleTypingIndicator()">
+
                         <select id="chat-expires-select" class="chat-expires-select" title="Self-Destruct Timer">
                             <option value="" selected><i class="fa-solid fa-clock"></i> Off</option>
                             <option value="10">10s</option>
@@ -279,7 +318,7 @@
                             <option value="3600">1h</option>
                             <option value="86400">1d</option>
                         </select>
-                        
+
                         <button type="submit" class="btn-chat-send">Send</button>
                     </form>
                 </div>
@@ -287,43 +326,62 @@
 
             <!-- Settings Sub Option Details Panel (Shows forms corresponding to chosen settings option) -->
             <div id="settings-display-panel" class="ig-settings-forms-wrapper hidden">
-                <button type="button" class="mobile-settings-back-btn mobile-back-btn" onclick="mobileBackToSettingsNav()" style="margin-bottom: 15px; background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 12px; border-radius: var(--radius-sm); font-size: 0.82rem; cursor: pointer;">
+                <button type="button" class="mobile-settings-back-btn mobile-back-btn"
+                    onclick="mobileBackToSettingsNav()"
+                    style="margin-bottom: 15px; background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 12px; border-radius: var(--radius-sm); font-size: 0.82rem; cursor: pointer;">
                     <i class="fa-solid fa-arrow-left"></i> Back to Settings
                 </button>
-                
+
                 <!-- Sub Option: Profile Picture / Animated Avatars -->
                 <div id="set-avatar" class="setting-form-pane active">
                     <h3>Choose Animated Avatar</h3>
-                    <p class="setting-desc">Select from our animated avatar gallery, switch styles, or generate a random seed.</p>
+                    <p class="setting-desc">Select from our animated avatar gallery, switch styles, or generate a random
+                        seed.</p>
 
                     <!-- Large Selected Preview Card -->
                     <div class="avatar-preview-card">
                         <div class="avatar-preview-wrapper">
-                            <img id="setting-avatar-preview" src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ request.user.avatar_index }}">
-                            <button type="button" class="btn-random-avatar" onclick="randomizeAvatar()" title="Randomize Avatar">
+                            <img id="setting-avatar-preview"
+                                src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ request.user.avatar_index }}">
+                            <button type="button" class="btn-random-avatar" onclick="randomizeAvatar()"
+                                title="Randomize Avatar">
                                 <i class="fa-solid fa-dice"></i>
                             </button>
                         </div>
                         <div class="avatar-preview-meta">
-                            <div class="avatar-seed-badge">Seed: <span id="current-seed-label">{{ request.user.avatar_index }}</span></div>
+                            <div class="avatar-seed-badge">Seed: <span id="current-seed-label">{{
+                                    request.user.avatar_index }}</span></div>
                             <input type="hidden" id="edit-avatar" value="{{ request.user.avatar_index }}">
-                            <button type="button" class="btn-ig-submit" onclick="saveAvatarSeedOnly()" style="margin-top: 6px;">Save Selected Avatar</button>
+                            <button type="button" class="btn-ig-submit" onclick="saveAvatarSeedOnly()"
+                                style="margin-top: 6px;">Save Selected Avatar</button>
                         </div>
                     </div>
 
                     <!-- Style Filter Tabs -->
-                    <div style="position: relative; display: flex; align-items: center; gap: 6px; margin-top: 10px; width: 100%;">
-                        <button type="button" onclick="scrollAvatarTabs(-150)" style="background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;" title="Scroll Left"><i class="fa-solid fa-chevron-left" style="font-size: 0.72rem;"></i></button>
-                        
+                    <div
+                        style="position: relative; display: flex; align-items: center; gap: 6px; margin-top: 10px; width: 100%;">
+                        <button type="button" onclick="scrollAvatarTabs(-150)"
+                            style="background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;"
+                            title="Scroll Left"><i class="fa-solid fa-chevron-left"
+                                style="font-size: 0.72rem;"></i></button>
+
                         <div class="avatar-style-tabs" id="avatar-style-tabs">
-                            <button type="button" class="avatar-style-tab active" onclick="switchAvatarStyle('avataaars', this)">🎨 2D Avataaars</button>
-                            <button type="button" class="avatar-style-tab" onclick="switchAvatarStyle('bottts', this)">🤖 Cyber Robots</button>
-                            <button type="button" class="avatar-style-tab" onclick="switchAvatarStyle('lorelei', this)">🌟 Lorelei</button>
-                            <button type="button" class="avatar-style-tab" onclick="switchAvatarStyle('fun-emoji', this)">😜 3D Emoji</button>
-                            <button type="button" class="avatar-style-tab" onclick="switchAvatarStyle('adventurer', this)">🧙 Adventurer</button>
+                            <button type="button" class="avatar-style-tab active"
+                                onclick="switchAvatarStyle('avataaars', this)">🎨 2D Avataaars</button>
+                            <button type="button" class="avatar-style-tab"
+                                onclick="switchAvatarStyle('bottts', this)">🤖 Cyber Robots</button>
+                            <button type="button" class="avatar-style-tab"
+                                onclick="switchAvatarStyle('lorelei', this)">🌟 Lorelei</button>
+                            <button type="button" class="avatar-style-tab"
+                                onclick="switchAvatarStyle('fun-emoji', this)">😜 3D Emoji</button>
+                            <button type="button" class="avatar-style-tab"
+                                onclick="switchAvatarStyle('adventurer', this)">🧙 Adventurer</button>
                         </div>
 
-                        <button type="button" onclick="scrollAvatarTabs(150)" style="background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;" title="Scroll Right"><i class="fa-solid fa-chevron-right" style="font-size: 0.72rem;"></i></button>
+                        <button type="button" onclick="scrollAvatarTabs(150)"
+                            style="background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;"
+                            title="Scroll Right"><i class="fa-solid fa-chevron-right"
+                                style="font-size: 0.72rem;"></i></button>
                     </div>
 
                     <!-- Gallery Grid -->
@@ -343,7 +401,8 @@
                             <input type="password" id="old-password" placeholder="Current Password" required>
                         </div>
                         <div class="input-group">
-                            <input type="password" id="new-password" placeholder="New Password (min 8 characters)" required>
+                            <input type="password" id="new-password" placeholder="New Password (min 8 characters)"
+                                required>
                         </div>
                         <div class="input-group">
                             <input type="password" id="confirm-password" placeholder="Confirm New Password" required>
@@ -353,23 +412,30 @@
                     <p id="password-status" class="setting-status-text"></p>
 
                     <!-- Passcode PIN Lock Setup -->
-                    <h4 style="margin-top: 25px; margin-bottom: 8px; font-size: 0.9rem; font-weight: 700; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                    <h4
+                        style="margin-top: 25px; margin-bottom: 8px; font-size: 0.9rem; font-weight: 700; border-top: 1px solid var(--border-color); padding-top: 15px;">
                         <i class="fa-solid fa-lock" style="color: var(--accent);"></i> In-App Passcode PIN Lock
                     </h4>
-                    <p class="setting-desc">Set a 4-digit security PIN. When leaving or returning to the app, a passcode overlay requires your PIN to reveal chats.</p>
+                    <p class="setting-desc">Set a 4-digit security PIN. When leaving or returning to the app, a passcode
+                        overlay requires your PIN to reveal chats.</p>
                     <div style="display: flex; gap: 8px; align-items: center; margin-top: 10px;">
-                        <input type="password" id="pin-lock-input" maxlength="4" placeholder="4-Digit PIN" style="width: 120px; padding: 9px; text-align: center; font-size: 1.1rem; letter-spacing: 4px; background: #121212; border: 1px solid var(--border-color); color: #fff; border-radius: 4px;">
-                        <button type="button" class="btn-ig-submit" onclick="savePasscodePin()" style="padding: 9px 14px;">Set PIN</button>
-                        <button type="button" class="btn-ig-submit bg-danger" onclick="disablePasscodePin()" style="padding: 9px 14px;">Disable</button>
+                        <input type="password" id="pin-lock-input" maxlength="4" placeholder="4-Digit PIN"
+                            style="width: 120px; padding: 9px; text-align: center; font-size: 1.1rem; letter-spacing: 4px; background: #121212; border: 1px solid var(--border-color); color: #fff; border-radius: 4px;">
+                        <button type="button" class="btn-ig-submit" onclick="savePasscodePin()"
+                            style="padding: 9px 14px;">Set PIN</button>
+                        <button type="button" class="btn-ig-submit bg-danger" onclick="disablePasscodePin()"
+                            style="padding: 9px 14px;">Disable</button>
                     </div>
 
                     <!-- Story Privacy Settings -->
-                    <h4 style="margin-top: 25px; margin-bottom: 8px; font-size: 0.9rem; font-weight: 700; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                    <h4
+                        style="margin-top: 25px; margin-bottom: 8px; font-size: 0.9rem; font-weight: 700; border-top: 1px solid var(--border-color); padding-top: 15px;">
                         <i class="fa-solid fa-eye" style="color: var(--accent);"></i> 24h Story Privacy Access
                     </h4>
                     <p class="setting-desc">Choose default visibility settings for your 24-hour status stories.</p>
                     <div style="display: flex; gap: 8px; align-items: center; margin-top: 10px;">
-                        <select id="setting-story-privacy" onchange="updateStoryPrivacySetting(this.value)" style="flex: 1; padding: 10px; background: #121212; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; font-size: 0.85rem;">
+                        <select id="setting-story-privacy" onchange="updateStoryPrivacySetting(this.value)"
+                            style="flex: 1; padding: 10px; background: #121212; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; font-size: 0.85rem;">
                             <option value="friends" selected>My Contacts / Mutual Friends Only</option>
                             <option value="public">Public / Everyone on Platform</option>
                             <option value="private">Private / Only Me</option>
@@ -392,17 +458,23 @@
                     <p class="setting-desc">Submit a help request ticket. Administrators will review and resolve it.</p>
                     <form id="help-ticket-form" class="profile-edit-form" onsubmit="submitHelpTicket(event)">
                         <div class="input-group">
-                            <input type="text" id="help-subject" placeholder="Subject / Issue Title" required style="width: 100%; padding: 10px; margin-bottom: 10px;">
+                            <input type="text" id="help-subject" placeholder="Subject / Issue Title" required
+                                style="width: 100%; padding: 10px; margin-bottom: 10px;">
                         </div>
                         <div class="input-group">
-                            <textarea id="help-message" placeholder="Describe your request or technical issue in detail..." required style="width: 100%; padding: 10px; height: 120px; resize: none; margin-bottom: 10px; background: #121212; border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></textarea>
+                            <textarea id="help-message"
+                                placeholder="Describe your request or technical issue in detail..." required
+                                style="width: 100%; padding: 10px; height: 120px; resize: none; margin-bottom: 10px; background: #121212; border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></textarea>
                         </div>
                         <button type="submit" class="btn-ig-submit">Submit Help Request</button>
                     </form>
                     <p id="help-status" class="setting-status-text" style="margin-top: 10px; font-weight: 600;"></p>
-                    
-                    <h4 style="margin-top: 25px; margin-bottom: 10px; font-size: 0.95rem; font-weight: 700; border-top: 1px solid var(--border-color); padding-top: 15px;">Your Support Tickets</h4>
-                    <div id="help-ticket-list" class="block-items-container" style="display: flex; flex-direction: column; gap: 10px; max-height: 200px; overflow-y: auto;">
+
+                    <h4
+                        style="margin-top: 25px; margin-bottom: 10px; font-size: 0.95rem; font-weight: 700; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                        Your Support Tickets</h4>
+                    <div id="help-ticket-list" class="block-items-container"
+                        style="display: flex; flex-direction: column; gap: 10px; max-height: 200px; overflow-y: auto;">
                         <!-- Tickets loaded dynamically -->
                     </div>
                 </div>
@@ -410,65 +482,109 @@
                 <!-- Sub Option: Theme Settings -->
                 <div id="set-theme" class="setting-form-pane hidden">
                     <h3>Select Chat Theme</h3>
-                    <p class="setting-desc">Personalize your chat workspace with preset themes or create your custom color theme.</p>
-                    
-                    <h4 style="margin-top: 15px; font-size: 0.9rem; font-weight: 600; color: var(--text-secondary);">Preset Themes</h4>
-                    <div class="theme-selection-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 10px;">
+                    <p class="setting-desc">Personalize your chat workspace with preset themes or create your custom
+                        color theme.</p>
+
+                    <h4 style="margin-top: 15px; font-size: 0.9rem; font-weight: 600; color: var(--text-secondary);">
+                        Preset Themes</h4>
+                    <div class="theme-selection-grid"
+                        style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 10px;">
                         <!-- Cyber Purple (Default) -->
-                        <div class="theme-card" id="theme-card-default" onclick="changeAppTheme('default')" style="background: #0f1012; border: 2px solid var(--accent); border-radius: var(--radius-sm); padding: 12px; cursor: pointer; text-align: center; transition: transform 0.2s;">
-                            <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #00d2ff, #7c3aed); margin: 0 auto 8px;"></div>
+                        <div class="theme-card" id="theme-card-default" onclick="changeAppTheme('default')"
+                            style="background: #0f1012; border: 2px solid var(--accent); border-radius: var(--radius-sm); padding: 12px; cursor: pointer; text-align: center; transition: transform 0.2s;">
+                            <div
+                                style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #00d2ff, #7c3aed); margin: 0 auto 8px;">
+                            </div>
                             <span style="font-weight: 600; font-size: 0.82rem;">Cyber Purple (Default)</span>
                         </div>
-                        
+
                         <!-- Sunset Rose -->
-                        <div class="theme-card" id="theme-card-sunset" onclick="changeAppTheme('sunset')" style="background: #0f1012; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; cursor: pointer; text-align: center; transition: transform 0.2s;">
-                            <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #dc2743, #cc2366); margin: 0 auto 8px;"></div>
+                        <div class="theme-card" id="theme-card-sunset" onclick="changeAppTheme('sunset')"
+                            style="background: #0f1012; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; cursor: pointer; text-align: center; transition: transform 0.2s;">
+                            <div
+                                style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #dc2743, #cc2366); margin: 0 auto 8px;">
+                            </div>
                             <span style="font-weight: 600; font-size: 0.82rem;">Sunset Rose</span>
                         </div>
-                        
+
                         <!-- Emerald Forest -->
-                        <div class="theme-card" id="theme-card-emerald" onclick="changeAppTheme('emerald')" style="background: #0f1012; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; cursor: pointer; text-align: center; transition: transform 0.2s;">
-                            <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #11998e, #38ef7d); margin: 0 auto 8px;"></div>
+                        <div class="theme-card" id="theme-card-emerald" onclick="changeAppTheme('emerald')"
+                            style="background: #0f1012; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; cursor: pointer; text-align: center; transition: transform 0.2s;">
+                            <div
+                                style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #11998e, #38ef7d); margin: 0 auto 8px;">
+                            </div>
                             <span style="font-weight: 600; font-size: 0.82rem;">Emerald Forest</span>
                         </div>
-                        
+
                         <!-- Crimson Glow -->
-                        <div class="theme-card" id="theme-card-crimson" onclick="changeAppTheme('crimson')" style="background: #0f1012; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; cursor: pointer; text-align: center; transition: transform 0.2s;">
-                            <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #cb2d3e, #ef473a); margin: 0 auto 8px;"></div>
+                        <div class="theme-card" id="theme-card-crimson" onclick="changeAppTheme('crimson')"
+                            style="background: #0f1012; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; cursor: pointer; text-align: center; transition: transform 0.2s;">
+                            <div
+                                style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #cb2d3e, #ef473a); margin: 0 auto 8px;">
+                            </div>
                             <span style="font-weight: 600; font-size: 0.82rem;">Crimson Glow</span>
                         </div>
                     </div>
 
                     <!-- CUSTOM COLOR PALETTE PICKER SECTION -->
-                    <div class="custom-theme-box" style="margin-top: 25px; padding: 18px; background: #0f1015; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                    <div class="custom-theme-box"
+                        style="margin-top: 25px; padding: 18px; background: #0f1015; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
                         <h4 style="font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-                            <i class="fa-solid fa-eye-dropper" style="color: var(--accent);"></i> Custom Color Palette Wheel
+                            <i class="fa-solid fa-eye-dropper" style="color: var(--accent);"></i> Custom Color Palette
+                            Wheel
                         </h4>
-                        <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px;">Pick any custom color from the circle palette wheel below or choose a quick swatch.</p>
+                        <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px;">Pick any custom
+                            color from the circle palette wheel below or choose a quick swatch.</p>
 
                         <!-- Circular Color Palette Input -->
                         <div style="display: flex; align-items: center; gap: 15px; margin-top: 15px;">
-                            <div class="color-picker-circle-wrapper" style="position: relative; width: 50px; height: 50px; border-radius: 50%; background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red); padding: 4px; cursor: pointer; box-shadow: 0 0 14px var(--accent-glow);">
-                                <input type="color" id="custom-color-picker" value="#7c3aed" oninput="applyCustomColorTheme(this.value)" onchange="applyCustomColorTheme(this.value)" style="opacity: 0; width: 100%; height: 100%; cursor: pointer; border-radius: 50%;">
-                                <div id="custom-color-preview-dot" style="position: absolute; inset: 4px; border-radius: 50%; background: var(--accent); pointer-events: none; border: 2px solid #fff;"></div>
+                            <div class="color-picker-circle-wrapper"
+                                style="position: relative; width: 50px; height: 50px; border-radius: 50%; background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red); padding: 4px; cursor: pointer; box-shadow: 0 0 14px var(--accent-glow);">
+                                <input type="color" id="custom-color-picker" value="#7c3aed"
+                                    oninput="applyCustomColorTheme(this.value)"
+                                    onchange="applyCustomColorTheme(this.value)"
+                                    style="opacity: 0; width: 100%; height: 100%; cursor: pointer; border-radius: 50%;">
+                                <div id="custom-color-preview-dot"
+                                    style="position: absolute; inset: 4px; border-radius: 50%; background: var(--accent); pointer-events: none; border: 2px solid #fff;">
+                                </div>
                             </div>
                             <div>
-                                <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-primary); display: block;">Selected Color Code</span>
-                                <input type="text" id="custom-hex-input" value="#7c3aed" oninput="if(/^#[0-9A-Fa-f]{6}$/.test(this.value)) applyCustomColorTheme(this.value)" style="background: #06070a; border: 1px solid var(--border-color); color: var(--text-primary); padding: 5px 10px; font-size: 0.82rem; border-radius: 4px; width: 110px; text-transform: uppercase; margin-top: 4px;">
+                                <span
+                                    style="font-size: 0.82rem; font-weight: 600; color: var(--text-primary); display: block;">Selected
+                                    Color Code</span>
+                                <input type="text" id="custom-hex-input" value="#7c3aed"
+                                    oninput="if(/^#[0-9A-Fa-f]{6}$/.test(this.value)) applyCustomColorTheme(this.value)"
+                                    style="background: #06070a; border: 1px solid var(--border-color); color: var(--text-primary); padding: 5px 10px; font-size: 0.82rem; border-radius: 4px; width: 110px; text-transform: uppercase; margin-top: 4px;">
                             </div>
                         </div>
 
                         <!-- Quick Color Swatches Row -->
                         <div style="margin-top: 15px;">
-                            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Quick Color Swatches</span>
+                            <span
+                                style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Quick
+                                Color Swatches</span>
                             <div style="display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap;">
-                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#0066ff')" style="width: 28px; height: 28px; border-radius: 50%; background: #0066ff; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;" title="Electric Blue"></button>
-                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#00f2fe')" style="width: 28px; height: 28px; border-radius: 50%; background: #00f2fe; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;" title="Neon Cyan"></button>
-                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#00ff88')" style="width: 28px; height: 28px; border-radius: 50%; background: #00ff88; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;" title="Emerald Green"></button>
-                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#ffb700')" style="width: 28px; height: 28px; border-radius: 50%; background: #ffb700; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;" title="Amber Gold"></button>
-                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#ff007f')" style="width: 28px; height: 28px; border-radius: 50%; background: #ff007f; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;" title="Hot Pink"></button>
-                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#8b5cf6')" style="width: 28px; height: 28px; border-radius: 50%; background: #8b5cf6; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;" title="Violet Purple"></button>
-                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#ef4444')" style="width: 28px; height: 28px; border-radius: 50%; background: #ef4444; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;" title="Ruby Red"></button>
+                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#0066ff')"
+                                    style="width: 28px; height: 28px; border-radius: 50%; background: #0066ff; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;"
+                                    title="Electric Blue"></button>
+                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#00f2fe')"
+                                    style="width: 28px; height: 28px; border-radius: 50%; background: #00f2fe; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;"
+                                    title="Neon Cyan"></button>
+                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#00ff88')"
+                                    style="width: 28px; height: 28px; border-radius: 50%; background: #00ff88; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;"
+                                    title="Emerald Green"></button>
+                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#ffb700')"
+                                    style="width: 28px; height: 28px; border-radius: 50%; background: #ffb700; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;"
+                                    title="Amber Gold"></button>
+                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#ff007f')"
+                                    style="width: 28px; height: 28px; border-radius: 50%; background: #ff007f; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;"
+                                    title="Hot Pink"></button>
+                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#8b5cf6')"
+                                    style="width: 28px; height: 28px; border-radius: 50%; background: #8b5cf6; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;"
+                                    title="Violet Purple"></button>
+                                <button type="button" class="swatch-btn" onclick="applyCustomColorTheme('#ef4444')"
+                                    style="width: 28px; height: 28px; border-radius: 50%; background: #ef4444; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.2s;"
+                                    title="Ruby Red"></button>
                             </div>
                         </div>
                     </div>
@@ -481,7 +597,8 @@
                 <div class="placeholder-content">
                     <i class="fa-regular fa-paper-plane"></i>
                     <h2>Your Messages</h2>
-                    <p>Send encrypted photos, texts, or start a peer-to-peer secure call with a friend or a group chat channel.</p>
+                    <p>Send encrypted photos, texts, or start a peer-to-peer secure call with a friend or a group chat
+                        channel.</p>
                     <button class="btn-placeholder-search" onclick="switchTab('search-tab')">Search Friends</button>
                 </div>
             </div>
@@ -513,7 +630,8 @@
         <!-- VIEW OTHER USER'S PROFILE MODAL (Instagram Style) -->
         <div id="user-profile-modal" class="modal hidden">
             <div class="ig-profile-modal-content">
-                <button class="close-modal-btn" onclick="closeUserProfileModal()"><i class="fa-solid fa-xmark"></i></button>
+                <button class="close-modal-btn" onclick="closeUserProfileModal()"><i
+                        class="fa-solid fa-xmark"></i></button>
                 <div class="ig-modal-profile-header">
                     <img id="modal-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=0">
                     <div class="ig-modal-profile-stats">
@@ -531,7 +649,8 @@
                 </div>
                 <div class="ig-modal-profile-actions">
                     <div id="modal-friend-action-btn-wrap"></div>
-                    <button id="modal-block-btn" class="btn-modal-action btn-danger" onclick="toggleBlockFromProfileModal()">Block User</button>
+                    <button id="modal-block-btn" class="btn-modal-action btn-danger"
+                        onclick="toggleBlockFromProfileModal()">Block User</button>
                 </div>
             </div>
         </div>
@@ -541,7 +660,8 @@
             <div class="ig-group-modal-content">
                 <div class="modal-header-row">
                     <h3>New Group Chat</h3>
-                    <button class="close-modal-btn" onclick="closeCreateGroupModal()"><i class="fa-solid fa-xmark"></i></button>
+                    <button class="close-modal-btn" onclick="closeCreateGroupModal()"><i
+                            class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="group-input-wrap">
                     <input type="text" id="new-group-name" placeholder="Group Name..." required>
@@ -567,10 +687,14 @@
                     <video id="local-video" autoplay playsinline muted></video>
                 </div>
                 <div class="call-controls-bar" id="call-actions-active">
-                    <button class="call-ctrl-btn" id="call-btn-mute" onclick="toggleMuteMic()" title="Mute Microphone"><i class="fa-solid fa-microphone"></i></button>
-                    <button class="call-ctrl-btn" id="call-btn-cam" onclick="toggleVideoCamera()" title="Toggle Camera"><i class="fa-solid fa-video"></i></button>
-                    <button class="call-ctrl-btn" id="call-btn-share" onclick="shareScreenStream()" title="Share Screen"><i class="fa-solid fa-desktop"></i></button>
-                    <button class="call-ctrl-btn btn-call-end" onclick="endCall()" style="background:#ef4444;" title="End Call"><i class="fa-solid fa-phone-slash"></i></button>
+                    <button class="call-ctrl-btn" id="call-btn-mute" onclick="toggleMuteMic()"
+                        title="Mute Microphone"><i class="fa-solid fa-microphone"></i></button>
+                    <button class="call-ctrl-btn" id="call-btn-cam" onclick="toggleVideoCamera()"
+                        title="Toggle Camera"><i class="fa-solid fa-video"></i></button>
+                    <button class="call-ctrl-btn" id="call-btn-share" onclick="shareScreenStream()"
+                        title="Share Screen"><i class="fa-solid fa-desktop"></i></button>
+                    <button class="call-ctrl-btn btn-call-end" onclick="endCall()" style="background:#ef4444;"
+                        title="End Call"><i class="fa-solid fa-phone-slash"></i></button>
                 </div>
             </div>
         </div>
@@ -582,91 +706,109 @@
                 <h3 id="incoming-name">Username</h3>
                 <p>Incoming ESCTRIX Call...</p>
                 <div class="incoming-actions-row">
-                    <button class="btn-incoming-decline" onclick="rejectCall()"><i class="fa-solid fa-xmark"></i> Decline</button>
-                    <button class="btn-incoming-accept" onclick="acceptCall()"><i class="fa-solid fa-phone"></i> Accept</button>
+                    <button class="btn-incoming-decline" onclick="rejectCall()"><i class="fa-solid fa-xmark"></i>
+                        Decline</button>
+                    <button class="btn-incoming-accept" onclick="acceptCall()"><i class="fa-solid fa-phone"></i>
+                        Accept</button>
                 </div>
-        <!-- ADD STORY MODAL -->
-        <div id="add-story-modal" class="modal hidden">
-            <div class="ig-group-modal-content">
-                <div class="modal-header-row">
-                    <h3>Add 24h Status Story</h3>
-                    <button class="close-modal-btn" onclick="closeAddStoryModal()"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-                <div class="group-input-wrap">
-                    <input type="text" id="story-caption-input" placeholder="Write a story update (max 280 chars)..." maxlength="280">
-                </div>
-                <div class="input-group" style="margin-top: 10px;">
-                    <label style="font-size: 0.78rem; color: var(--text-secondary);">Photo or Video Attachment (Optional)</label>
-                    <input type="file" id="story-file-input" accept="image/*,video/*" style="width: 100%; padding: 8px; background: #121212; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; margin-top: 4px;">
-                </div>
-                <div class="input-group" style="margin-top: 10px;">
-                    <label style="font-size: 0.78rem; color: var(--text-secondary);">Story Privacy</label>
-                    <select id="story-privacy-select" style="width: 100%; padding: 8px; background: #121212; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; margin-top: 4px;">
-                        <option value="friends" selected>My Contacts / Mutual Friends Only</option>
-                        <option value="public">Public / Everyone</option>
-                        <option value="private">Private / Only Me</option>
-                    </select>
-                </div>
-                <button class="btn-create-group-action" onclick="submitNewStory()" style="margin-top: 15px;">Publish Story</button>
-            </div>
-        </div>
-
-        <!-- STORY VIEWER OVERLAY MODAL -->
-        <div id="story-viewer-modal" class="modal hidden">
-            <div class="ig-call-overlay" style="max-width: 360px; padding: 25px; border-radius: 16px;">
-                <button class="close-modal-btn" onclick="closeStoryViewer()" style="position: absolute; top: 15px; right: 15px;"><i class="fa-solid fa-xmark"></i></button>
-                <div style="display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 12px;">
-                    <img id="story-viewer-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=0" style="width: 40px; height: 40px; border-radius: 50%;">
-                    <div>
-                        <strong id="story-viewer-name" style="font-size: 0.9rem; color: #fff; display: block;">Username</strong>
-                        <span id="story-viewer-time" style="font-size: 0.7rem; color: var(--text-secondary);">Time</span>
+                <!-- ADD STORY MODAL -->
+                <div id="add-story-modal" class="modal hidden">
+                    <div class="ig-group-modal-content">
+                        <div class="modal-header-row">
+                            <h3>Add 24h Status Story</h3>
+                            <button class="close-modal-btn" onclick="closeAddStoryModal()"><i
+                                    class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <div class="group-input-wrap">
+                            <input type="text" id="story-caption-input"
+                                placeholder="Write a story update (max 280 chars)..." maxlength="280">
+                        </div>
+                        <div class="input-group" style="margin-top: 10px;">
+                            <label style="font-size: 0.78rem; color: var(--text-secondary);">Photo or Video Attachment
+                                (Optional)</label>
+                            <input type="file" id="story-file-input" accept="image/*,video/*"
+                                style="width: 100%; padding: 8px; background: #121212; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; margin-top: 4px;">
+                        </div>
+                        <div class="input-group" style="margin-top: 10px;">
+                            <label style="font-size: 0.78rem; color: var(--text-secondary);">Story Privacy</label>
+                            <select id="story-privacy-select"
+                                style="width: 100%; padding: 8px; background: #121212; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; margin-top: 4px;">
+                                <option value="friends" selected>My Contacts / Mutual Friends Only</option>
+                                <option value="public">Public / Everyone</option>
+                                <option value="private">Private / Only Me</option>
+                            </select>
+                        </div>
+                        <button class="btn-create-group-action" onclick="submitNewStory()"
+                            style="margin-top: 15px;">Publish Story</button>
                     </div>
                 </div>
-                <div id="story-viewer-body" style="width: 100%; min-height: 180px; background: rgba(0,0,0,0.4); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; text-align: center;">
-                    <img id="story-viewer-image" style="max-width: 100%; max-height: 220px; border-radius: 8px; margin-bottom: 10px; display: none;">
-                    <video id="story-viewer-video" controls autoplay loop style="max-width: 100%; max-height: 220px; border-radius: 8px; margin-bottom: 10px; display: none;"></video>
-                    <p id="story-viewer-caption" style="font-size: 1rem; color: #fff; font-weight: 500;"></p>
+
+                <!-- STORY VIEWER OVERLAY MODAL -->
+                <div id="story-viewer-modal" class="modal hidden">
+                    <div class="ig-call-overlay" style="max-width: 360px; padding: 25px; border-radius: 16px;">
+                        <button class="close-modal-btn" onclick="closeStoryViewer()"
+                            style="position: absolute; top: 15px; right: 15px;"><i
+                                class="fa-solid fa-xmark"></i></button>
+                        <div style="display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 12px;">
+                            <img id="story-viewer-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=0"
+                                style="width: 40px; height: 40px; border-radius: 50%;">
+                            <div>
+                                <strong id="story-viewer-name"
+                                    style="font-size: 0.9rem; color: #fff; display: block;">Username</strong>
+                                <span id="story-viewer-time"
+                                    style="font-size: 0.7rem; color: var(--text-secondary);">Time</span>
+                            </div>
+                        </div>
+                        <div id="story-viewer-body"
+                            style="width: 100%; min-height: 180px; background: rgba(0,0,0,0.4); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; text-align: center;">
+                            <img id="story-viewer-image"
+                                style="max-width: 100%; max-height: 220px; border-radius: 8px; margin-bottom: 10px; display: none;">
+                            <video id="story-viewer-video" controls autoplay loop
+                                style="max-width: 100%; max-height: 220px; border-radius: 8px; margin-bottom: 10px; display: none;"></video>
+                            <p id="story-viewer-caption" style="font-size: 1rem; color: #fff; font-weight: 500;"></p>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- PIN LOCK OVERLAY -->
-        <div id="pin-lock-overlay" class="pin-lock-overlay hidden">
-            <img src="{% static 'img/logo.png' %}" style="width: 54px; height: 54px;">
-            <h3 style="color: #fff; font-weight: 700; font-size: 1.2rem;">ESCTRIX Passcode Lock</h3>
-            <p style="color: var(--text-secondary); font-size: 0.82rem;">Enter your 4-digit PIN to access chats</p>
-            <div class="pin-dots-row">
-                <div class="pin-dot" id="dot-1"></div>
-                <div class="pin-dot" id="dot-2"></div>
-                <div class="pin-dot" id="dot-3"></div>
-                <div class="pin-dot" id="dot-4"></div>
-            </div>
-            <div class="pin-keypad">
-                <button class="pin-key" onclick="pressPinKey('1')">1</button>
-                <button class="pin-key" onclick="pressPinKey('2')">2</button>
-                <button class="pin-key" onclick="pressPinKey('3')">3</button>
-                <button class="pin-key" onclick="pressPinKey('4')">4</button>
-                <button class="pin-key" onclick="pressPinKey('5')">5</button>
-                <button class="pin-key" onclick="pressPinKey('6')">6</button>
-                <button class="pin-key" onclick="pressPinKey('7')">7</button>
-                <button class="pin-key" onclick="pressPinKey('8')">8</button>
-                <button class="pin-key" onclick="pressPinKey('9')">9</button>
-                <button class="pin-key" onclick="clearPinKey()"><i class="fa-solid fa-delete-left"></i></button>
-                <button class="pin-key" onclick="pressPinKey('0')">0</button>
-                <button class="pin-key" onclick="submitPinUnlock()"><i class="fa-solid fa-check"></i></button>
-            </div>
-        </div>
+                <!-- PIN LOCK OVERLAY -->
+                <div id="pin-lock-overlay" class="pin-lock-overlay hidden">
+                    <img src="{% static 'img/logo.png' %}" style="width: 54px; height: 54px;">
+                    <h3 style="color: #fff; font-weight: 700; font-size: 1.2rem;">ESCTRIX Passcode Lock</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.82rem;">Enter your 4-digit PIN to access chats
+                    </p>
+                    <div class="pin-dots-row">
+                        <div class="pin-dot" id="dot-1"></div>
+                        <div class="pin-dot" id="dot-2"></div>
+                        <div class="pin-dot" id="dot-3"></div>
+                        <div class="pin-dot" id="dot-4"></div>
+                    </div>
+                    <div class="pin-keypad">
+                        <button class="pin-key" onclick="pressPinKey('1')">1</button>
+                        <button class="pin-key" onclick="pressPinKey('2')">2</button>
+                        <button class="pin-key" onclick="pressPinKey('3')">3</button>
+                        <button class="pin-key" onclick="pressPinKey('4')">4</button>
+                        <button class="pin-key" onclick="pressPinKey('5')">5</button>
+                        <button class="pin-key" onclick="pressPinKey('6')">6</button>
+                        <button class="pin-key" onclick="pressPinKey('7')">7</button>
+                        <button class="pin-key" onclick="pressPinKey('8')">8</button>
+                        <button class="pin-key" onclick="pressPinKey('9')">9</button>
+                        <button class="pin-key" onclick="clearPinKey()"><i class="fa-solid fa-delete-left"></i></button>
+                        <button class="pin-key" onclick="pressPinKey('0')">0</button>
+                        <button class="pin-key" onclick="submitPinUnlock()"><i class="fa-solid fa-check"></i></button>
+                    </div>
+                </div>
 
-    <!-- Inject Django Context -->
-    <script>
-        const CURRENT_USER = {
-            username: "{{ request.user.username }}",
-            display_name: "{{ request.user.display_name }}",
-            avatar_index: {{ request.user.avatar_index }}
+                <!-- Inject Django Context -->
+                <script>
+                    const CURRENT_USER = {
+                        username: "{{ request.user.username }}",
+                        display_name: "{{ request.user.display_name }}",
+                        avatar_index: {{ request.user.avatar_index }}
         };
-    </script>
-    <script src="{% static 'js/api.js' %}?v=15"></script>
-    <script src="{% static 'js/webrtc.js' %}?v=15"></script>
-    <script src="{% static 'js/chat.js' %}?v=15"></script>
+                </script>
+                <script src="{% static 'js/api.js' %}?v=15"></script>
+                <script src="{% static 'js/webrtc.js' %}?v=15"></script>
+                <script src="{% static 'js/chat.js' %}?v=15"></script>
 </body>
+
 </html>
