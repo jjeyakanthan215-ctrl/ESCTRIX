@@ -251,12 +251,18 @@
                     </div>
 
                     <!-- Style Filter Tabs -->
-                    <div class="avatar-style-tabs">
-                        <button type="button" class="avatar-style-tab active" onclick="switchAvatarStyle('avataaars', this)">🎨 2D Avataaars</button>
-                        <button type="button" class="avatar-style-tab" onclick="switchAvatarStyle('bottts', this)">🤖 Cyber Robots</button>
-                        <button type="button" class="avatar-style-tab" onclick="switchAvatarStyle('lorelei', this)">🌟 Lorelei</button>
-                        <button type="button" class="avatar-style-tab" onclick="switchAvatarStyle('fun-emoji', this)">😜 3D Emoji</button>
-                        <button type="button" class="avatar-style-tab" onclick="switchAvatarStyle('adventurer', this)">🧙 Adventurer</button>
+                    <div style="position: relative; display: flex; align-items: center; gap: 6px; margin-top: 10px; width: 100%;">
+                        <button type="button" onclick="scrollAvatarTabs(-150)" style="background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;" title="Scroll Left"><i class="fa-solid fa-chevron-left" style="font-size: 0.72rem;"></i></button>
+                        
+                        <div class="avatar-style-tabs" id="avatar-style-tabs">
+                            <button type="button" class="avatar-style-tab active" onclick="switchAvatarStyle('avataaars', this)">🎨 2D Avataaars</button>
+                            <button type="button" class="avatar-style-tab" onclick="switchAvatarStyle('bottts', this)">🤖 Cyber Robots</button>
+                            <button type="button" class="avatar-style-tab" onclick="switchAvatarStyle('lorelei', this)">🌟 Lorelei</button>
+                            <button type="button" class="avatar-style-tab" onclick="switchAvatarStyle('fun-emoji', this)">😜 3D Emoji</button>
+                            <button type="button" class="avatar-style-tab" onclick="switchAvatarStyle('adventurer', this)">🧙 Adventurer</button>
+                        </div>
+
+                        <button type="button" onclick="scrollAvatarTabs(150)" style="background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;" title="Scroll Right"><i class="fa-solid fa-chevron-right" style="font-size: 0.72rem;"></i></button>
                     </div>
 
                     <!-- Gallery Grid -->

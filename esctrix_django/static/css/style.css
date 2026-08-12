@@ -1876,25 +1876,47 @@ input:focus, textarea:focus, select:focus {
     display: flex;
     gap: 8px;
     overflow-x: auto;
-    padding-bottom: 4px;
-    margin-top: 10px;
+    overflow-y: hidden;
+    padding-bottom: 6px;
+    margin-top: 5px;
+    flex-wrap: nowrap;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) transparent;
+}
+
+.avatar-style-tabs::-webkit-scrollbar {
+    display: block !important;
+    height: 4px !important;
+}
+
+.avatar-style-tabs::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+.avatar-style-tabs::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 4px;
 }
 
 .avatar-style-tab {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.08);
     color: var(--text-secondary);
-    padding: 6px 12px;
+    padding: 6px 14px;
     border-radius: 20px;
     font-size: 0.76rem;
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
+    flex-shrink: 0;
     transition: all 0.2s;
 }
 
 .avatar-style-tab:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.12);
     color: #fff;
 }
 

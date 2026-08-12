@@ -1737,3 +1737,10 @@ function randomizeAvatar() {
         }, 220);
     }
 }
+
+function scrollAvatarTabs(amount) {
+    const container = document.getElementById('avatar-style-tabs');
+    if (container) {
+        container.scrollBy({ left: amount, behavior: 'smooth' });
+    }
+}
