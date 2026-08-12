@@ -909,6 +909,14 @@ UPDATE 24: CONTACT LONG PRESS CONTEXT MENU & REAL-TIME AUTO SYNC POLLER
       * Integrated autoSyncActiveChatHistory() poller executing every 3 seconds
       * Automatically decrypts and appends new incoming messages in real time without requiring manual force page reloads
 
+------------------------------------------------------------------------
+UPDATE 25: DIRECT LEFT-CLICK CONTACT OPTIONS MENU & THREE-DOTS BUTTON
+------------------------------------------------------------------------
+  - Direct Left-Click & Dedicated Options Button (chat.js & style.css):
+      * Updated contact item list rows so normal left-click immediately opens the Options Context Menu
+      * Added dedicated three-dots options button (.btn-contact-dots) to each contact row
+      * Preserved direct chat button for 1-click messaging while enabling easy access to Clear Messages, Delete Chat, Mute Notifications, Mute Calls, and View Profile
+
 
 ================================================================================
                     FUTURE UPGRADES & RECOMMENDED ROADMAP

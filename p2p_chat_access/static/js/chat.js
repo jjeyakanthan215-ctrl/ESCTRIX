@@ -308,7 +308,7 @@ apiEvents.onFriendsList = (friends) => {
 
         const li = document.createElement('div');
         li.className = 'list-item';
-        li.onclick = () => openChat(f);
+        li.onclick = (e) => openContactContextMenu(f.username, e);
         
         const statusBadge = f.is_online 
             ? `<span style="font-size:0.65rem; background:rgba(34,197,94,0.15); color:#22c55e; border:1px solid rgba(34,197,94,0.3); padding:2px 8px; border-radius:10px; font-weight:600;">Online</span>`
@@ -320,9 +320,10 @@ apiEvents.onFriendsList = (friends) => {
                 <div class="list-item-title">${f.display_name}</div>
                 <div class="list-item-subtitle">@${f.username}</div>
             </div>
-            <div style="display:flex; align-items:center; gap:8px;">
+            <div style="display:flex; align-items:center; gap:6px;">
                 ${statusBadge}
-                <button class="btn-small ${f.is_online ? 'btn-success' : 'btn-secondary'}">Chat</button>
+                <button class="btn-small ${f.is_online ? 'btn-success' : 'btn-secondary'}" onclick="event.stopPropagation(); openChatByUsername('${f.username}')">Chat</button>
+                <button class="btn-contact-dots" onclick="event.stopPropagation(); openContactContextMenu('${f.username}', event)" title="Options Menu"><i class="fa-solid fa-ellipsis-vertical"></i></button>
             </div>
         `;
         if (offlineEl) {
@@ -330,6 +331,7 @@ apiEvents.onFriendsList = (friends) => {
             attachContactLongPress(li, f.username);
         }
     });
+
 
 
     if (onlineCount === 0 && storiesEl) {
