@@ -477,6 +477,9 @@ async function openChat(friend) {
     currentActiveChatUser = friend.username;
     currentActiveGroupId = null;
     
+    const callBtns = document.querySelectorAll('.chat-header-actions .btn-call-action');
+    callBtns.forEach(b => b.style.display = 'flex');
+    
     document.getElementById('session-name').innerText = friend.display_name;
     document.getElementById('session-avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${friend.avatar_index}`;
     
@@ -2271,4 +2274,67 @@ function pinMessage(text) {
 function unpinCurrentMessage() {
     const banner = document.getElementById('pinned-message-banner');
     if (banner) banner.classList.add('hidden');
+}
+
+// --- OFFICIAL ESCTRIX CHANNEL UPDATES ---
+async function openEsctrixOfficialChannel() {
+    currentActiveChatUser = null;
+    currentActiveGroupId = null;
+    
+    // UI panel switching
+    document.getElementById('chat-placeholder').classList.add('hidden');
+    document.getElementById('active-chat-box').classList.remove('hidden');
+    
+    // Header
+    const avatarEl = document.getElementById('session-avatar');
+    if (avatarEl) avatarEl.src = '/static/img/logo.png';
+    
+    document.getElementById('session-name').innerHTML = `ESCTRIX <i class="fa-solid fa-circle-check" style="color:#0066ff; font-size:0.88rem;" title="Official Verified Channel"></i>`;
+    document.getElementById('session-status').innerText = 'Official System Updates & Announcements';
+
+    // Hide direct call buttons for system channel
+    const callBtns = document.querySelectorAll('.chat-header-actions .btn-call-action');
+    callBtns.forEach(b => {
+        if (!b.classList.contains('mobile-back-btn')) b.style.display = 'none';
+    });
+
+    const msgContainer = document.getElementById('chat-messages');
+    msgContainer.innerHTML = '<p class="empty-placeholder">Loading official updates...</p>';
+
+    try {
+        const response = await fetch('/api/system/broadcasts/');
+        const data = await response.json();
+        if (data.success) {
+            msgContainer.innerHTML = '';
+            if (data.broadcasts.length === 0) {
+                msgContainer.innerHTML = '<p class="empty-placeholder">No official announcements yet.</p>';
+                return;
+            }
+            
+            data.broadcasts.forEach(b => {
+                const bubble = document.createElement('div');
+                bubble.className = 'chat-bubble income';
+                bubble.style.maxWidth = '85%';
+                bubble.style.background = 'rgba(15, 16, 22, 0.9)';
+                bubble.style.border = '1px solid var(--accent-glow)';
+
+                bubble.innerHTML = `
+                    <div style="display:flex; align-items:center; justify-content:space-between; width:100%; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:6px; margin-bottom:8px;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <img src="/static/img/logo.png" style="width:20px; height:20px; border-radius:50%;">
+                            <strong style="color:var(--accent); font-size:0.85rem;">${b.title}</strong>
+                        </div>
+                        <span style="font-size:0.68rem; color:var(--text-secondary); opacity:0.7;">${b.created_at}</span>
+                    </div>
+                    <div style="font-size:0.84rem; color:var(--text-primary); line-height:1.4; white-space:pre-wrap;">${b.message}</div>
+                    <div style="margin-top:8px; font-size:0.7rem; color:var(--text-secondary); opacity:0.6; text-transform:uppercase;">● ${b.category}</div>
+                `;
+                msgContainer.appendChild(bubble);
+            });
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+        }
+    } catch (err) {
+        console.error(err);
+        msgContainer.innerHTML = '<p class="empty-placeholder text-danger">Error loading announcements.</p>';
+    }
 }

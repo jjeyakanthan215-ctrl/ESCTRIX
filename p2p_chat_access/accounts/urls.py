@@ -36,4 +36,6 @@ urlpatterns = [
     path('api/group/history/', views.api_group_history, name='api_group_history'),
     path('api/story/create/', views.api_create_story, name='api_create_story'),
     path('api/story/list/', views.api_get_stories, name='api_get_stories'),
+    path('api/system/broadcasts/', views.api_get_system_broadcasts, name='api_get_system_broadcasts'),
+    path('api/system/broadcast/send/', views.api_post_system_broadcast, name='api_post_system_broadcast'),
 ]

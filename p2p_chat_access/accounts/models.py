@@ -99,3 +99,12 @@ class UserStory(models.Model):
 
     def __str__(self):
         return f"Story by {self.user.username} (expires {self.expires_at})"
+
+class SystemBroadcast(models.Model):
+    title = models.CharField(max_length=150, default="ESCTRIX System Update")
+    message = models.TextField()
+    category = models.CharField(max_length=50, default="System Update")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"[ESCTRIX Official] {self.title} ({self.created_at.strftime('%Y-%m-%d %H:%M')})"

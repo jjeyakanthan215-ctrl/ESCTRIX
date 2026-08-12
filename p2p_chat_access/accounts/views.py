@@ -6,7 +6,7 @@ import json
 import re
 from datetime import timedelta, datetime
 from django.utils import timezone
-from .models import CustomUser, Friendship, BlockList, HelpTicket, GuestContactRequest, UserStory
+from .models import CustomUser, Friendship, BlockList, HelpTicket, GuestContactRequest, UserStory, SystemBroadcast
 from chat.models import ChatGroup, ChatGroupMember, ChatMessage, ChatGroupMessage, MessageReaction
 
 @ensure_csrf_cookie
@@ -729,6 +729,44 @@ def api_get_stories(request):
         })
         
     return JsonResponse({'success': True, 'stories': results})
+
+def api_get_system_broadcasts(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=401)
+    
+    broadcasts = SystemBroadcast.objects.all().order_by('-created_at')[:30]
+    results = []
+    for b in broadcasts:
+        results.append({
+            'id': b.id,
+            'title': b.title,
+            'message': b.message,
+            'category': b.category,
+            'created_at': b.created_at.strftime('%Y-%m-%d %H:%M')
+        })
+    return JsonResponse({'success': True, 'broadcasts': results})
+
+def api_post_system_broadcast(request):
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return JsonResponse({'success': False, 'error': 'Admin permissions required'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        title = data.get('title', 'ESCTRIX Official Announcement').strip()
+        message = data.get('message', '').strip()
+        category = data.get('category', 'System Update').strip()
+        
+        if not message:
+            return JsonResponse({'success': False, 'error': 'Message content cannot be empty'}, status=400)
+            
+        b = SystemBroadcast.objects.create(
+            title=title,
+            message=message,
+            category=category
+        )
+        return JsonResponse({'success': True, 'broadcast_id': b.id})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 
 

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html
-from .models import CustomUser, Friendship, BlockList, HelpTicket, GuestContactRequest
+from .models import CustomUser, Friendship, BlockList, HelpTicket, GuestContactRequest, SystemBroadcast
 
 
 # ─── ACTIONS ──────────────────────────────────────────────────
@@ -143,6 +143,13 @@ class GuestContactAdmin(admin.ModelAdmin):
         return format_html(html)
 
 
+class SystemBroadcastAdmin(admin.ModelAdmin):
+    list_display  = ('title', 'category', 'created_at')
+    search_fields = ('title', 'message')
+    ordering      = ('-created_at',)
+    list_per_page = 25
+
+
 # ─── REGISTER ─────────────────────────────────────────────────
 
 admin.site.register(CustomUser, CustomUserAdmin)
@@ -150,3 +157,4 @@ admin.site.register(Friendship, FriendshipAdmin)
 admin.site.register(BlockList, BlockListAdmin)
 admin.site.register(HelpTicket, HelpTicketAdmin)
 admin.site.register(GuestContactRequest, GuestContactAdmin)
+admin.site.register(SystemBroadcast, SystemBroadcastAdmin)
