@@ -140,6 +140,7 @@ function switchTab(tabId) {
         const mob = document.querySelector('.mob-nav-item[onclick="switchTab(\'notifications-tab\')"]');
         if (mob) mob.classList.add('active');
         loadPendingRequests();
+        renderNotificationsTab();
     } else if (tabId === 'settings-tab') {
         const item = document.querySelector('button[onclick="switchTab(\'settings-tab\')"]');
         if (item) item.classList.add('active');
@@ -916,6 +917,7 @@ async function saveAvatarSeedOnly() {
             const profilePreview = document.getElementById('profile-avatar-preview');
             if (profilePreview) profilePreview.src = `https://api.dicebear.com/7.x/${currentAvatarStyle}/svg?seed=${a}`;
             showToast('Avatar Saved', 'Your new profile avatar has been saved!', 'success');
+            saveNotification('Avatar Updated', 'Your profile avatar has been updated.', 'info', 'fa-image');
         } else {
             showToast('Avatar Error', data.error || 'Failed to update avatar', 'error');
         }
@@ -962,6 +964,7 @@ async function changePassword(e) {
             status.innerText = 'Password changed successfully!';
             status.style.color = 'var(--success)';
             showToast('Password Changed', 'Your password was updated successfully!', 'success');
+            saveNotification('Password Changed', 'Your account password was updated successfully.', 'security', 'fa-shield-halved');
             document.getElementById('password-form').reset();
         } else {
             status.innerText = data.error || 'Failed to change password.';
@@ -1392,6 +1395,7 @@ async function sendFriendRequest(targetUsername) {
         const data = await response.json();
         if (data.success) {
             showToast('Friend Request', `Friend request sent to @${targetUsername}!`, 'success');
+            saveNotification('Friend Request Sent', `Sent a friend request to @${targetUsername}`, 'info', 'fa-paper-plane');
             debounceSearch();
         } else {
             showToast('Friend Request Error', data.error, 'error');
@@ -1414,6 +1418,7 @@ async function acceptFriendRequest(senderUsername) {
         const data = await response.json();
         if (data.success) {
             showToast('Friend Request', `Friend request from @${senderUsername} accepted!`, 'success');
+            saveNotification('Friend Request Accepted', `Accepted friend request from @${senderUsername}`, 'success', 'fa-user-check');
             loadPendingRequests();
             sendToServer('FRIEND_LIST');
         } else {
@@ -1513,6 +1518,8 @@ async function submitHelpTicket(e) {
         if (data.success) {
             statusText.innerText = "Help request submitted successfully!";
             statusText.style.color = "var(--success)";
+            showToast('Help & Support', 'Support ticket submitted successfully!', 'success');
+            saveNotification('Support Ticket Submitted', `Submitted help request: "${subject}"`, 'info', 'fa-circle-question');
             document.getElementById('help-ticket-form').reset();
             loadHelpTickets();
         } else {
@@ -1597,7 +1604,7 @@ function changeAppTheme(themeName) {
     showToast('Theme Updated', `Theme changed to ${themeName.toUpperCase()}`, 'success');
 }
 
-function applyCustomColorTheme(hexColor) {
+function applyCustomColorTheme(hexColor, silent = false) {
     if (!hexColor || !hexColor.startsWith('#')) return;
     
     document.documentElement.setAttribute('data-theme', 'custom');
@@ -1624,7 +1631,9 @@ function applyCustomColorTheme(hexColor) {
         card.style.border = '1px solid var(--border-color)';
     });
 
-    showToast('Custom Theme', `Theme color updated to ${hexColor.toUpperCase()}`, 'success');
+    if (!silent) {
+        showToast('Custom Theme', `Theme color updated to ${hexColor.toUpperCase()}`, 'success');
+    }
 }
 
 function hexToRgba(hex, alpha) {
@@ -1648,14 +1657,122 @@ function adjustColorBrightness(hex, percent) {
     return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 + (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 + (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
 }
 
-// Restore saved theme on load
+// Restore saved theme on load silently
 const savedTheme = localStorage.getItem('esctrix_theme');
 if (savedTheme) {
     if (savedTheme.startsWith('#')) {
-        applyCustomColorTheme(savedTheme);
+        applyCustomColorTheme(savedTheme, true);
     } else {
         document.documentElement.setAttribute('data-theme', savedTheme);
     }
+}
+
+// --- NOTIFICATION STORAGE & ACTIVITY LOG ENGINE ---
+
+function getStoredNotifications() {
+    try {
+        const key = `esctrix_notifications_${CURRENT_USER.username}`;
+        return JSON.parse(localStorage.getItem(key)) || [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveNotification(title, message, type = 'info', icon = 'fa-bell') {
+    try {
+        const key = `esctrix_notifications_${CURRENT_USER.username}`;
+        const list = getStoredNotifications();
+        const item = {
+            id: 'notif_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            title,
+            message,
+            type,
+            icon,
+            timestamp: new Date().toISOString(),
+            read: false
+        };
+        list.unshift(item);
+        if (list.length > 30) list.pop();
+        localStorage.setItem(key, JSON.stringify(list));
+        
+        updateNotificationBadge();
+        renderNotificationsTab();
+        return item;
+    } catch (e) {
+        console.error("Error saving notification", e);
+    }
+}
+
+function clearAllNotifications() {
+    const key = `esctrix_notifications_${CURRENT_USER.username}`;
+    localStorage.removeItem(key);
+    renderNotificationsTab();
+    updateNotificationBadge();
+    showToast('Notifications', 'Activity log cleared.', 'info');
+}
+
+function updateNotificationBadge() {
+    const list = getStoredNotifications();
+    const unreadCount = list.filter(n => !n.read).length;
+    const badge = document.getElementById('activity-badge');
+    if (badge) {
+        const reqList = document.getElementById('request-list');
+        const hasRequests = reqList && reqList.children.length > 0 && !reqList.querySelector('.empty-placeholder');
+        if (unreadCount > 0 || hasRequests) {
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+}
+
+function renderNotificationsTab() {
+    const container = document.getElementById('notifications-tab-container');
+    if (!container) return;
+    
+    const list = getStoredNotifications();
+
+    if (list.length === 0) {
+        container.innerHTML = `
+            <div class="empty-placeholder" style="padding: 20px 10px; text-align: center;">
+                <i class="fa-regular fa-bell" style="font-size: 1.5rem; color: var(--text-secondary); opacity: 0.4; margin-bottom: 6px; display: block;"></i>
+                <p style="color: var(--text-secondary); font-size: 0.8rem;">No recent account activity</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = '';
+    list.forEach(n => {
+        const row = document.createElement('div');
+        row.className = 'list-item';
+        row.style.padding = '10px 12px';
+        row.style.border = '1px solid var(--border-color)';
+        row.style.borderRadius = 'var(--radius-sm)';
+        row.style.alignItems = 'flex-start';
+        row.style.background = n.read ? 'transparent' : 'rgba(124, 58, 237, 0.08)';
+        
+        const dateStr = new Date(n.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' });
+        
+        let iconColor = 'var(--accent)';
+        if (n.type === 'success') iconColor = 'var(--success)';
+        if (n.type === 'error' || n.type === 'danger') iconColor = 'var(--danger)';
+        if (n.type === 'security') iconColor = '#ffb700';
+
+        row.innerHTML = `
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; color: ${iconColor}; flex-shrink: 0; margin-right: 10px;">
+                <i class="fa-solid ${n.icon}"></i>
+            </div>
+            <div class="list-item-info" style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="font-size: 0.82rem; color: var(--text-primary);">${n.title}</strong>
+                    <span style="font-size: 0.68rem; color: var(--text-secondary); opacity: 0.7;">${dateStr}</span>
+                </div>
+                <div style="font-size: 0.76rem; color: var(--text-secondary); margin-top: 2px;">${n.message}</div>
+            </div>
+        `;
+        container.appendChild(row);
+    });
 }
 
 // Initial loads
@@ -1664,11 +1781,20 @@ window.addEventListener('DOMContentLoaded', () => {
     setInterval(loadPendingRequests, 10000);
     renderAvatarPresetGrid();
     
-    // Restore inputs if custom color is saved
+    // Restore theme silently on page load
     const saved = localStorage.getItem('esctrix_theme');
     if (saved && saved.startsWith('#')) {
-        applyCustomColorTheme(saved);
+        applyCustomColorTheme(saved, true);
     }
+
+    // Log session login event once per session
+    if (!sessionStorage.getItem('esctrix_login_logged')) {
+        sessionStorage.setItem('esctrix_login_logged', '1');
+        saveNotification('Session Authenticated', 'Logged in to ESCTRIX session', 'success', 'fa-key');
+    }
+    
+    updateNotificationBadge();
+    renderNotificationsTab();
 });
 
 // --- ANIMATED AVATAR PICKER GALLERY ---

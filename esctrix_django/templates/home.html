@@ -101,11 +101,27 @@
 
             <!-- Notifications Tab -->
             <div id="notifications-tab" class="ig-tab-content hidden">
-                <div class="panel-title-header">
+                <div class="panel-title-header" style="display: flex; justify-content: space-between; align-items: center;">
                     <h3>Notifications</h3>
+                    <button type="button" onclick="clearAllNotifications()" style="background: transparent; border: none; color: var(--text-secondary); font-size: 0.78rem; cursor: pointer; padding: 4px 8px;" title="Clear Activity Log">
+                        <i class="fa-solid fa-trash-can"></i> Clear Log
+                    </button>
                 </div>
-                <div id="request-list" class="requests-list">
-                    <!-- Friend requests injected here -->
+
+                <!-- Pending Friend Requests Sub-Section -->
+                <div style="padding: 10px 15px 0;">
+                    <h4 style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">Friend Requests</h4>
+                    <div id="request-list" class="requests-list">
+                        <!-- Friend requests injected here -->
+                    </div>
+                </div>
+
+                <!-- Account & Security Activity Log Sub-Section -->
+                <div style="padding: 15px 15px 0; border-top: 1px solid var(--border-color); margin-top: 15px;">
+                    <h4 style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">Account & Security Activity</h4>
+                    <div id="notifications-tab-container" class="notifications-list-container" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Persistent notifications injected here -->
+                    </div>
                 </div>
             </div>
 
@@ -510,8 +526,8 @@
             avatar_index: {{ request.user.avatar_index }}
         };
     </script>
-    <script src="{% static 'js/api.js' %}?v=11"></script>
-    <script src="{% static 'js/webrtc.js' %}?v=11"></script>
-    <script src="{% static 'js/chat.js' %}?v=11"></script>
+    <script src="{% static 'js/api.js' %}?v=12"></script>
+    <script src="{% static 'js/webrtc.js' %}?v=12"></script>
+    <script src="{% static 'js/chat.js' %}?v=12"></script>
 </body>
 </html>
