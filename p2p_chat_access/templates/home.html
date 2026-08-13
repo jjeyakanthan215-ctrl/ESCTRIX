@@ -19,6 +19,7 @@
         <aside class="ig-navigation-sidebar">
             <div class="ig-nav-header">
                 <img src="{% static 'img/logo.png' %}" alt="ESCTRIX logo" style="height: 38px; width: auto; object-fit: contain;">
+                <span style="background: linear-gradient(135deg, #00d2ff 0%, #7c3aed 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-family: 'Outfit', sans-serif; letter-spacing: 1px;">ESCTRIX</span>
             </div>
 
 
@@ -32,12 +33,13 @@
                 <button class="ig-nav-item" onclick="switchTab('search-tab')">
                     <i class="fa-solid fa-magnifying-glass"></i> <span>Search</span>
                 </button>
+                <button class="ig-nav-item" onclick="switchTab('calls-tab')">
+                    <i class="fa-solid fa-phone"></i> <span>Calls</span>
+                    <span id="calls-badge" class="ig-badge-dot hidden"></span>
+                </button>
                 <button class="ig-nav-item" onclick="switchTab('notifications-tab')">
                     <i class="fa-regular fa-heart"></i> <span>Notifications</span>
                     <span id="activity-badge" class="ig-badge-dot hidden"></span>
-                </button>
-                <button class="ig-nav-item" onclick="switchTab('settings-tab')">
-                    <i class="fa-solid fa-gear"></i> <span>Settings</span>
                 </button>
                 <button class="ig-nav-item" onclick="switchTab('profile-tab')">
                     <i class="fa-regular fa-circle-user"></i> <span>Profile</span>
@@ -149,6 +151,19 @@
                 </div>
             </div>
 
+            <!-- Calls Tab -->
+            <div id="calls-tab" class="ig-tab-content hidden">
+                <div class="panel-title-header" style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3>Call History</h3>
+                    <button type="button" onclick="clearCallHistory()" style="background:transparent; border:none; color:var(--text-secondary); font-size:0.78rem; cursor:pointer; padding:4px 8px;" title="Clear Call History">
+                        <i class="fa-solid fa-trash-can"></i> Clear
+                    </button>
+                </div>
+                <div id="call-history-list" style="display:flex; flex-direction:column; gap:8px; padding:10px 15px;">
+                    <p class="empty-placeholder" id="call-history-empty">No call history yet</p>
+                </div>
+            </div>
+
             <!-- Notifications Tab -->
             <div id="notifications-tab" class="ig-tab-content hidden">
                 <div class="panel-title-header"
@@ -168,6 +183,15 @@
                         Friend Requests</h4>
                     <div id="request-list" class="requests-list">
                         <!-- Friend requests injected here -->
+                    </div>
+                </div>
+
+                <!-- Call History Sub-Section in Notifications -->
+                <div style="padding: 15px 15px 0; border-top: 1px solid var(--border-color); margin-top: 15px;">
+                    <h4 style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">
+                        <i class="fa-solid fa-phone" style="color:var(--accent); margin-right:5px;"></i> Recent Calls</h4>
+                    <div id="notifications-call-history" style="display:flex; flex-direction:column; gap:6px; max-height:200px; overflow-y:auto;">
+                        <p class="empty-placeholder" style="font-size:0.8rem;">No recent calls</p>
                     </div>
                 </div>
 
@@ -204,19 +228,19 @@
                     <button class="setting-nav-item" onclick="switchSettingOption('set-theme')">
                         <i class="fa-solid fa-palette"></i> Chat Theme
                     </button>
-                    <form method="post" action="{% url 'logout' %}" style="margin-top: 15px;">
-                        {% csrf_token %}
-                        <button type="submit" class="setting-nav-item" style="color: var(--danger); width: 100%; justify-content: flex-start; border: 1px solid rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05);">
-                            <i class="fa-solid fa-right-from-bracket"></i> Logout
-                        </button>
-                    </form>
+                    <button type="button" class="setting-nav-item" onclick="handleLogout()" style="color: var(--danger); width: 100%; justify-content: flex-start; border: 1px solid rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05); margin-top: 15px;">
+                        <i class="fa-solid fa-right-from-bracket"></i> Logout
+                    </button>
                 </div>
             </div>
 
             <!-- Profile Tab -->
             <div id="profile-tab" class="ig-tab-content hidden">
-                <div class="panel-title-header">
+                <div class="panel-title-header" style="display: flex; justify-content: space-between; align-items: center;">
                     <h3>My Profile</h3>
+                    <button class="icon-btn" onclick="switchTab('settings-tab')" title="Settings" style="background: transparent; border: none; color: var(--text-secondary); font-size: 1.25rem; cursor: pointer; padding: 4px; transition: color 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text-secondary)'">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
                 </div>
                 <div class="profile-tab-wrapper">
                     <div class="profile-avatar-row">
@@ -658,9 +682,6 @@
             <button class="mob-nav-item" onclick="switchTab('notifications-tab')">
                 <i class="fa-regular fa-heart"></i>
             </button>
-            <button class="mob-nav-item" onclick="switchTab('settings-tab')">
-                <i class="fa-solid fa-gear"></i>
-            </button>
             <button class="mob-nav-item" onclick="switchTab('profile-tab')">
                 <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ request.user.avatar_index }}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
             </button>
@@ -719,6 +740,7 @@
                 <img id="call-peer-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=0">
                 <h3 id="call-peer-name">Calling...</h3>
                 <span id="call-status">Connecting</span>
+                <span id="call-timer" class="call-timer hidden" style="font-size: 0.85rem; font-weight: 600; color: #fff; margin-top: 4px; padding: 2px 8px; background: rgba(0,0,0,0.3); border-radius: 12px; letter-spacing: 1px;">00:00</span>
                 <div class="video-grid hidden" id="video-grid">
                     <video id="remote-video" autoplay playsinline></video>
                     <video id="local-video" autoplay playsinline muted></video>
@@ -832,6 +854,7 @@
                         <button class="pin-key" onclick="clearPinKey()"><i class="fa-solid fa-delete-left"></i></button>
                         <button class="pin-key" onclick="pressPinKey('0')">0</button>
                         <button class="pin-key" onclick="submitPinUnlock()"><i class="fa-solid fa-check"></i></button>
+                    </div>
                 </div>
 
                 <!-- CONTACT LONG PRESS & RIGHT CLICK CONTEXT MENU -->
@@ -853,12 +876,19 @@
                         <button type="button" class="ctx-item" onclick="handleCtxToggleMuteCalls()">
                             <i class="fa-solid fa-phone-slash" id="ctx-mute-call-icon"></i> <span id="ctx-mute-call-label">Mute Calls</span>
                         </button>
+                        <button type="button" class="ctx-item" onclick="handleCtxMarkAsRead()">
+                            <i class="fa-solid fa-envelope-open"></i> <span>Mark as Read</span>
+                        </button>
+                        <button type="button" class="ctx-item" onclick="handleCtxMarkAsUnread()">
+                            <i class="fa-solid fa-envelope"></i> <span>Mark as Unread</span>
+                        </button>
                         <button type="button" class="ctx-item danger" onclick="handleCtxClearChat()">
                             <i class="fa-solid fa-broom"></i> <span>Clear Messages</span>
                         </button>
                         <button type="button" class="ctx-item danger" onclick="handleCtxDeleteChat()">
                             <i class="fa-solid fa-trash-can"></i> <span>Delete Chat</span>
                         </button>
+                    </div>
                 </div>
 
                 <!-- TELEGRAM-STYLE IN-APP MEDIA VIEWER MODAL (LIGHTBOX) -->
@@ -904,7 +934,7 @@
 
                 <script src="{% static 'js/api.js' %}?v=17"></script>
                 <script src="{% static 'js/webrtc.js' %}?v=17"></script>
-                <script src="{% static 'js/chat.js' %}?v=17"></script>
+                <script src="{% static 'js/chat.js' %}?v=18"></script>
 
 </body>
 

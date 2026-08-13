@@ -939,6 +939,31 @@ UPDATE 27: UI POLISH & MOBILE RESPONSIVENESS FIXES
       * Display user's selected Animated Avatar directly inside the mobile bottom navigation bar instead of a generic silhouette icon
       * Added a dedicated highlighted "Logout" button natively within the settings sub-navigation pane for streamlined account access
 
+------------------------------------------------------------------------
+UPDATE 28: LOGIN PORTAL GLASSMORPHISM & RESPONSIVE MOBILE VIEW REFACTOR
+------------------------------------------------------------------------
+  - Centered Glassmorphic Login Container:
+      * Redesigned the auth portal to center the login container both vertically and horizontally across desktop and mobile devices.
+      * Wrapped form components in an inner container (`.auth-panel-inner`) with restricted width (`max-width: 360px`) for improved layout alignment.
+      * Set the right-side authentication panel background to semi-transparent (`rgba(13, 14, 24, 0.55)`) and added a premium backdrop blur effect (`backdrop-filter: blur(28px) saturate(180%)`).
+  - Mobile View Optimization:
+      * Fully hid the left-hand hero advertising column containing the *"Connect with your close friends"* text and decorative phone frames on mobile devices (`max-width: 900px`).
+      * Positioned the centered login card as the sole focused layout on mobile screens.
+  - Interactive Support Dialog & Field Fixes:
+      * Resolved inline style specificity on the **Help & Support** modal container.
+      * Restored fully operational feedback forms, selections, input groups, and dismiss actions on mobile viewports.
+
+------------------------------------------------------------------------
+UPDATE 29: CSS LINTING, E2E TESTING & SIDEBAR BRANDING
+------------------------------------------------------------------------
+  - CSS Linting & Compatibility:
+      * Fixed vendor prefix warnings in `auth.html` by properly defining the standard `background-clip` property alongside `-webkit-background-clip`.
+  - Quality Assurance & DOM Testing:
+      * Conducted comprehensive end-to-end (E2E) DOM and feature testing across the Authentication Flow and Main Dashboard.
+      * Generated full `dom_test_report.md` detailing functional states of all inputs, navigations, form toggles, and session handling.
+  - UI Branding Enhancements:
+      * Injected the ESCTRIX brand name text next to the main sidebar logo (`home.html`).
+      * Styled the text with the signature gradient (`linear-gradient(135deg, #00d2ff 0%, #7c3aed 100%)`) and `Outfit` font for a cohesive premium aesthetic.
 
 ================================================================================
                     FUTURE UPGRADES & RECOMMENDED ROADMAP

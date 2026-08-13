@@ -78,6 +78,7 @@
         .hero-tagline .highlight {
             background: linear-gradient(135deg, #00d2ff 0%, #7c3aed 100%);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
@@ -261,17 +262,37 @@
 
         /* ─── RIGHT LOGIN PANEL ───────────────────────────── */
         .auth-panel {
-            width: 420px;
-            min-width: 380px;
+            width: 480px;
+            min-width: 420px;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 50px 44px;
-            background: rgba(10, 10, 16, 0.85);
-            border-left: 1px solid rgba(255,255,255,0.06);
-            backdrop-filter: blur(20px);
+            align-items: center;
+            padding: 50px 48px;
+            background: rgba(13, 14, 24, 0.55);
+            border-left: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(28px) saturate(180%);
+            -webkit-backdrop-filter: blur(28px) saturate(180%);
+            box-shadow: -20px 0 50px rgba(0, 0, 0, 0.4), inset 1px 0 0 rgba(255, 255, 255, 0.08);
             position: relative;
             z-index: 10;
+        }
+
+        .auth-panel-inner {
+            width: 100%;
+            max-width: 360px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .panel-logo {
+            justify-content: center;
+        }
+
+        .field-group, .privacy-check, .btn-primary, .auth-switch, .help-support-btn-wrap {
+            width: 100%;
         }
 
         /* inner glow edge */
@@ -281,8 +302,9 @@
             left: 0;
             top: 0;
             bottom: 0;
-            width: 1px;
-            background: linear-gradient(to bottom, transparent, rgba(124,58,237,0.5), transparent);
+            width: 2px;
+            background: linear-gradient(to bottom, transparent, rgba(0, 210, 255, 0.6), rgba(124, 58, 237, 0.8), transparent);
+            box-shadow: 0 0 15px rgba(124, 58, 237, 0.5);
         }
 
         /* Logo */
@@ -304,6 +326,7 @@
             letter-spacing: 2px;
             background: linear-gradient(135deg, #00d2ff 0%, #7c3aed 100%);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
@@ -332,25 +355,26 @@
 
         .field-group input {
             width: 100%;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(10px);
             border-radius: 10px;
             padding: 13px 42px 13px 42px;
             font-size: 0.9rem;
             color: #fff;
             font-family: 'Inter', sans-serif;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
             outline: none;
         }
 
         .field-group input::placeholder {
-            color: rgba(255,255,255,0.28);
+            color: rgba(255,255,255,0.35);
         }
 
         .field-group input:focus {
-            border-color: rgba(124,58,237,0.7);
-            box-shadow: 0 0 0 3px rgba(124,58,237,0.12);
-            background: rgba(255,255,255,0.06);
+            border-color: rgba(124,58,237,0.8);
+            box-shadow: 0 0 15px rgba(124,58,237,0.25);
+            background: rgba(255, 255, 255, 0.07);
         }
 
         .field-icon {
@@ -598,25 +622,16 @@
         @media (max-width: 900px) {
             body {
                 flex-direction: column;
+                justify-content: center;
+                align-items: center;
                 overflow-y: auto;
                 height: auto;
                 min-height: 100vh;
             }
 
-            /* Hero becomes compact header strip */
+            /* Hide top hero section on mobile screens */
             .auth-hero {
-                flex: none;
-                padding: 30px 20px 20px;
-                min-height: auto;
-            }
-
-            .hero-tagline {
-                font-size: 1.6rem;
-            }
-
-            .hero-sub {
-                font-size: 0.85rem;
-                margin-bottom: 20px;
+                display: none !important;
             }
 
             /* Hide the phone stack and floating badges on mobile */
@@ -778,6 +793,7 @@
 
     <!-- ═══ RIGHT PANEL ════════════════════════════════════ -->
     <div class="auth-panel">
+      <div class="auth-panel-inner">
 
         <!-- Logo -->
         <div class="panel-logo">
@@ -791,15 +807,15 @@
                 <div class="form-title">Welcome back</div>
                 <div class="form-subtitle">Sign in to your secure account</div>
             </div>
-            <form onsubmit="handleLogin(event)">
+            <form onsubmit="handleLogin(event)" autocomplete="off">
                 {% csrf_token %}
                 <div class="field-group">
                     <i class="fa-solid fa-user field-icon"></i>
-                    <input type="text" id="login-username" required placeholder="Username" autocomplete="username">
+                    <input type="text" id="login-username" required placeholder="Username" autocomplete="off">
                 </div>
                 <div class="field-group">
                     <i class="fa-solid fa-lock field-icon"></i>
-                    <input type="password" id="login-password" required placeholder="Password" autocomplete="current-password">
+                    <input type="password" id="login-password" required placeholder="Password" autocomplete="off">
                 </div>
                 <a class="link-forgot" onclick="switchForm('forgot')">Forgot password?</a>
                 <div class="privacy-check">
@@ -822,34 +838,36 @@
                 <div class="form-title">Create account</div>
                 <div class="form-subtitle">Join ESCTRIX — secure &amp; private</div>
             </div>
-            <form onsubmit="handleRegister(event)">
+            <form onsubmit="handleRegister(event)" autocomplete="off">
                 {% csrf_token %}
                 <div class="field-group">
-                    <i class="fa-solid fa-at field-icon"></i>
-                    <input type="text" id="reg-username" required placeholder="Username (3–30 chars)" autocomplete="off"
-                           oninput="checkUsernameAvailability(this.value)" style="padding-right:36px">
-                    <span class="field-suffix" id="username-status-icon"></span>
+                    <i class="fa-solid fa-user field-icon"></i>
+                    <input type="text" id="reg-username" required placeholder="Username" autocomplete="off" onblur="checkUsernameAvailable()">
+                    <span id="reg-username-status" class="field-suffix"></span>
                 </div>
                 <div class="field-group">
-                    <i class="fa-solid fa-id-card field-icon"></i>
-                    <input type="text" id="reg-displayname" required placeholder="Full Name" autocomplete="name">
-                </div>
-                <div class="field-group">
-                    <i class="fa-solid fa-calendar field-icon"></i>
-                    <input type="date" id="reg-dob" required>
+                    <i class="fa-solid fa-envelope field-icon"></i>
+                    <input type="email" id="reg-email" placeholder="Email (optional)" autocomplete="off">
                 </div>
                 <div class="field-group">
                     <i class="fa-solid fa-lock field-icon"></i>
                     <input type="password" id="reg-password" required placeholder="Password (min 8 chars)" autocomplete="new-password">
                 </div>
+                <div class="field-group">
+                    <i class="fa-solid fa-lock field-icon"></i>
+                    <input type="password" id="reg-confirm" required placeholder="Confirm password" autocomplete="new-password">
+                </div>
+                <div class="privacy-check">
+                    <input type="checkbox" id="reg-privacy" required>
+                    <label for="reg-privacy">
+                        I accept the <a href="/privacy/" target="_blank">Privacy Policy</a> &amp; E2EE cryptographic security terms
+                    </label>
+                </div>
                 <button type="submit" class="btn-primary">Create Account</button>
-                <p class="terms-text">
-                    By signing up you agree to our <a href="/terms/" target="_blank" style="color:var(--text-active);">Terms</a> &amp; <a href="/privacy/" target="_blank" style="color:var(--text-active);">Privacy Policy</a>
-                </p>
                 <p id="auth-error-reg" class="error-msg"></p>
             </form>
             <div class="switch-row">
-                Have an account? <a onclick="switchForm('login')">Log in</a>
+                Already have an account? <a onclick="switchForm('login')">Sign in</a>
             </div>
         </div>
 
@@ -899,7 +917,7 @@
             </div>
         </div>
 
-        <div style="position:absolute; bottom:60px; left:0; right:0; text-align:center;">
+        <div style="margin-top: 25px; text-align:center;">
             <button onclick="document.getElementById('help-modal').classList.add('open')"
                 style="background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.3);
                        color:#a78bfa; padding:8px 20px; border-radius:50px; font-size:0.78rem;
@@ -911,17 +929,19 @@
             </button>
         </div>
 
-        <div style="position:absolute; bottom:20px; left:0; right:0; text-align:center; font-size:0.67rem; color:rgba(255,255,255,0.18);">
+        <div style="margin-top: 15px; text-align:center; font-size:0.67rem; color:rgba(255,255,255,0.18);">
             <a href="/privacy/" style="color:rgba(255,255,255,0.28);text-decoration:none;" target="_blank">Privacy</a> ·
             <a href="/terms/" style="color:rgba(255,255,255,0.28);text-decoration:none;" target="_blank">Terms</a> ·
-            <a href="/security/" style="color:rgba(255,255,255,0.28);text-decoration:none;" target="_blank">Security</a>
-            &nbsp;·&nbsp; © 2026 ESCTRIX
+            <a href="/security/" style="color:rgba(255,255,255,0.28);text-decoration:none;" target="_blank">Security</a> ·
+            &copy; 2026 ESCTRIX
         </div>
+
+      </div>
     </div>
 
     <!-- ═══ HELP CONTACT MODAL ════════════════════════════ -->
     <div id="help-modal" style="
-        display:none; position:fixed; inset:0; z-index:9999;
+        position:fixed; inset:0; z-index:9999;
         background:rgba(0,0,0,0.7); backdrop-filter:blur(6px);
         align-items:center; justify-content:center;">
 

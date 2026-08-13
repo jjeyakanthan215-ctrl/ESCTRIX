@@ -497,6 +497,33 @@ def api_group_members(request):
     except ChatGroup.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Group not found'}, status=404)
 
+def api_clear_chat(request):
+    import json
+    from django.db.models import Q
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=401)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            target_username = data.get('target_username')
+            if not target_username:
+                return JsonResponse({'success': False, 'error': 'target_username required'}, status=400)
+            
+            target_user = CustomUser.objects.get(username=target_username)
+            # Delete messages between these two users
+            ChatMessage.objects.filter(
+                Q(sender=request.user, recipient=target_user) | Q(sender=target_user, recipient=request.user)
+            ).delete()
+            
+            return JsonResponse({'success': True})
+        except CustomUser.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'User not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
+
 def api_chat_history(request):
     if not request.user.is_authenticated:
         return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=401)

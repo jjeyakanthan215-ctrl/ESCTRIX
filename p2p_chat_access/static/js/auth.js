@@ -1,3 +1,30 @@
+function clearFormFields(formId) {
+    const container = formId ? document.getElementById(`form-${formId}`) : document;
+    if (!container) return;
+    const inputs = container.querySelectorAll('input[type="text"], input[type="password"], input[type="date"], input[type="email"]');
+    inputs.forEach(input => {
+        input.value = '';
+        input.style.borderColor = '';
+    });
+    const checkEl = container.querySelector('input[type="checkbox"]');
+    if (checkEl) checkEl.checked = false;
+    
+    const iconEl = document.getElementById('username-status-icon');
+    if (iconEl && (!formId || formId === 'register')) {
+        iconEl.style.display = 'none';
+        iconEl.innerHTML = '';
+    }
+}
+
+// Automatically clear form input fields on page load, reload, or back/forward navigation
+document.addEventListener('DOMContentLoaded', () => {
+    clearFormFields();
+});
+
+window.addEventListener('pageshow', (event) => {
+    clearFormFields();
+});
+
 function switchForm(formId) {
     // Hide all forms
     document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
@@ -5,6 +32,8 @@ function switchForm(formId) {
     document.getElementById(`form-${formId}`).classList.add('active');
     // Clear any error messages when switching forms
     document.querySelectorAll('.error-msg').forEach(el => el.innerText = '');
+    // Clear input fields when switching forms
+    clearFormFields(formId);
 }
 
 function getCookie(name) {
@@ -48,9 +77,12 @@ async function handleLogin(e) {
             }
         } else {
             document.getElementById('auth-error-login').innerText = data.error;
+            // Clear input fields on login error so user enters fresh details
+            clearFormFields('login');
         }
     } catch (err) {
         document.getElementById('auth-error-login').innerText = 'Connection error';
+        clearFormFields('login');
     }
 }
 
@@ -84,9 +116,12 @@ async function handleRegister(e) {
             }
         } else {
             document.getElementById('auth-error-reg').innerText = data.error;
+            // Clear input fields on registration error so user enters fresh details
+            clearFormFields('register');
         }
     } catch (err) {
         document.getElementById('auth-error-reg').innerText = 'Connection error';
+        clearFormFields('register');
     }
 }
 
@@ -110,9 +145,11 @@ async function handleForgotPassword(e) {
             toggleAuthMode('reset');
         } else {
             document.getElementById('auth-error-forgot').innerText = data.error;
+            clearFormFields('forgot');
         }
     } catch (err) {
         document.getElementById('auth-error-forgot').innerText = 'Connection error';
+        clearFormFields('forgot');
     }
 }
 
@@ -136,9 +173,11 @@ async function handleResetPassword(e) {
             window.location.href = '/';
         } else {
             document.getElementById('auth-error-reset').innerText = data.error;
+            clearFormFields('reset');
         }
     } catch (err) {
         document.getElementById('auth-error-reset').innerText = 'Connection error';
+        clearFormFields('reset');
     }
 }
 

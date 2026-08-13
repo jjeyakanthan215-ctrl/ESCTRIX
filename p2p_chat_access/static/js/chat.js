@@ -322,12 +322,30 @@ apiEvents.onFriendsList = (friends) => {
             </div>
             <div style="display:flex; align-items:center; gap:6px;">
                 ${statusBadge}
-                <button class="btn-small ${f.is_online ? 'btn-success' : 'btn-secondary'}" onclick="event.stopPropagation(); openChatByUsername('${f.username}')">Chat</button>
-                <button class="btn-contact-dots" onclick="event.stopPropagation(); openContactContextMenu('${f.username}', event)" title="Options Menu"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                <button class="btn-small ${f.is_online ? 'btn-success' : 'btn-secondary'}">Chat</button>
+                <button class="btn-contact-dots" title="Options Menu"><i class="fa-solid fa-ellipsis-vertical"></i></button>
             </div>
         `;
         if (offlineEl) {
             offlineEl.appendChild(li);
+            
+            // Attach proper event listeners to prevent 'event is not defined' errors
+            const chatBtn = li.querySelector('.btn-small');
+            const dotsBtn = li.querySelector('.btn-contact-dots');
+            
+            if (chatBtn) {
+                chatBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    openChatByUsername(f.username);
+                };
+            }
+            if (dotsBtn) {
+                dotsBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    openContactContextMenu(f.username, e);
+                };
+            }
+            
             attachContactLongPress(li, f.username);
         }
     });
@@ -812,13 +830,17 @@ apiEvents.onChatMessage = async (msg) => {
         if (currentActiveChatUser === sender) {
             renderChatHistory();
         } else {
-            playUiSound('received');
-            const friendObj = acceptedFriends.find(f => f.username === sender);
-            const avatarSeed = friendObj ? friendObj.avatar_index : 0;
-            const displayName = friendObj ? friendObj.display_name : sender;
-            const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
-            
-            showToast(displayName, text.length > 50 ? text.substring(0, 48) + '...' : text, 'info', 5000, () => openChatByUsername(sender), avatarUrl);
+            if (!isUserNotifMuted(sender)) {
+                playUiSound('received');
+                const friendObj = acceptedFriends.find(f => f.username === sender);
+                const avatarSeed = friendObj ? friendObj.avatar_index : 0;
+                const displayName = friendObj ? friendObj.display_name : sender;
+                const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
+                
+                showToast(displayName, text.length > 50 ? text.substring(0, 48) + '...' : text, 'info', 5000, () => openChatByUsername(sender), avatarUrl);
+            } else {
+                console.log(`Notification suppressed for muted user @${sender}`);
+            }
         }
     } catch (e) {
         console.error("Failed to decrypt message", e);
@@ -1219,8 +1241,10 @@ function openCreateGroupModal() {
     list.innerHTML = '<p class="empty-placeholder">Loading friends...</p>';
     
     // We fetch friends lists from server or by reading the UI contacts list elements
-    const offlineContacts = document.getElementById('feed-offline').querySelectorAll('.list-item');
-    const onlineStories = document.getElementById('stories-bar').querySelectorAll('.story-circle');
+    const feedOfflineEl = document.getElementById('feed-offline');
+    const storiesBarEl = document.getElementById('stories-tray');
+    const offlineContacts = feedOfflineEl ? feedOfflineEl.querySelectorAll('.list-item') : [];
+    const onlineStories = storiesBarEl ? storiesBarEl.querySelectorAll('.story-circle') : [];
     
     list.innerHTML = '';
     let hasFriends = false;
@@ -2768,8 +2792,10 @@ function openContactContextMenu(username, e) {
     if (x + 240 > window.innerWidth) x = window.innerWidth - 250;
     if (y + 260 > window.innerHeight) y = window.innerHeight - 270;
 
+    menu.style.position = 'fixed';
     menu.style.left = `${Math.max(10, x)}px`;
     menu.style.top = `${Math.max(10, y)}px`;
+    menu.style.zIndex = '99999';
     menu.classList.remove('hidden');
 }
 
@@ -2842,11 +2868,36 @@ function handleCtxToggleMuteCalls() {
     localStorage.setItem('esctrix_muted_calls', JSON.stringify(muted));
 }
 
+function handleCtxMarkAsRead() {
+    closeContactContextMenu();
+    if (!currentContextMenuUsername) return;
+    
+    // In a full implementation, this would send an API request to mark all messages as read.
+    // For now, we will just update the local state if applicable and show a toast.
+    if (chatMessages[currentContextMenuUsername]) {
+        chatMessages[currentContextMenuUsername].forEach(m => m.is_read = true);
+    }
+    showToast('Marked as Read', `Conversation with @${currentContextMenuUsername} marked as read.`, 'success');
+}
+
+function handleCtxMarkAsUnread() {
+    closeContactContextMenu();
+    if (!currentContextMenuUsername) return;
+    
+    // Mark as unread is typically a local flag to remind the user to reply later.
+    showToast('Marked as Unread', `Conversation with @${currentContextMenuUsername} marked as unread.`, 'info');
+}
+
 function handleCtxClearChat() {
     closeContactContextMenu();
     if (!currentContextMenuUsername) return;
     
     if (confirm(`Are you sure you want to clear all chat messages with @${currentContextMenuUsername}?`)) {
+        fetch('/api/chat/clear/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
+            body: JSON.stringify({target_username: currentContextMenuUsername})
+        });
         chatMessages[currentContextMenuUsername] = [];
         if (currentActiveChatUser === currentContextMenuUsername) {
             renderChatHistory();
@@ -2860,6 +2911,11 @@ function handleCtxDeleteChat() {
     if (!currentContextMenuUsername) return;
     
     if (confirm(`Delete conversation with @${currentContextMenuUsername}?`)) {
+        fetch('/api/chat/clear/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
+            body: JSON.stringify({target_username: currentContextMenuUsername})
+        });
         delete chatMessages[currentContextMenuUsername];
         if (currentActiveChatUser === currentContextMenuUsername) {
             closeChat();
@@ -2868,13 +2924,7 @@ function handleCtxDeleteChat() {
     }
 }
 
-// Close context menu when clicking outside
-window.addEventListener('click', (e) => {
-    const menu = document.getElementById('contact-context-menu');
-    if (menu && !menu.contains(e.target) && !e.target.closest('.list-item')) {
-        menu.classList.add('hidden');
-    }
-});
+// Context menu close logic is handled by the single document listener below
 
 // --- REAL-TIME CHAT HISTORY AUTO-SYNCING POLLER ---
 async function autoSyncActiveChatHistory() {
@@ -2987,12 +3037,14 @@ window.addEventListener('keydown', (e) => {
         if (!ws || ws.readyState !== WebSocket.OPEN) connectWebSocket();
     });
 
-// Close context menus when clicking outside
+// Single authoritative handler to close context menu when clicking outside
 document.addEventListener('click', (e) => {
     const contactMenu = document.getElementById('contact-context-menu');
     if (contactMenu && !contactMenu.classList.contains('hidden')) {
-        if (!contactMenu.contains(e.target) && !e.target.closest('.btn-contact-dots') && !e.target.closest('.list-item')) {
+        const clickedInsideMenu = contactMenu.contains(e.target);
+        const clickedDotsBtn = e.target.closest('.btn-contact-dots');
+        if (!clickedInsideMenu && !clickedDotsBtn) {
             closeContactContextMenu();
         }
     }
-});
+}, true); // capture phase to intercept before stopPropagation

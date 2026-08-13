@@ -35,6 +35,7 @@ urlpatterns = [
     path('api/group/list/', views.api_group_list, name='api_group_list'),
     path('api/group/members/', views.api_group_members, name='api_group_members'),
     path('api/chat/history/', views.api_chat_history, name='api_chat_history'),
+    path('api/chat/clear/', views.api_clear_chat, name='api_clear_chat'),
     path('api/group/history/', views.api_group_history, name='api_group_history'),
     path('api/media/upload/', views.api_media_upload, name='api_media_upload'),
 

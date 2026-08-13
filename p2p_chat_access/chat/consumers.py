@@ -172,25 +172,27 @@ class SignalingConsumer(AsyncWebsocketConsumer):
 
             elif msg_type == 'CALL_ACCEPT':
                 caller_username = payload.get('caller_username')
-                await self.channel_layer.group_send(
-                    f'user_{caller_username}',
-                    {
-                        'type': 'forward_message',
-                        'msg_type': 'CALL_ACCEPTED',
-                        'data': {'target_username': self.username}
-                    }
-                )
+                if caller_username:
+                    await self.channel_layer.group_send(
+                        f'user_{caller_username}',
+                        {
+                            'type': 'forward_message',
+                            'msg_type': 'CALL_ACCEPTED',
+                            'data': {'target_username': self.username}
+                        }
+                    )
                 
             elif msg_type == 'CALL_REJECT':
                 caller_username = payload.get('caller_username')
-                await self.channel_layer.group_send(
-                    f'user_{caller_username}',
-                    {
-                        'type': 'forward_message',
-                        'msg_type': 'CALL_REJECTED',
-                        'data': {'target_username': self.username}
-                    }
-                )
+                if caller_username:
+                    await self.channel_layer.group_send(
+                        f'user_{caller_username}',
+                        {
+                            'type': 'forward_message',
+                            'msg_type': 'CALL_REJECTED',
+                            'data': {'target_username': self.username}
+                        }
+                    )
                 
             elif msg_type == 'FRIEND_LIST':
                 friends = await self.get_friends_list()
