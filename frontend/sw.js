@@ -1,13 +1,13 @@
-const CACHE_NAME = 'esctrix-v13';
+const CACHE_NAME = 'esctrix-v15-quantum';
 const OFFLINE_URL = '/offline.html';
 const ASSETS = [
     '/',
     '/index.html',
     '/offline.html',
     '/manifest.json',
-    '/static/css/style.css',
-    '/static/js/app.js',
-    '/static/js/webrtc.js',
+    '/static/css/style.css?v=2.1.0',
+    '/static/js/app.js?v=2.1.0',
+    '/static/js/webrtc.js?v=2.1.0',
     '/static/logo.png',
     '/static/icon-192.png',
     '/static/icon-512.png',

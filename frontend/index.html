@@ -11,10 +11,23 @@
     <link rel="apple-touch-icon" href="/static/icon-192.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/style.css?v=2.1.0">
     <link rel="manifest" href="/manifest.json">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* ── Critical In-Head Guard Styles (Prevents FOUC & oversize images) ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; scrollbar-width: none !important; }
+        ::-webkit-scrollbar { display: none !important; width: 0 !important; }
+        .hidden { display: none !important; }
+        .custom-dialog-modal, .custom-context-menu, .incoming-call-modal, .media-preview-modal, .user-profile-modal, .settings-modal { display: none; }
+        img { max-width: 100%; height: auto; }
+        a { color: inherit; text-decoration: none; }
+        .nav-brand-logo { width: 38px !important; height: 38px !important; border-radius: 10px; object-fit: cover; }
+        .intro-logo-halo { width: 88px !important; height: 88px !important; margin: 0 auto 20px; }
+        .intro-logo-img { width: 100% !important; height: 100% !important; object-fit: cover; }
+        .auth-logo-halo { width: 72px !important; height: 72px !important; margin: 0 auto 14px; }
+        .auth-logo-img { width: 100% !important; height: 100% !important; object-fit: cover; }
+    </style>
 </head>
 <body class="quantum-body">
     <!-- Animated Cyber Background Mesh -->
@@ -1431,14 +1444,14 @@
     <!-- ══════════════════════════════════════════ -->
     <!-- DYNAMIC CUSTOM CONTEXT MENU (WhatsApp-Style)-->
     <!-- ══════════════════════════════════════════ -->
-    <div id="custom-context-menu" class="custom-context-menu">
+    <div id="custom-context-menu" class="custom-context-menu" style="display: none;">
         <div id="context-menu-items"></div>
     </div>
 
     <!-- ══════════════════════════════════════════ -->
     <!-- IN-APP GLASS DIALOG MODAL (No Native Alert)-->
     <!-- ══════════════════════════════════════════ -->
-    <div id="custom-dialog-modal" class="custom-dialog-modal">
+    <div id="custom-dialog-modal" class="custom-dialog-modal" style="display: none;">
         <div class="custom-dialog-card">
             <div class="dialog-icon-halo" id="dialog-icon-halo">
                 <i class="ph ph-sparkle" id="dialog-icon"></i>
@@ -1459,8 +1472,8 @@
     <div id="quantum-cursor-dot" class="quantum-cursor-dot"></div>
     <div id="quantum-cursor-ring" class="quantum-cursor-ring"></div>
 
-    <!-- Scripts -->
-    <script src="/static/js/webrtc.js"></script>
-    <script src="/static/js/app.js"></script>
+    <!-- Scripts with Cache Busters -->
+    <script src="/static/js/webrtc.js?v=2.1.0"></script>
+    <script src="/static/js/app.js?v=2.1.0"></script>
 </body>
 </html>
