@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
@@ -19,6 +19,44 @@ class ConnectionManager:
         # }
         self.rooms: Dict[str, Dict[str, Any]] = {}
         self.admin_connections: Dict[str, WebSocket] = {}
+        # user_sessions maps username -> list of session dicts
+        self.user_sessions: Dict[str, List[Dict[str, Any]]] = {}
+
+    def record_session(self, username: str, client_id: str, ip: str = "127.0.0.1", device: str = "Desktop Web / Quantum Engine"):
+        if not username:
+            return
+        if username not in self.user_sessions:
+            self.user_sessions[username] = []
+        # Filter existing matching client_id
+        self.user_sessions[username] = [s for s in self.user_sessions[username] if s.get('client_id') != client_id]
+        self.user_sessions[username].append({
+            'client_id': client_id,
+            'ip': ip,
+            'device': device,
+            'online_since': logging.Formatter().formatTime(logging.LogRecord('', 0, '', 0, '', (), None)),
+            'is_current': False
+        })
+
+    def get_user_sessions(self, username: str, current_client_id: str = "") -> List[Dict[str, Any]]:
+        sessions = self.user_sessions.get(username, [])
+        result = []
+        for s in sessions:
+            s_copy = dict(s)
+            s_copy['is_current'] = (s_copy.get('client_id') == current_client_id)
+            result.append(s_copy)
+        if not result:
+            result.append({
+                'client_id': current_client_id or 'primary-session',
+                'ip': 'Active Connection',
+                'device': 'Quantum Web Client (Secure)',
+                'online_since': 'Active now',
+                'is_current': True
+            })
+        return result
+
+    def terminate_other_sessions(self, username: str, current_client_id: str):
+        if username in self.user_sessions:
+            self.user_sessions[username] = [s for s in self.user_sessions[username] if s.get('client_id') == current_client_id]
 
     def get_room(self, space_name: str):
         return self.rooms.get(space_name)

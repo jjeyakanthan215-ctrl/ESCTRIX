@@ -2577,3 +2577,671 @@ input:checked + .slider:before {
         flex-direction: column;
     }
 }
+
+/* ══════════════════════════════════════════════════ */
+/* INSTAGRAM-STYLE PROFILE & QR NAMETAG               */
+/* ══════════════════════════════════════════════════ */
+.profile-modal-content {
+    max-width: 440px;
+    padding: 24px;
+    border-radius: 24px;
+    text-align: center;
+}
+
+.instagram-profile-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.profile-avatar-halo {
+    position: relative;
+    padding: 4px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6, #06d6c7);
+    box-shadow: 0 0 24px rgba(236, 72, 153, 0.35);
+    margin-bottom: 12px;
+}
+
+.profile-avatar-main {
+    width: 86px;
+    height: 86px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8b5cf6, #06d6c7);
+    color: #fff;
+    font-size: 2.2rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #070b14;
+}
+
+.profile-display-name {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.profile-handle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.profile-handle {
+    font-size: 0.95rem;
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.account-id-badge {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--panel-border);
+    color: var(--text-muted);
+}
+
+.profile-bio-text {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    margin-bottom: 20px;
+    max-width: 340px;
+}
+
+.profile-action-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+    margin-bottom: 14px;
+}
+
+.profile-secondary-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+/* QR Nametag Card */
+.qr-nametag-content {
+    max-width: 380px;
+    padding: 24px;
+    text-align: center;
+    border-radius: 24px;
+}
+
+.nametag-card {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.04), rgba(139, 92, 246, 0.12));
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    border-radius: 20px;
+    padding: 24px 16px;
+    margin-top: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.nametag-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8b5cf6, #06d6c7);
+    color: #fff;
+    font-size: 1.6rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.nametag-handle {
+    font-size: 0.9rem;
+    color: var(--accent);
+    margin-bottom: 14px;
+}
+
+.nametag-qr-box {
+    background: #fff;
+    padding: 12px;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    margin-bottom: 14px;
+}
+
+.nametag-qr-box img {
+    width: 180px;
+    height: 180px;
+    display: block;
+}
+
+.nametag-id-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: rgba(6, 214, 199, 0.12);
+    border: 1px solid rgba(6, 214, 199, 0.3);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+}
+
+.nametag-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* ══════════════════════════════════════════════════ */
+/* ADVANCED MULTI-TAB SETTINGS SUITE                  */
+/* ══════════════════════════════════════════════════ */
+.settings-suite-content {
+    max-width: 820px;
+    width: 95%;
+    max-height: 88vh;
+    border-radius: 24px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.settings-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.settings-header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.settings-body-layout {
+    display: flex;
+    flex: 1;
+    min-height: 480px;
+    overflow: hidden;
+}
+
+.settings-nav-pane {
+    width: 240px;
+    background: rgba(0, 0, 0, 0.25);
+    border-right: 1px solid var(--panel-border);
+    padding: 14px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.settings-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-family: var(--font-family);
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+
+.settings-nav-btn i {
+    font-size: 1.2rem;
+}
+
+.settings-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+}
+
+.settings-nav-btn.active {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 214, 199, 0.15));
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.2);
+}
+
+.settings-content-pane {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+}
+
+.settings-tab-view {
+    display: none;
+    animation: fadeIn 0.25s ease;
+}
+
+.settings-tab-view.active {
+    display: block;
+}
+
+.settings-profile-preview {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 18px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--panel-border);
+    border-radius: 18px;
+    margin-bottom: 20px;
+}
+
+.settings-avatar-wrap {
+    position: relative;
+    padding: 3px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+}
+
+.settings-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #111827;
+    color: #fff;
+    font-size: 1.6rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-cycle-btn {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #000;
+    border: 2px solid #070b14;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    transition: transform 0.2s;
+}
+
+.avatar-cycle-btn:hover {
+    transform: scale(1.15) rotate(45deg);
+}
+
+.account-id-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    background: rgba(0, 0, 0, 0.35);
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--panel-border);
+}
+
+.copy-chip-btn {
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.settings-row-info {
+    max-width: 75%;
+}
+
+.settings-row-info strong {
+    display: block;
+    font-size: 0.95rem;
+    margin-bottom: 3px;
+}
+
+.settings-select {
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--panel-border);
+    color: #fff;
+    font-family: var(--font-family);
+    outline: none;
+    cursor: pointer;
+}
+
+.settings-select option {
+    background: #0f172a;
+    color: #fff;
+}
+
+.settings-divider {
+    height: 1px;
+    background: var(--panel-border);
+    margin: 20px 0;
+}
+
+/* Wallpaper Grid */
+.wallpaper-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.wallpaper-card {
+    border: 2px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 8px;
+    text-align: center;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.02);
+    transition: all 0.2s ease;
+}
+
+.wallpaper-card:hover {
+    border-color: rgba(6, 214, 199, 0.5);
+    transform: translateY(-2px);
+}
+
+.wallpaper-card.active {
+    border-color: var(--accent);
+    background: rgba(6, 214, 199, 0.08);
+    box-shadow: 0 0 16px var(--accent-glow);
+}
+
+.wp-preview {
+    height: 70px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.wp-cyber {
+    background: linear-gradient(135deg, #070b14, #131d36),
+                repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(6, 214, 199, 0.08) 20px);
+}
+
+.wp-doodle {
+    background: #0b141a radial-gradient(circle, rgba(255,255,255,0.06) 10%, transparent 11%) 0 0 / 16px 16px;
+}
+
+.wp-oled {
+    background: #000000;
+}
+
+.wp-emerald {
+    background: linear-gradient(135deg, #041f17, #064e3b);
+}
+
+.wallpaper-card span {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* Chat Wallpaper Overrides on Viewport */
+.chat-messages-viewport.wp-cyber-grid {
+    background-color: transparent !important;
+}
+
+.chat-messages-viewport.wp-doodle-pattern {
+    background: #09121a radial-gradient(circle, rgba(255, 255, 255, 0.05) 12%, transparent 13%) 0 0 / 20px 20px !important;
+}
+
+.chat-messages-viewport.wp-oled-black {
+    background: #020408 !important;
+}
+
+.chat-messages-viewport.wp-emerald-matrix {
+    background: linear-gradient(180deg, #03140f, #05241b) !important;
+}
+
+/* Active Sessions List */
+.sessions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.session-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+}
+
+.session-icon {
+    font-size: 1.4rem;
+    color: var(--primary);
+}
+
+.session-meta {
+    flex: 1;
+}
+
+.session-meta strong {
+    display: block;
+    font-size: 0.88rem;
+}
+
+/* Storage Meter Card */
+.storage-meter-card {
+    padding: 18px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+}
+
+.storage-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.95rem;
+}
+
+.settings-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 14px 24px;
+    border-top: 1px solid var(--panel-border);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* ══════════════════════════════════════════════════ */
+/* PASSCODE LOCK OVERLAY                              */
+/* ══════════════════════════════════════════════════ */
+.passcode-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(4, 7, 15, 0.94);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.passcode-overlay.hidden {
+    display: none;
+}
+
+.passcode-card {
+    max-width: 340px;
+    width: 90%;
+    padding: 32px 24px;
+    text-align: center;
+    border-radius: 28px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+}
+
+.passcode-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 214, 199, 0.2));
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    color: var(--accent);
+    margin: 0 auto 16px;
+}
+
+.pin-dots-row {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin: 24px 0;
+}
+
+.pin-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--panel-border);
+    background: transparent;
+    transition: all 0.2s ease;
+}
+
+.pin-dot.filled {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 10px var(--accent-glow);
+    transform: scale(1.2);
+}
+
+.pin-keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    max-width: 240px;
+    margin: 0 auto;
+}
+
+.pin-key {
+    height: 58px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--panel-border);
+    color: #fff;
+    font-size: 1.3rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.pin-key:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: scale(1.05);
+}
+
+.pin-key:active {
+    background: var(--accent);
+    color: #000;
+}
+
+.pin-key.clear {
+    color: var(--text-muted);
+}
+
+.pin-key.unlock {
+    background: linear-gradient(135deg, var(--accent), #059669);
+    color: #000;
+    border: none;
+}
+
+/* ══════════════════════════════════════════════════ */
+/* TELEGRAM SAFETY EMOJI FINGERPRINT                  */
+/* ══════════════════════════════════════════════════ */
+.safety-emojis-row {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 14px 0;
+}
+
+.safety-emoji-badge {
+    font-size: 1.8rem;
+    padding: 8px 12px;
+    border-radius: 14px;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+}
+
+/* ══════════════════════════════════════════════════ */
+/* WHATSAPP-STYLE MESSAGE TICKS & VOICE SPEED BADGE   */
+/* ══════════════════════════════════════════════════ */
+.msg-status-tick {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 4px;
+    font-size: 0.85rem;
+    vertical-align: middle;
+}
+
+.tick-sent {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.tick-delivered {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.tick-read {
+    color: #38bdf8 !important; /* WhatsApp signature cyan/blue read tick */
+}
+
+.voice-speed-pill {
+    padding: 2px 6px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--accent);
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-left: 8px;
+    user-select: none;
+    transition: background 0.2s;
+}
+
+.voice-speed-pill:hover {
+    background: rgba(6, 214, 199, 0.25);
+}

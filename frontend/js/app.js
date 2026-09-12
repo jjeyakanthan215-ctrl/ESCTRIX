@@ -72,19 +72,15 @@ const ESCTRIX = {
 
     cacheElements() {
         const ids = [
-            'intro-screen', 'intro-get-started-btn', 'intro-admin-portal-btn', 'auth-back-to-intro-btn',
-            'role-tab-user', 'role-tab-admin', 'admin-enter-chat-btn', 'admin-logout-btn',
+            'intro-screen', 'intro-get-started-btn', 'auth-back-to-intro-btn',
+            'admin-enter-chat-btn', 'admin-logout-btn',
             'auth-brand-badge', 'auth-user-icon', 'auth-security-text', 'auth-switch-bar',
             'login-screen', 'dashboard-screen', 'admin-screen',
             'auth-title', 'auth-subtitle', 'auth-username', 'auth-password', 'auth-displayname',
             'display-name-group', 'auth-submit-btn', 'auth-toggle', 'auth-toggle-msg', 'login-error',
             'telegram-sidebar', 'telegram-chat-pane', 'chat-search-input', 'search-clear-btn',
             'new-space-btn', 'chat-threads-list', 'dynamic-chat-threads', 'thread-aura-ai', 'thread-saved-messages',
-            'drawer-open-btn', 'profile-drawer', 'drawer-backdrop', 'drawer-close-btn',
-            'drawer-avatar-halo', 'drawer-avatar-text', 'drawer-avatar-change-btn', 'drawer-displayname',
-            'drawer-username', 'drawer-account-id', 'copy-account-id-btn', 'drawer-input-displayname',
-            'drawer-input-bio', 'drawer-save-profile-btn', 'toggle-sfx', 'logout-btn',
-            'footer-user-chip', 'footer-user-avatar', 'footer-user-name', 'footer-user-id',
+            'drawer-open-btn', 'footer-user-chip', 'footer-user-avatar', 'footer-user-name', 'footer-user-id',
             'cmd-palette-btn', 'admin-panel-btn', 'admin-back-btn',
             'back-to-threads-btn', 'active-chat-avatar', 'active-chat-dot', 'active-chat-name', 'active-chat-status',
             'vibe-indicator-badge', 'vibe-emoji', 'vibe-text', 'video-call-btn', 'screen-share-btn',
@@ -110,16 +106,34 @@ const ESCTRIX = {
             'incall-message-input', 'incall-send-btn', 'end-video-call-btn',
             'call-type-modal', 'call-type-peer-name', 'start-audio-call-btn', 'start-video-call-btn', 'cancel-call-type-btn',
             'call-modal', 'caller-name', 'accept-call-btn', 'decline-call-btn',
-            'e2ee-modal', 'e2ee-canvas', 'e2ee-hash-label', 'e2ee-close-btn',
+            'e2ee-modal', 'e2ee-canvas', 'e2ee-hash-label', 'e2ee-close-btn', 'safety-emojis-row',
             'stat-total-users', 'stat-active-hosts', 'stat-total-connections', 'stat-ai-status', 'admin-users-tbody',
             'admin-hosts-ul', 'admin-chat-log', 'admin-broadcast-msg', 'admin-broadcast-btn',
             'admin-new-password-input', 'admin-change-pwd-btn', 'admin-back-intro-btn',
             'kicked-overlay', 'kicked-message', 'kicked-ok-btn', 'kick-admin-modal', 'kick-modal-target',
             'kick-custom-msg', 'kick-confirm-btn', 'kick-cancel-btn', 'toast', 'toast-msg',
-            'intro-nav-get-started-btn', 'intro-nav-admin-btn', 'intro-bottom-get-started-btn',
+            'intro-nav-get-started-btn', 'intro-bottom-get-started-btn',
             'intro-user-card', 'intro-user-avatar', 'intro-user-displayname', 'intro-user-handle',
             'intro-user-accountid', 'intro-btn-label', 'intro-switch-account-btn',
-            'nav-to-intro-btn', 'chat-commander-btn'
+            'nav-to-intro-btn',
+            // Instagram Profile Card
+            'user-profile-modal', 'user-profile-close-btn', 'up-avatar-halo', 'up-avatar', 'up-displayname',
+            'up-username', 'up-account-id', 'up-bio', 'up-action-dm', 'up-action-voice', 'up-action-video',
+            'up-action-add-contact', 'up-add-contact-label', 'up-action-share-qr',
+            // Instagram QR Nametag
+            'qr-nametag-modal', 'qr-nametag-close-btn', 'nametag-card', 'nametag-avatar', 'nametag-displayname',
+            'nametag-username', 'nametag-qr-img', 'nametag-account-id', 'nametag-copy-link-btn',
+            // Settings Suite
+            'settings-suite-modal', 'settings-close-btn', 'settings-admin-tab-btn', 'settings-avatar-halo',
+            'settings-avatar-text', 'settings-avatar-cycle-btn', 'settings-meta-displayname', 'settings-meta-username',
+            'settings-meta-account-id', 'settings-copy-id-btn', 'settings-input-displayname', 'settings-input-bio',
+            'settings-save-profile-btn', 'settings-my-nametag-btn', 'pref-read-receipts', 'pref-last-seen',
+            'setup-passcode-btn', 'passcode-status-label', 'pref-burn-timer', 'sessions-container',
+            'terminate-other-sessions-btn', 'pref-enter-send', 'pref-font-size', 'pref-sfx-toggle',
+            'pref-ringtone-toggle', 'pref-preview-toggle', 'storage-usage-val', 'storage-bar-fill',
+            'clear-media-cache-btn', 'clear-chat-history-btn', 'settings-open-admin-screen-btn', 'settings-logout-btn',
+            // Passcode Screen Lock
+            'passcode-lock-overlay', 'pin-dots-row', 'pin-clear-btn', 'pin-enter-btn', 'pin-error-msg'
         ];
 
         ids.forEach(id => {
@@ -213,8 +227,17 @@ const ESCTRIX = {
         const sfx = localStorage.getItem('esctrix_sfx');
         if (sfx !== null) {
             this.state.sfxEnabled = sfx === 'true';
-            if (this.elements.toggleSfx) this.elements.toggleSfx.checked = this.state.sfxEnabled;
+            if (this.elements.prefSfxToggle) this.elements.prefSfxToggle.checked = this.state.sfxEnabled;
         }
+        const wp = localStorage.getItem('esctrix_wallpaper') || 'cyber-grid';
+        this.settings?.applyWallpaperClass(wp);
+
+        const fontSize = localStorage.getItem('esctrix_fontsize') || 'medium';
+        if (this.elements.prefFontSize) this.elements.prefFontSize.value = fontSize;
+        this.settings?.applyFontSize(fontSize);
+
+        // Passcode Lock Init
+        this.passcode?.init();
     },
 
     checkPersistentAuth() {
@@ -272,24 +295,22 @@ const ESCTRIX = {
             if (user.avatar_color) e.footerUserAvatar.style.background = user.avatar_color;
         }
 
-        // Profile Drawer
-        if (e.drawerDisplayname) e.drawerDisplayname.textContent = user.display_name || user.username;
-        if (e.drawerUsername) e.drawerUsername.textContent = `@${user.username}`;
-        if (e.drawerAccountId) e.drawerAccountId.textContent = user.account_id || 'ESC-QUANTUM';
-        if (e.drawerAvatarText) {
-            e.drawerAvatarText.textContent = initials;
-            if (user.avatar_color) e.drawerAvatarHalo.style.background = user.avatar_color;
+        // Settings Suite Profile
+        if (e.settingsMetaDisplayname) e.settingsMetaDisplayname.textContent = user.display_name || user.username;
+        if (e.settingsMetaUsername) e.settingsMetaUsername.textContent = `@${user.username}`;
+        if (e.settingsMetaAccountId) e.settingsMetaAccountId.textContent = user.account_id || 'ESC-QUANTUM';
+        if (e.settingsAvatarText) {
+            e.settingsAvatarText.textContent = initials;
+            if (user.avatar_color) e.settingsAvatarHalo.style.background = user.avatar_color;
         }
-        if (e.drawerInputDisplayname) e.drawerInputDisplayname.value = user.display_name || user.username;
-        if (e.drawerInputBio) e.drawerInputBio.value = user.bio || '';
+        if (e.settingsInputDisplayname) e.settingsInputDisplayname.value = user.display_name || user.username;
+        if (e.settingsInputBio) e.settingsInputBio.value = user.bio || '';
 
-        // Admin trigger
+        // Stealth Admin tab in Settings
         if (user.role === 'admin') {
-            if (e.adminPanelBtn) e.adminPanelBtn.classList.remove('hidden');
-            if (e.chatCommanderBtn) e.chatCommanderBtn.classList.remove('hidden');
+            if (e.settingsAdminTabBtn) e.settingsAdminTabBtn.classList.remove('hidden');
         } else {
-            if (e.adminPanelBtn) e.adminPanelBtn.classList.add('hidden');
-            if (e.chatCommanderBtn) e.chatCommanderBtn.classList.add('hidden');
+            if (e.settingsAdminTabBtn) e.settingsAdminTabBtn.classList.add('hidden');
         }
     },
 
@@ -310,7 +331,6 @@ const ESCTRIX = {
                 this.showScreen('dashboard-screen');
                 this.showToast(`Welcome back, ${this.state.user.display_name || this.state.user.username}! 🚀`);
             } else {
-                this.auth.setRoleMode('user');
                 this.showScreen('login-screen');
             }
         };
@@ -319,22 +339,8 @@ const ESCTRIX = {
         e.introNavGetStartedBtn?.addEventListener('click', handleGetStarted);
         e.introBottomGetStartedBtn?.addEventListener('click', handleGetStarted);
 
-        const handleAdminPortal = () => {
-            this.playSfx('click');
-            if (this.state.user && this.state.user.role === 'admin') {
-                this.admin.open();
-            } else {
-                this.auth.setRoleMode('admin');
-                this.showScreen('login-screen');
-            }
-        };
-
-        e.introAdminPortalBtn?.addEventListener('click', handleAdminPortal);
-        e.introNavAdminBtn?.addEventListener('click', handleAdminPortal);
-
         e.introSwitchAccountBtn?.addEventListener('click', () => {
             this.playSfx('click');
-            this.auth.setRoleMode('user');
             this.showScreen('login-screen');
         });
 
@@ -350,18 +356,12 @@ const ESCTRIX = {
             this.showScreen('intro-screen');
         });
 
-        e.chatCommanderBtn?.addEventListener('click', () => {
-            this.playSfx('click');
-            this.admin.open();
-        });
-
         e.authBackToIntroBtn?.addEventListener('click', () => {
             this.playSfx('click');
             this.renderIntroUserState(this.state.user);
             this.showScreen('intro-screen');
         });
-        e.roleTabUser?.addEventListener('click', () => this.auth.setRoleMode('user'));
-        e.roleTabAdmin?.addEventListener('click', () => this.auth.setRoleMode('admin'));
+
         e.adminEnterChatBtn?.addEventListener('click', () => {
             this.playSfx('click');
             this.showScreen('dashboard-screen');
@@ -369,25 +369,87 @@ const ESCTRIX = {
         e.adminLogoutBtn?.addEventListener('click', () => this.auth.logout());
         e.adminChangePwdBtn?.addEventListener('click', () => this.admin.changeMyPassword());
 
+        // Stealth Admin Keyboard Shortcut (Ctrl + Shift + A)
+        window.addEventListener('keydown', (ev) => {
+            if (ev.ctrlKey && ev.shiftKey && ev.key.toLowerCase() === 'a') {
+                ev.preventDefault();
+                if (this.state.user && this.state.user.role === 'admin') {
+                    this.admin.open();
+                }
+            }
+        });
+
         // Auth Screen
         e.authToggle?.addEventListener('click', () => this.auth.toggleMode());
         e.authSubmitBtn?.addEventListener('click', () => this.auth.submit());
         e.authPassword?.addEventListener('keypress', (ev) => { if (ev.key === 'Enter') this.auth.submit(); });
 
-        // Drawer
-        e.drawerOpenBtn?.addEventListener('click', () => this.drawer.open());
-        e.drawerCloseBtn?.addEventListener('click', () => this.drawer.close());
-        e.drawerBackdrop?.addEventListener('click', () => this.drawer.close());
-        e.footerUserChip?.addEventListener('click', () => this.drawer.open());
-        e.copyAccountIdBtn?.addEventListener('click', () => this.drawer.copyAccountId());
-        e.drawerSaveProfileBtn?.addEventListener('click', () => this.drawer.saveProfile());
-        e.drawerAvatarChangeBtn?.addEventListener('click', () => this.drawer.cycleAvatarColor());
-        e.logoutBtn?.addEventListener('click', () => this.auth.logout());
-        e.toggleSfx?.addEventListener('change', (ev) => {
+        // Settings Suite Triggers
+        e.drawerOpenBtn?.addEventListener('click', () => this.settings.open());
+        e.footerUserChip?.addEventListener('click', () => this.settings.open());
+        e.settingsCloseBtn?.addEventListener('click', () => this.settings.close());
+
+        document.querySelectorAll('.settings-nav-btn').forEach(btn => {
+            btn.addEventListener('click', (ev) => this.settings.switchTab(ev.currentTarget.dataset.tab));
+        });
+
+        e.settingsSaveProfileBtn?.addEventListener('click', () => this.settings.saveProfile());
+        e.settingsAvatarCycleBtn?.addEventListener('click', () => this.settings.cycleAvatarColor());
+        e.settingsCopyIdBtn?.addEventListener('click', () => this.settings.copyAccountId());
+        e.settingsMyNametagBtn?.addEventListener('click', () => this.profileModal.openNametag(this.state.user));
+        e.setupPasscodeBtn?.addEventListener('click', () => this.passcode.promptSetup());
+        e.terminateOtherSessionsBtn?.addEventListener('click', () => this.settings.terminateOtherSessions());
+        e.settingsOpenAdminScreenBtn?.addEventListener('click', () => {
+            this.settings.close();
+            this.admin.open();
+        });
+        e.settingsLogoutBtn?.addEventListener('click', () => this.auth.logout());
+
+        // Wallpaper Selector
+        document.querySelectorAll('.wallpaper-card').forEach(card => {
+            card.addEventListener('click', (ev) => {
+                const wp = ev.currentTarget.dataset.wallpaper;
+                this.settings.setWallpaper(wp);
+            });
+        });
+
+        // Font Size Selector
+        e.prefFontSize?.addEventListener('change', (ev) => this.settings.applyFontSize(ev.target.value));
+
+        // Preferences Toggles
+        e.prefReadReceipts?.addEventListener('change', (ev) => localStorage.setItem('esctrix_read_receipts', String(ev.target.checked)));
+        e.prefLastSeen?.addEventListener('change', (ev) => localStorage.setItem('esctrix_last_seen', ev.target.value));
+        e.prefBurnTimer?.addEventListener('change', (ev) => localStorage.setItem('esctrix_burn_timer', ev.target.value));
+        e.prefEnterSend?.addEventListener('change', (ev) => localStorage.setItem('esctrix_enter_send', String(ev.target.checked)));
+        e.prefSfxToggle?.addEventListener('change', (ev) => {
             this.state.sfxEnabled = ev.target.checked;
             localStorage.setItem('esctrix_sfx', String(this.state.sfxEnabled));
             this.playSfx('click');
         });
+        e.prefRingtoneToggle?.addEventListener('change', (ev) => localStorage.setItem('esctrix_ringtone', String(ev.target.checked)));
+        e.prefPreviewToggle?.addEventListener('change', (ev) => localStorage.setItem('esctrix_preview', String(ev.target.checked)));
+
+        e.clearMediaCacheBtn?.addEventListener('click', () => this.settings.clearMediaCache());
+        e.clearChatHistoryBtn?.addEventListener('click', () => this.settings.clearChatHistory());
+
+        // Instagram User Profile Modal Actions
+        e.userProfileCloseBtn?.addEventListener('click', () => this.profileModal.close());
+        e.upActionDm?.addEventListener('click', () => this.profileModal.startDM());
+        e.upActionVoice?.addEventListener('click', () => this.profileModal.startCall('audio'));
+        e.upActionVideo?.addEventListener('click', () => this.profileModal.startCall('video'));
+        e.upActionAddContact?.addEventListener('click', () => this.profileModal.toggleContact());
+        e.upActionShareQr?.addEventListener('click', () => this.profileModal.openNametag(this.profileModal.currentUser));
+
+        // Instagram QR Nametag Actions
+        e.qrNametagCloseBtn?.addEventListener('click', () => this.modal.close('qr-nametag-modal'));
+        e.nametagCopyLinkBtn?.addEventListener('click', () => this.profileModal.copyNametagLink());
+
+        // Passcode Screen Lock Keypad
+        document.querySelectorAll('.pin-key[data-digit]').forEach(k => {
+            k.addEventListener('click', (ev) => this.passcode.pressDigit(ev.currentTarget.dataset.digit));
+        });
+        e.pinClearBtn?.addEventListener('click', () => this.passcode.clearDigit());
+        e.pinEnterBtn?.addEventListener('click', () => this.passcode.verify());
 
         // Chat Tabs & Folders
         document.querySelectorAll('.folder-tab').forEach(tab => {
@@ -423,7 +485,11 @@ const ESCTRIX = {
         // Message Input & Sending
         e.sendBtn?.addEventListener('click', () => this.chat.sendMessage());
         e.messageInput?.addEventListener('keypress', (ev) => {
-            if (ev.key === 'Enter') this.chat.sendMessage();
+            const enterSend = localStorage.getItem('esctrix_enter_send') !== 'false';
+            if (ev.key === 'Enter' && !ev.shiftKey && enterSend) {
+                ev.preventDefault();
+                this.chat.sendMessage();
+            }
         });
         e.messageInput?.addEventListener('input', (ev) => {
             if (ev.target.value === '/') {
@@ -543,44 +609,9 @@ const ESCTRIX = {
     },
 
     // ─────────────────────────────────────────────────────────
-    // AUTHENTICATION MODULE
+    // AUTHENTICATION MODULE (Unified & Stealth)
     // ─────────────────────────────────────────────────────────
     auth: {
-        setRoleMode(mode) {
-            const e = ESCTRIX.elements;
-            e.loginError.textContent = '';
-            if (mode === 'admin') {
-                ESCTRIX.state.isAdminAuthMode = true;
-                e.roleTabAdmin?.classList.add('active', 'admin-mode');
-                e.roleTabUser?.classList.remove('active');
-                e.authTitle.textContent = 'Admin Commander Portal';
-                e.authSubtitle.textContent = 'Enter administrator credentials for live telemetry & moderation';
-                if (e.authBrandBadge) {
-                    e.authBrandBadge.textContent = 'COMMANDER';
-                    e.authBrandBadge.style.background = 'linear-gradient(135deg, #ef4444, #8b5cf6)';
-                }
-                if (e.authSwitchBar) e.authSwitchBar.style.display = 'none';
-                if (e.displayNameGroup) e.displayNameGroup.style.display = 'none';
-                e.authUsername.placeholder = 'Enter Admin Username';
-                e.authSubmitBtn.innerHTML = '<i class="ph ph-shield-star"></i> Access Command Console';
-                if (e.authSecurityText) e.authSecurityText.textContent = 'Encrypted TLS Root Administrator Channel';
-            } else {
-                ESCTRIX.state.isAdminAuthMode = false;
-                e.roleTabUser?.classList.add('active');
-                e.roleTabAdmin?.classList.remove('active', 'admin-mode');
-                e.authTitle.textContent = ESCTRIX.state.isLoginMode ? 'Account Login' : 'Create Quantum Identity';
-                e.authSubtitle.textContent = 'Decentralized P2P Messaging & Neural AI';
-                if (e.authBrandBadge) {
-                    e.authBrandBadge.textContent = 'QUANTUM';
-                    e.authBrandBadge.style.background = 'linear-gradient(135deg, var(--primary), var(--accent))';
-                }
-                if (e.authSwitchBar) e.authSwitchBar.style.display = 'block';
-                e.authUsername.placeholder = 'Username (Handle)';
-                e.authSubmitBtn.innerHTML = ESCTRIX.state.isLoginMode ? '<i class="ph ph-sign-in"></i> Sign In' : '<i class="ph ph-user-plus"></i> Generate Account';
-                if (e.authSecurityText) e.authSecurityText.textContent = 'Zero-Knowledge AES-256 E2EE Client Secured';
-            }
-        },
-
         toggleMode() {
             ESCTRIX.state.isLoginMode = !ESCTRIX.state.isLoginMode;
             const e = ESCTRIX.elements;
@@ -616,7 +647,7 @@ const ESCTRIX = {
             e.loginError.textContent = 'Authenticating quantum frequency...';
             e.authSubmitBtn.disabled = true;
 
-            const endpoint = (ESCTRIX.state.isLoginMode || ESCTRIX.state.isAdminAuthMode) ? '/api/auth/login' : '/api/auth/register';
+            const endpoint = ESCTRIX.state.isLoginMode ? '/api/auth/login' : '/api/auth/register';
             const payload = { username, password, display_name: displayName };
 
             try {
@@ -631,31 +662,19 @@ const ESCTRIX = {
                     ESCTRIX.playSfx('send');
                     let user = data.user;
                     if (!user) {
-                        // Fallback profile query
                         const pRes = await fetch(`/api/user/profile?username=${encodeURIComponent(username)}`);
                         const pData = await pRes.json();
                         user = pData.profile || { username, account_id: 'ESC-LIVE', display_name: username, role: data.role || 'user' };
-                    }
-
-                    // Check admin role if in admin mode
-                    if (ESCTRIX.state.isAdminAuthMode && user.role !== 'admin') {
-                        e.loginError.textContent = 'Access Denied: This identity does not possess Commander privileges.';
-                        return;
                     }
 
                     ESCTRIX.state.user = user;
                     localStorage.setItem('esctrix_quantum_session', JSON.stringify(user));
                     ESCTRIX.applyUserProfile(user);
 
-                    if (ESCTRIX.state.isAdminAuthMode) {
-                        ESCTRIX.admin.open();
-                        ESCTRIX.showToast(`Commander Verified: Welcome to Command Console 🛡️`);
-                    } else {
-                        ESCTRIX.showScreen('dashboard-screen');
-                        ESCTRIX.loadSavedMessages();
-                        ESCTRIX.loadContacts();
-                        ESCTRIX.showToast(`Identity verified: ${user.display_name || user.username} 🚀`);
-                    }
+                    ESCTRIX.showScreen('dashboard-screen');
+                    ESCTRIX.loadSavedMessages();
+                    ESCTRIX.loadContacts();
+                    ESCTRIX.showToast(`Identity verified: ${user.display_name || user.username} 🚀`);
                 } else {
                     e.loginError.textContent = data.message || 'Authentication failed. Please check credentials.';
                 }
@@ -673,7 +692,7 @@ const ESCTRIX = {
                 ESCTRIX.state.p2p.disconnect();
                 ESCTRIX.state.p2p = null;
             }
-            ESCTRIX.elements.profileDrawer.classList.add('hidden');
+            ESCTRIX.elements.settingsSuiteModal?.classList.add('hidden');
             ESCTRIX.elements.authUsername.value = '';
             ESCTRIX.elements.authPassword.value = '';
             ESCTRIX.renderIntroUserState(null);
@@ -683,28 +702,182 @@ const ESCTRIX = {
     },
 
     // ─────────────────────────────────────────────────────────
-    // PROFILE DRAWER MODULE
+    // INSTAGRAM USER PROFILE & NAMETAG MODULE
     // ─────────────────────────────────────────────────────────
-    drawer: {
+    profileModal: {
+        currentUser: null,
+
+        async open(user) {
+            ESCTRIX.playSfx('click');
+            this.currentUser = user;
+            const e = ESCTRIX.elements;
+            if (!e.userProfileModal) return;
+
+            // Populate profile
+            if (e.upDisplayname) e.upDisplayname.textContent = user.display_name || user.username;
+            if (e.upUsername) e.upUsername.textContent = `@${user.username}`;
+            if (e.upAccountId) e.upAccountId.textContent = user.account_id || 'ESC-QUANTUM';
+            if (e.upBio) e.upBio.textContent = user.bio || 'Decentralized & Quantum Secured 🚀';
+            if (e.upAvatar) {
+                e.upAvatar.textContent = (user.display_name || user.username || 'U').charAt(0).toUpperCase();
+                if (user.avatar_color) e.upAvatar.style.background = user.avatar_color;
+            }
+
+            // Check if already contact
+            const isContact = (ESCTRIX.state.contacts || []).some(c => c.contact_username === user.username);
+            if (e.upAddContactLabel) {
+                e.upAddContactLabel.textContent = isContact ? 'In Your Contacts ✓' : 'Add to Contacts';
+            }
+
+            e.userProfileModal.classList.remove('hidden');
+        },
+
+        close() {
+            ESCTRIX.elements.userProfileModal?.classList.add('hidden');
+        },
+
+        startDM() {
+            if (!this.currentUser) return;
+            this.close();
+            ESCTRIX.space.openDirectSpace(this.currentUser.username);
+            ESCTRIX.chat.switchChat('space', { spaceName: `@${this.currentUser.username}` });
+        },
+
+        startCall(type) {
+            if (!this.currentUser) return;
+            this.close();
+            ESCTRIX.space.openDirectSpace(this.currentUser.username);
+            ESCTRIX.chat.switchChat('space', { spaceName: `@${this.currentUser.username}` });
+            setTimeout(() => {
+                ESCTRIX.call.initiate(type);
+            }, 300);
+        },
+
+        async toggleContact() {
+            if (!this.currentUser) return;
+            await ESCTRIX.addContact(this.currentUser.username);
+            if (ESCTRIX.elements.upAddContactLabel) {
+                ESCTRIX.elements.upAddContactLabel.textContent = 'In Your Contacts ✓';
+            }
+        },
+
+        openNametag(user) {
+            if (!user) return;
+            ESCTRIX.playSfx('click');
+            const e = ESCTRIX.elements;
+            if (e.nametagDisplayname) e.nametagDisplayname.textContent = user.display_name || user.username;
+            if (e.nametagUsername) e.nametagUsername.textContent = `@${user.username}`;
+            if (e.nametagAccountId) e.nametagAccountId.textContent = user.account_id || 'ESC-QUANTUM';
+            if (e.nametagAvatar) {
+                e.nametagAvatar.textContent = (user.display_name || user.username || 'U').charAt(0).toUpperCase();
+                if (user.avatar_color) e.nametagAvatar.style.background = user.avatar_color;
+            }
+
+            // Generate clean QR
+            const directUrl = `${window.location.origin}/@${user.username}`;
+            if (e.nametagQrImg) {
+                e.nametagQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(directUrl)}`;
+            }
+
+            ESCTRIX.modal.open('qr-nametag-modal');
+        },
+
+        copyNametagLink() {
+            const user = this.currentUser || ESCTRIX.state.user;
+            if (!user) return;
+            const directUrl = `${window.location.origin}/@${user.username}`;
+            navigator.clipboard.writeText(directUrl).then(() => {
+                ESCTRIX.playSfx('send');
+                ESCTRIX.showToast(`Direct Handle Link copied: @${user.username} 📋`);
+            });
+        }
+    },
+
+    // ─────────────────────────────────────────────────────────
+    // ADVANCED MULTI-TAB SETTINGS SUITE MODULE
+    // ─────────────────────────────────────────────────────────
+    settings: {
         open() {
             ESCTRIX.playSfx('click');
-            ESCTRIX.elements.profileDrawer.classList.remove('hidden');
+            const user = ESCTRIX.state.user;
+            if (user) {
+                ESCTRIX.applyUserProfile(user);
+            }
+            this.loadPreferences();
+            this.loadSessions();
+            ESCTRIX.elements.settingsSuiteModal?.classList.remove('hidden');
         },
+
         close() {
-            ESCTRIX.elements.profileDrawer.classList.add('hidden');
+            ESCTRIX.elements.settingsSuiteModal?.classList.add('hidden');
         },
-        copyAccountId() {
-            const id = ESCTRIX.state.user?.account_id || 'ESC-000000';
-            navigator.clipboard.writeText(id).then(() => {
-                ESCTRIX.playSfx('send');
-                ESCTRIX.showToast(`Account ID ${id} copied to clipboard! 📋`);
+
+        switchTab(tabName) {
+            ESCTRIX.playSfx('click');
+            document.querySelectorAll('.settings-nav-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.settings-tab-view').forEach(v => v.classList.remove('active'));
+
+            const targetBtn = document.querySelector(`.settings-nav-btn[data-tab="${tabName}"]`);
+            const targetView = document.getElementById(`tab-${tabName}-view`);
+            if (targetBtn) targetBtn.classList.add('active');
+            if (targetView) targetView.classList.add('active');
+        },
+
+        loadPreferences() {
+            const e = ESCTRIX.elements;
+            if (e.prefReadReceipts) {
+                e.prefReadReceipts.checked = localStorage.getItem('esctrix_read_receipts') !== 'false';
+            }
+            if (e.prefLastSeen) {
+                e.prefLastSeen.value = localStorage.getItem('esctrix_last_seen') || 'contacts';
+            }
+            if (e.prefBurnTimer) {
+                e.prefBurnTimer.value = localStorage.getItem('esctrix_burn_timer') || '0';
+            }
+            if (e.prefEnterSend) {
+                e.prefEnterSend.checked = localStorage.getItem('esctrix_enter_send') !== 'false';
+            }
+            if (e.prefFontSize) {
+                e.prefFontSize.value = localStorage.getItem('esctrix_fontsize') || 'medium';
+            }
+            if (e.prefSfxToggle) {
+                e.prefSfxToggle.checked = ESCTRIX.state.sfxEnabled;
+            }
+            if (e.prefRingtoneToggle) {
+                e.prefRingtoneToggle.checked = localStorage.getItem('esctrix_ringtone') !== 'false';
+            }
+            if (e.prefPreviewToggle) {
+                e.prefPreviewToggle.checked = localStorage.getItem('esctrix_preview') !== 'false';
+            }
+
+            // Wallpaper active card
+            const currentWp = localStorage.getItem('esctrix_wallpaper') || 'cyber-grid';
+            document.querySelectorAll('.wallpaper-card').forEach(c => {
+                if (c.dataset.wallpaper === currentWp) {
+                    c.classList.add('active');
+                } else {
+                    c.classList.remove('active');
+                }
             });
+
+            // Passcode status
+            const hasPasscode = Boolean(localStorage.getItem('esctrix_passcode_pin'));
+            if (e.passcodeStatusLabel) {
+                e.passcodeStatusLabel.textContent = hasPasscode ? 'Change PIN (Active)' : 'Setup PIN';
+            }
+
+            // Storage estimate
+            if (e.storageUsageVal) {
+                const lsSize = (JSON.stringify(localStorage).length / (1024 * 1024)).toFixed(2);
+                e.storageUsageVal.textContent = `${lsSize} MB`;
+            }
         },
+
         async saveProfile() {
             const user = ESCTRIX.state.user;
             if (!user) return;
-            const newName = ESCTRIX.elements.drawerInputDisplayname.value.trim();
-            const newBio = ESCTRIX.elements.drawerInputBio.value.trim();
+            const newName = ESCTRIX.elements.settingsInputDisplayname?.value.trim();
+            const newBio = ESCTRIX.elements.settingsInputBio?.value.trim();
 
             if (!newName) {
                 ESCTRIX.showToast('Display name cannot be empty', true);
@@ -728,12 +901,12 @@ const ESCTRIX = {
                     localStorage.setItem('esctrix_quantum_session', JSON.stringify(ESCTRIX.state.user));
                     ESCTRIX.applyUserProfile(ESCTRIX.state.user);
                     ESCTRIX.showToast('Profile updated successfully! ✨');
-                    ESCTRIX.drawer.close();
                 }
             } catch (e) {
                 ESCTRIX.showToast('Failed to update profile', true);
             }
         },
+
         cycleAvatarColor() {
             const colors = [
                 'linear-gradient(135deg, #8b5cf6, #06d6c7)',
@@ -752,6 +925,195 @@ const ESCTRIX = {
                 ESCTRIX.state.user.avatar_color = newColor;
                 ESCTRIX.applyUserProfile(ESCTRIX.state.user);
                 this.saveProfile();
+            }
+        },
+
+        copyAccountId() {
+            const id = ESCTRIX.state.user?.account_id || 'ESC-000000';
+            navigator.clipboard.writeText(id).then(() => {
+                ESCTRIX.playSfx('send');
+                ESCTRIX.showToast(`Account ID ${id} copied to clipboard! 📋`);
+            });
+        },
+
+        setWallpaper(wpName) {
+            ESCTRIX.playSfx('click');
+            localStorage.setItem('esctrix_wallpaper', wpName);
+            document.querySelectorAll('.wallpaper-card').forEach(c => {
+                c.classList.toggle('active', c.dataset.wallpaper === wpName);
+            });
+            this.applyWallpaperClass(wpName);
+            ESCTRIX.showToast(`Chat Wallpaper set to: ${wpName.replace('-', ' ').toUpperCase()}`);
+        },
+
+        applyWallpaperClass(wpName) {
+            const vp = ESCTRIX.elements.messagesViewport;
+            if (!vp) return;
+            vp.classList.remove('wp-cyber-grid', 'wp-doodle-pattern', 'wp-oled-black', 'wp-emerald-matrix');
+            vp.classList.add(`wp-${wpName}`);
+        },
+
+        applyFontSize(size) {
+            localStorage.setItem('esctrix_fontsize', size);
+            const list = ESCTRIX.elements.messagesList;
+            if (!list) return;
+            list.style.fontSize = size === 'small' ? '0.86rem' : size === 'large' ? '1.05rem' : '0.94rem';
+        },
+
+        async loadSessions() {
+            const user = ESCTRIX.state.user;
+            if (!user) return;
+            const container = ESCTRIX.elements.sessionsContainer;
+            if (!container) return;
+
+            try {
+                const res = await fetch(`/api/user/sessions?username=${encodeURIComponent(user.username)}`);
+                const data = await res.json();
+                if (data.status === 'success' && data.sessions) {
+                    container.innerHTML = data.sessions.map((s, idx) => `
+                        <div class="session-item ${s.is_current || idx === 0 ? 'current' : ''}">
+                            <div class="session-icon"><i class="ph ph-desktop"></i></div>
+                            <div class="session-meta">
+                                <strong>${s.device || 'Quantum Web Client'}</strong>
+                                <span class="muted">${s.ip || '127.0.0.1'} • ${s.online_since || 'Active now'}</span>
+                            </div>
+                            ${s.is_current || idx === 0 ? '<span class="badge-pill active-badge">This Device</span>' : ''}
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {}
+        },
+
+        async terminateOtherSessions() {
+            const user = ESCTRIX.state.user;
+            if (!user) return;
+            try {
+                await fetch('/api/user/sessions/terminate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user.username })
+                });
+                ESCTRIX.showToast('All other active sessions revoked! 🛡️');
+                this.loadSessions();
+            } catch (e) {}
+        },
+
+        clearMediaCache() {
+            // Clears any stored blobs or large cached strings
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('esctrix_cache_') || key.startsWith('cached_voice_')) {
+                    localStorage.removeItem(key);
+                }
+            });
+            ESCTRIX.showToast('Media cache cleared! 🧹');
+            this.loadPreferences();
+        },
+
+        clearChatHistory() {
+            if (confirm('Clear local history across all conversations? (Encrypted cloud vault is untouched)')) {
+                ESCTRIX.state.chatHistories['ai'] = [];
+                ESCTRIX.state.chatHistories['space'] = [];
+                ESCTRIX.chat.renderMessages();
+                ESCTRIX.showToast('Local conversation view purged.');
+            }
+        }
+    },
+
+    // ─────────────────────────────────────────────────────────
+    // PASSCODE SCREEN LOCK MODULE
+    // ─────────────────────────────────────────────────────────
+    passcode: {
+        enteredPin: '',
+        isLocked: false,
+
+        init() {
+            const hasPasscode = Boolean(localStorage.getItem('esctrix_passcode_pin'));
+            if (hasPasscode) {
+                // Auto lock on tab hide / blur
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden && localStorage.getItem('esctrix_passcode_pin')) {
+                        this.lock();
+                    }
+                });
+            }
+        },
+
+        promptSetup() {
+            const existing = localStorage.getItem('esctrix_passcode_pin');
+            if (existing) {
+                const choice = confirm('Passcode is currently active. Click OK to remove passcode, or Cancel to change it.');
+                if (choice) {
+                    localStorage.removeItem('esctrix_passcode_pin');
+                    ESCTRIX.showToast('Passcode screen lock removed.');
+                    ESCTRIX.settings.loadPreferences();
+                    return;
+                }
+            }
+
+            const pin = prompt('Enter a 4-digit security PIN for screen lock:');
+            if (pin && /^\d{4}$/.test(pin)) {
+                localStorage.setItem('esctrix_passcode_pin', pin);
+                ESCTRIX.showToast('4-Digit Passcode Lock Enabled! 🔒');
+                ESCTRIX.settings.loadPreferences();
+            } else if (pin) {
+                alert('PIN must be exactly 4 digits (0-9).');
+            }
+        },
+
+        lock() {
+            const pin = localStorage.getItem('esctrix_passcode_pin');
+            if (!pin) return;
+            this.isLocked = true;
+            this.enteredPin = '';
+            this.updateDots();
+            ESCTRIX.elements.passcodeLockOverlay?.classList.remove('hidden');
+        },
+
+        pressDigit(digit) {
+            if (this.enteredPin.length < 4) {
+                this.enteredPin += digit;
+                ESCTRIX.playSfx('click');
+                this.updateDots();
+                if (this.enteredPin.length === 4) {
+                    setTimeout(() => this.verify(), 150);
+                }
+            }
+        },
+
+        clearDigit() {
+            if (this.enteredPin.length > 0) {
+                this.enteredPin = this.enteredPin.slice(0, -1);
+                ESCTRIX.playSfx('click');
+                this.updateDots();
+            }
+        },
+
+        updateDots() {
+            const dots = document.querySelectorAll('.pin-dot');
+            dots.forEach((dot, idx) => {
+                dot.classList.toggle('filled', idx < this.enteredPin.length);
+            });
+            if (ESCTRIX.elements.pinErrorMsg) {
+                ESCTRIX.elements.pinErrorMsg.textContent = '';
+            }
+        },
+
+        verify() {
+            const saved = localStorage.getItem('esctrix_passcode_pin');
+            if (this.enteredPin === saved) {
+                ESCTRIX.playSfx('receive');
+                this.isLocked = false;
+                ESCTRIX.elements.passcodeLockOverlay?.classList.add('hidden');
+                this.enteredPin = '';
+                this.updateDots();
+                ESCTRIX.showToast('Screen unlocked! 🔓');
+            } else {
+                ESCTRIX.playSfx('call');
+                if (ESCTRIX.elements.pinErrorMsg) {
+                    ESCTRIX.elements.pinErrorMsg.textContent = 'Incorrect PIN. Try again.';
+                }
+                this.enteredPin = '';
+                this.updateDots();
             }
         }
     },
@@ -842,6 +1204,7 @@ const ESCTRIX = {
             const div = document.createElement('div');
             div.className = `message ${msg.sender === 'me' ? 'sent' : 'received'}`;
             const timeStr = msg.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const statusTick = msg.sender === 'me' ? '<span class="msg-status-tick tick-read"><i class="ph ph-checks"></i></span>' : '';
 
             if (msg.type === 'voice') {
                 div.innerHTML = `
@@ -879,12 +1242,23 @@ const ESCTRIX = {
                     </div>
                     <div class="message-meta">
                         <span>${timeStr}</span>
-                        ${msg.sender === 'me' ? '<i class="ph ph-checks" style="color:var(--accent)"></i>' : ''}
+                        ${statusTick}
                     </div>
                 `;
-                // Bind voice play
+                // Bind voice play & speed cycling
                 const pBtn = div.querySelector('.voice-play-btn');
-                pBtn?.addEventListener('click', () => ESCTRIX.voice.playAudio(decodeURIComponent(pBtn.dataset.audio), pBtn));
+                const speedPill = div.querySelector('.voice-speed-pill');
+                pBtn?.addEventListener('click', () => ESCTRIX.voice.playAudio(decodeURIComponent(pBtn.dataset.audio), pBtn, speedPill));
+                speedPill?.addEventListener('click', () => {
+                    const speeds = [1.0, 1.5, 2.0];
+                    let cur = parseFloat(speedPill.dataset.speed || '1.0');
+                    let next = speeds[(speeds.indexOf(cur) + 1) % speeds.length];
+                    speedPill.dataset.speed = String(next);
+                    speedPill.textContent = `${next.toFixed(1)}x`;
+                    if (ESCTRIX.state.currentAudioPlayer) {
+                        ESCTRIX.state.currentAudioPlayer.playbackRate = next;
+                    }
+                });
             } else if (msg.type === 'file') {
                 div.innerHTML = `
                     <div class="file-bubble">
@@ -899,7 +1273,7 @@ const ESCTRIX = {
                     </div>
                     <div class="message-meta">
                         <span>${timeStr}</span>
-                        ${msg.sender === 'me' ? '<i class="ph ph-checks" style="color:var(--accent)"></i>' : ''}
+                        ${statusTick}
                     </div>
                 `;
             } else {
@@ -910,7 +1284,7 @@ const ESCTRIX = {
                     <div class="message-text">${formatted}</div>
                     <div class="message-meta">
                         <span>${timeStr}</span>
-                        ${msg.sender === 'me' ? '<i class="ph ph-checks" style="color:var(--accent)"></i>' : ''}
+                        ${statusTick}
                     </div>
                 `;
             }
@@ -1118,11 +1492,14 @@ const ESCTRIX = {
                 </div>
             `).join('');
 
-            // Bind click to connect or add contact
+            // Bind click to open Instagram Profile Card
             list.querySelectorAll('.user-search-result').forEach(row => {
                 row.addEventListener('click', () => {
                     const targetUname = row.dataset.username;
-                    ESCTRIX.addContact(targetUname);
+                    const foundUser = users.find(u => u.username === targetUname);
+                    if (foundUser) {
+                        ESCTRIX.profileModal.open(foundUser);
+                    }
                 });
             });
         },
@@ -1476,7 +1853,7 @@ const ESCTRIX = {
             e.voiceRecordingBar.classList.add('hidden');
         },
 
-        playAudio(base64Url, buttonEl) {
+        playAudio(base64Url, buttonEl, speedPillEl = null) {
             const s = ESCTRIX.state;
             if (s.currentAudioPlayer) {
                 s.currentAudioPlayer.pause();
@@ -1485,6 +1862,8 @@ const ESCTRIX = {
             }
 
             const audio = new Audio(base64Url);
+            const rate = speedPillEl ? parseFloat(speedPillEl.dataset.speed || '1.0') : 1.0;
+            audio.playbackRate = rate;
             s.currentAudioPlayer = audio;
             const icon = buttonEl.querySelector('i');
             if (icon) icon.className = 'ph ph-pause';
@@ -2017,7 +2396,24 @@ const ESCTRIX = {
                 }
             }
 
-            hashLabel.textContent = `FINGERPRINT: SHA256-${Math.abs(hash).toString(16).toUpperCase()}-QUANTUM-E2EE`;
+            // Generate Telegram-style 4 safety emojis
+            const emojiPool = ['⚡', '🚀', '🌌', '🔒', '💎', '🛡️', '🛰️', '🔥', '🔮', '🎯', '✨', '🪐', '💫', '🔑', '🧬', '🛸'];
+            const absHash = Math.abs(hash);
+            const e1 = emojiPool[absHash % emojiPool.length];
+            const e2 = emojiPool[(absHash >> 4) % emojiPool.length];
+            const e3 = emojiPool[(absHash >> 8) % emojiPool.length];
+            const e4 = emojiPool[(absHash >> 12) % emojiPool.length];
+
+            const em1 = document.getElementById('safety-emoji-1');
+            const em2 = document.getElementById('safety-emoji-2');
+            const em3 = document.getElementById('safety-emoji-3');
+            const em4 = document.getElementById('safety-emoji-4');
+            if (em1) em1.textContent = e1;
+            if (em2) em2.textContent = e2;
+            if (em3) em3.textContent = e3;
+            if (em4) em4.textContent = e4;
+
+            hashLabel.textContent = `FINGERPRINT: SHA256-${absHash.toString(16).toUpperCase()}-QUANTUM-E2EE`;
             ESCTRIX.modal.open('e2ee-modal');
         }
     },

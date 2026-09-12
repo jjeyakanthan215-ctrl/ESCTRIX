@@ -172,6 +172,11 @@ async def get_index(request: Request):
     )
 
 
+@app.get("/favicon.ico")
+async def get_favicon():
+    return FileResponse("frontend/icon-192.png", media_type="image/png")
+
+
 @app.get("/manifest.json")
 async def get_manifest():
     return FileResponse("frontend/manifest.json", media_type="application/manifest+json")
@@ -247,6 +252,23 @@ async def add_new_contact(data: ContactAdd):
     if add_contact(data.owner_username, data.contact_username):
         return {"status": "success"}
     return {"status": "error", "message": "User not found or already in contacts"}
+
+
+class SessionTerminateRequest(BaseModel):
+    username: str
+    current_client_id: Optional[str] = ""
+
+
+@app.get("/api/user/sessions")
+async def get_sessions(username: str, current_client_id: str = ""):
+    sessions = manager.get_user_sessions(username, current_client_id)
+    return {"status": "success", "sessions": sessions}
+
+
+@app.post("/api/user/sessions/terminate")
+async def terminate_sessions(data: SessionTerminateRequest):
+    manager.terminate_other_sessions(data.username, data.current_client_id)
+    return {"status": "success", "message": "All other sessions terminated."}
 
 
 # ─────────────────────────────────────────────────────────────
@@ -483,13 +505,18 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                 provided_pin    = message.get("data", {}).get("pin")
                 client_username = message.get("data", {}).get("username")
 
+                # Auto-instantiate direct 1-to-1 rooms (WhatsApp/Instagram DM style)
+                if space_name and (space_name.startswith("Direct-") or space_name.startswith("DM-")):
+                    if not manager.get_room(space_name):
+                        manager.create_room(space_name, client_username, "")
+
                 room = manager.get_room(space_name)
                 if not room:
                     await websocket.send_text(json.dumps({"type": "auth_fail", "reason": "no_room"}))
                     continue
 
-                claiming_host = (client_username == room['host_username'])
-                host_slot_taken = room['host_client_id'] is not None
+                claiming_host = (client_username == room['host_username']) or (space_name and space_name.startswith("Direct-"))
+                host_slot_taken = room['host_client_id'] is not None and not space_name.startswith("Direct-")
 
                 if claiming_host and host_slot_taken and room['host_client_id'] != client_id:
                     await websocket.send_text(json.dumps({
@@ -499,7 +526,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                     }))
                     continue
 
-                pin_ok = (room['pin'] == provided_pin) or (room['pin'] == '' and provided_pin == '')
+                pin_ok = (room['pin'] == provided_pin) or (room['pin'] == '' and (provided_pin == '' or provided_pin is None)) or space_name.startswith("Direct-")
 
                 if claiming_host or pin_ok:
                     result = manager.add_client_to_room(
@@ -516,6 +543,9 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                         continue
 
                     current_room = space_name
+                    # Record user active session
+                    client_ip = websocket.client.host if websocket.client else "127.0.0.1"
+                    manager.record_session(client_username, client_id, client_ip)
 
                     existing_peers = [
                         {"client_id": cid, "username": uname}
@@ -559,7 +589,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
             elif current_room and message.get("type") in [
                 "offer", "answer", "candidate",
                 "call_request", "call_accepted", "call_declined",
-                "typing", "vibe_update"
+                "typing", "vibe_update", "message_delivered", "message_read", "burn_room"
             ]:
                 target = message.get("target")
 
@@ -584,3 +614,9 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                 {"type": "peer_disconnected", "peer_id": client_id}
             )
         manager.remove_admin(client_id)
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("server:app", host="127.0.0.1", port=DEFAULT_PORT, reload=False)
+
