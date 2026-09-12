@@ -237,6 +237,9 @@ img {
 /* ══════════════════════════════════════════════════ */
 /* INTRODUCTION / HERO SHOWCASE SCREEN                */
 /* ══════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════ */
+/* INTRODUCTION / HERO SHOWCASE SCREEN                */
+/* ══════════════════════════════════════════════════ */
 .intro-container {
     width: 100%;
     min-height: 100vh;
@@ -247,32 +250,37 @@ img {
     padding-bottom: 60px;
 }
 
-/* ── Intro Top Navigation Bar ── */
+/* ── Top Navigation Bar (Full-Width Sticky Glass) ── */
 .intro-nav-bar {
     width: 100%;
-    max-width: 1240px;
-    margin: 0 auto;
-    padding: 20px 24px;
+    padding: 16px 36px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 20px;
-    position: relative;
-    z-index: 100;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: rgba(6, 10, 18, 0.78);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
 }
 
 .intro-nav-brand {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-shrink: 0;
 }
 
 .nav-brand-logo {
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     border-radius: 10px;
     object-fit: cover;
     box-shadow: 0 0 16px var(--primary-glow);
+    flex-shrink: 0;
 }
 
 .nav-brand-title {
@@ -283,6 +291,7 @@ img {
     display: flex;
     align-items: center;
     gap: 6px;
+    white-space: nowrap;
 }
 
 .nav-live-pill {
@@ -298,6 +307,7 @@ img {
     font-weight: 700;
     letter-spacing: 0.8px;
     margin-left: 6px;
+    white-space: nowrap;
 }
 
 .intro-nav-links {
@@ -327,12 +337,14 @@ img {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-shrink: 0;
 }
 
+/* ── Hero Center Section ── */
 .intro-hero-top {
-    max-width: 820px;
-    margin: 20px auto 44px;
-    padding: 0 24px;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 24px 36px;
     text-align: center;
 }
 
@@ -341,7 +353,7 @@ img {
     justify-content: center;
     gap: 10px;
     flex-wrap: wrap;
-    margin-bottom: 24px;
+    margin-bottom: 22px;
 }
 
 .intro-pill-badge {
@@ -379,7 +391,7 @@ img {
 }
 
 .intro-title {
-    font-size: 3.2rem;
+    font-size: 3.4rem;
     font-weight: 850;
     letter-spacing: -0.5px;
     margin-bottom: 16px;
@@ -397,17 +409,82 @@ img {
     font-size: 1.15rem;
     color: var(--text-muted);
     line-height: 1.65;
-    margin-bottom: 32px;
+    margin-bottom: 30px;
     max-width: 720px;
     margin-left: auto;
     margin-right: auto;
+}
+
+/* ── Active User Identity Card ── */
+.intro-user-card {
+    max-width: 620px;
+    margin: 0 auto 24px;
+    padding: 16px 22px;
+    display: flex;
+    align-items: center;
+    text-align: left;
+    gap: 16px;
+    background: rgba(13, 20, 36, 0.75);
+    border: 1px solid rgba(6, 214, 199, 0.3);
+    border-radius: 18px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+    transition: all 0.3s ease;
+}
+
+.intro-user-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--primary));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    box-shadow: 0 0 16px rgba(6, 214, 199, 0.4);
+}
+
+.intro-user-meta {
+    flex: 1;
+}
+
+.intro-user-welcome {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 2px;
+}
+
+.intro-user-welcome strong {
+    color: #fff;
+}
+
+.intro-user-welcome span {
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+}
+
+.intro-user-sub {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.intro-user-sub code {
+    color: #c4b5fd;
+    font-family: var(--font-mono);
+    font-weight: 700;
 }
 
 .intro-action-group {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
     flex-wrap: wrap;
     margin-bottom: 16px;
 }
@@ -420,18 +497,16 @@ img {
     box-shadow: 0 8px 24px var(--primary-glow);
 }
 
-.intro-btn-portal {
-    padding: 15px 28px;
-    font-size: 1rem;
-    font-weight: 700;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.08);
+.intro-footnote {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-top: 10px;
 }
 
 .intro-features-grid {
-    max-width: 1240px;
-    margin: 0 auto 48px;
-    padding: 0 24px;
+    max-width: 1280px;
+    margin: 0 auto 54px;
+    padding: 0 32px;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 22px;
@@ -3791,23 +3866,112 @@ input:checked + .slider:before {
 
 /* ── Responsive Rules for Intro / Hero Showcase ── */
 @media (max-width: 1080px) {
+    .intro-nav-bar {
+        padding: 14px 24px;
+    }
     .intro-features-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
+        gap: 18px;
+        padding: 0 20px;
     }
 }
 
 @media (max-width: 768px) {
-    .intro-title {
-        font-size: 2.2rem;
+    .intro-nav-bar {
+        padding: 12px 16px;
+        gap: 10px;
     }
-    
-    .intro-subtitle {
-        font-size: 1rem;
+
+    .intro-nav-brand {
+        gap: 8px;
+    }
+
+    .nav-brand-logo {
+        width: 30px !important;
+        height: 30px !important;
+    }
+
+    .nav-brand-title {
+        font-size: 0.95rem;
+    }
+
+    .nav-live-pill {
+        display: none !important; /* Hide badge on mobile to avoid cramming */
     }
 
     .intro-nav-links {
-        display: none;
+        display: none !important;
+    }
+
+    #intro-nav-get-started-btn {
+        padding: 6px 14px;
+        font-size: 0.78rem;
+    }
+
+    .intro-hero-top {
+        padding: 24px 16px 20px;
+        margin: 0 auto;
+    }
+
+    .intro-badge-row {
+        gap: 6px;
+        margin-bottom: 16px;
+    }
+
+    .intro-pill-badge {
+        font-size: 0.65rem;
+        padding: 4px 10px;
+        letter-spacing: 0.4px;
+    }
+
+    .intro-logo-halo {
+        width: 76px !important;
+        height: 76px !important;
+        margin: 0 auto 16px;
+        border-radius: 20px;
+    }
+
+    .intro-title {
+        font-size: 2.1rem;
+        letter-spacing: -0.3px;
+        margin-bottom: 12px;
+    }
+    
+    .intro-subtitle {
+        font-size: 0.92rem;
+        line-height: 1.5;
+        margin-bottom: 22px;
+        padding: 0 4px;
+    }
+
+    .intro-user-card {
+        padding: 14px;
+        margin: 0 auto 18px;
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .intro-user-avatar {
+        margin: 0 auto;
+    }
+
+    .intro-action-group {
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .intro-action-group .btn {
+        width: 100%;
+        max-width: 100%;
+        justify-content: center;
+    }
+
+    .intro-btn-cta {
+        padding: 13px 24px;
+        font-size: 0.95rem;
     }
 
     .intro-features-grid {
@@ -3821,9 +3985,23 @@ input:checked + .slider:before {
         align-items: flex-start;
         padding: 20px;
         margin: 0 16px 36px;
+        gap: 16px;
+    }
+
+    .security-banner-left {
+        gap: 14px;
     }
 
     .security-banner-badge {
         align-self: flex-start;
+    }
+
+    .intro-bottom-cta {
+        margin: 0 16px 40px;
+        padding: 28px 16px;
+    }
+
+    .intro-bottom-cta h3 {
+        font-size: 1.4rem;
     }
 }
