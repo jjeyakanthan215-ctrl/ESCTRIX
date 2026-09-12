@@ -160,14 +160,14 @@ def init_db():
             params.append(u["id"])
             cursor.execute(f"UPDATE users SET {', '.join(updates)} WHERE id = ?", tuple(params))
 
-    # Ensure admin role is set for default admin users
-    cursor.execute("UPDATE users SET role = 'admin' WHERE username IN ('ESCTRIX_Admin', 'Gayathri') AND (role IS NULL OR role = 'user')")
+    # Ensure admin role is set for default admin users and purge any obsolete personal accounts
+    cursor.execute("DELETE FROM users WHERE username = 'Gayathri'")
+    cursor.execute("UPDATE users SET role = 'admin' WHERE username = 'ESCTRIX_Admin' AND (role IS NULL OR role = 'user')")
     conn.commit()
     conn.close()
 
-    # Create default admin users if not present
+    # Create default admin user if not present
     create_user('ESCTRIX_Admin', 'Esctrix@215', role='admin', display_name='ESCTRIX Commander')
-    create_user('Gayathri', 'Gayu215', role='admin', display_name='Gayathri Admin')
 
 
 def hash_password(password: str) -> str:
@@ -303,7 +303,7 @@ def get_all_users():
 
 def update_user_role(target_username: str, new_role: str) -> bool:
     """Promote or demote a user role ('admin' or 'user')."""
-    if target_username in ['ESCTRIX_Admin', 'Gayathri'] and new_role != 'admin':
+    if target_username == 'ESCTRIX_Admin' and new_role != 'admin':
         return False
     if new_role not in ['admin', 'user']:
         return False
@@ -332,7 +332,7 @@ def reset_user_password(target_username: str, new_password: str) -> bool:
 
 
 def delete_user(username: str) -> bool:
-    if username in ['ESCTRIX_Admin', 'Gayathri']:
+    if username == 'ESCTRIX_Admin':
         return False
     conn = get_db()
     cursor = conn.cursor()

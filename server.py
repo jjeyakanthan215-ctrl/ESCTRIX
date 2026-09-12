@@ -27,7 +27,7 @@ from connection_manager import manager
 logger = logging.getLogger(__name__)
 
 # --- Configuration ---
-ADMIN_USERS = [u.strip() for u in os.environ.get("ADMIN_USERS", "ESCTRIX_Admin,Gayathri").split(",") if u.strip()]
+ADMIN_USERS = [u.strip() for u in os.environ.get("ADMIN_USERS", "ESCTRIX_Admin").split(",") if u.strip()]
 DEFAULT_PORT = int(os.environ.get("PORT", 8006))
 
 def is_admin_authorized(username: Optional[str]) -> bool:

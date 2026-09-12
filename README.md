@@ -86,7 +86,7 @@ The project includes `render.yaml` and `Procfile` ready for 1-click deployment o
    - `DB_PATH`: `users.db` (or persistent disk path e.g. `/data/users.db`)
    - `GEMINI_API_KEY`: *(Optional)* Your Google Gemini API key to upgrade Aura AI to Gemini 1.5 Flash.
    - `FIREBASE_PROJECT_ID`: *(Optional)* Your Firebase project ID for persistent cloud syncing.
-   - `ADMIN_USERS`: `ESCTRIX_Admin,Gayathri`
+   - `ADMIN_USERS`: `ESCTRIX_Admin`
 
 ---
 

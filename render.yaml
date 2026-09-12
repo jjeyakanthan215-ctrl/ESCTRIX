@@ -15,7 +15,7 @@ services:
       - key: RENDER
         value: "true"
       - key: ADMIN_USERS
-        value: "ESCTRIX_Admin,Gayathri"
+        value: "ESCTRIX_Admin"
       # Optional: Add GEMINI_API_KEY to upgrade Aura AI to live Google Gemini 1.5 Flash
       # - key: GEMINI_API_KEY
       #   sync: false

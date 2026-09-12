@@ -561,7 +561,7 @@ const ESCTRIX = {
                 }
                 if (e.authSwitchBar) e.authSwitchBar.style.display = 'none';
                 if (e.displayNameGroup) e.displayNameGroup.style.display = 'none';
-                e.authUsername.placeholder = 'Admin Handle (e.g. ESCTRIX_Admin, Gayathri)';
+                e.authUsername.placeholder = 'Enter Admin Username';
                 e.authSubmitBtn.innerHTML = '<i class="ph ph-shield-star"></i> Access Command Console';
                 if (e.authSecurityText) e.authSecurityText.textContent = 'Encrypted TLS Root Administrator Channel';
             } else {
@@ -2050,7 +2050,7 @@ const ESCTRIX = {
                     const tbody = ESCTRIX.elements.adminUsersTbody;
                     tbody.innerHTML = (data.user_list || []).map(usr => {
                         const createdDate = usr.created_at ? new Date(usr.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Active';
-                        const isRoot = ['ESCTRIX_Admin', 'Gayathri'].includes(usr.username);
+                        const isRoot = usr.username === 'ESCTRIX_Admin';
                         return `
                             <tr>
                                 <td style="font-family:var(--font-mono); color:var(--accent); font-weight:700;">${usr.account_id || 'ESC-LIVE'}</td>
