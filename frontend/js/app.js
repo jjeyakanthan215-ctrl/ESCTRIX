@@ -111,10 +111,15 @@ const ESCTRIX = {
             'call-type-modal', 'call-type-peer-name', 'start-audio-call-btn', 'start-video-call-btn', 'cancel-call-type-btn',
             'call-modal', 'caller-name', 'accept-call-btn', 'decline-call-btn',
             'e2ee-modal', 'e2ee-canvas', 'e2ee-hash-label', 'e2ee-close-btn',
-            'stat-total-users', 'stat-active-hosts', 'stat-total-connections', 'admin-users-tbody',
+            'stat-total-users', 'stat-active-hosts', 'stat-total-connections', 'stat-ai-status', 'admin-users-tbody',
             'admin-hosts-ul', 'admin-chat-log', 'admin-broadcast-msg', 'admin-broadcast-btn',
+            'admin-new-password-input', 'admin-change-pwd-btn', 'admin-back-intro-btn',
             'kicked-overlay', 'kicked-message', 'kicked-ok-btn', 'kick-admin-modal', 'kick-modal-target',
-            'kick-custom-msg', 'kick-confirm-btn', 'kick-cancel-btn', 'toast', 'toast-msg'
+            'kick-custom-msg', 'kick-confirm-btn', 'kick-cancel-btn', 'toast', 'toast-msg',
+            'intro-nav-get-started-btn', 'intro-nav-admin-btn', 'intro-bottom-get-started-btn',
+            'intro-user-card', 'intro-user-avatar', 'intro-user-displayname', 'intro-user-handle',
+            'intro-user-accountid', 'intro-btn-label', 'intro-switch-account-btn',
+            'nav-to-intro-btn', 'chat-commander-btn'
         ];
 
         ids.forEach(id => {
@@ -220,17 +225,39 @@ const ESCTRIX = {
                 if (user && user.username) {
                     this.state.user = user;
                     this.applyUserProfile(user);
-                    this.showScreen('dashboard-screen');
                     this.loadSavedMessages();
                     this.loadContacts();
-                    this.showToast(`Welcome back, ${user.display_name || user.username}! ⚡`);
-                    return;
+                    this.renderIntroUserState(user);
                 }
             } catch (e) {
                 localStorage.removeItem('esctrix_quantum_session');
+                this.renderIntroUserState(null);
             }
+        } else {
+            this.renderIntroUserState(null);
         }
+        // Introduction page is always the starting gateway of the project
         this.showScreen('intro-screen');
+    },
+
+    renderIntroUserState(user) {
+        const e = this.elements;
+        if (user && user.username) {
+            if (e.introUserCard) e.introUserCard.classList.remove('hidden');
+            if (e.introUserDisplayname) e.introUserDisplayname.textContent = user.display_name || user.username;
+            if (e.introUserHandle) e.introUserHandle.textContent = `@${user.username}`;
+            if (e.introUserAccountid) e.introUserAccountid.textContent = user.account_id || 'ESC-QUANTUM';
+            if (e.introUserAvatar) {
+                e.introUserAvatar.textContent = (user.display_name || user.username || 'U').charAt(0).toUpperCase();
+                if (user.avatar_color) e.introUserAvatar.style.background = user.avatar_color;
+            }
+            if (e.introBtnLabel) e.introBtnLabel.textContent = `Launch Quantum Workspace (${user.display_name || user.username}) →`;
+            if (e.introSwitchAccountBtn) e.introSwitchAccountBtn.classList.remove('hidden');
+        } else {
+            if (e.introUserCard) e.introUserCard.classList.add('hidden');
+            if (e.introBtnLabel) e.introBtnLabel.textContent = 'Get Started';
+            if (e.introSwitchAccountBtn) e.introSwitchAccountBtn.classList.add('hidden');
+        }
     },
 
     applyUserProfile(user) {
@@ -257,8 +284,12 @@ const ESCTRIX = {
         if (e.drawerInputBio) e.drawerInputBio.value = user.bio || '';
 
         // Admin trigger
-        if (user.role === 'admin' && e.adminPanelBtn) {
-            e.adminPanelBtn.classList.remove('hidden');
+        if (user.role === 'admin') {
+            if (e.adminPanelBtn) e.adminPanelBtn.classList.remove('hidden');
+            if (e.chatCommanderBtn) e.chatCommanderBtn.classList.remove('hidden');
+        } else {
+            if (e.adminPanelBtn) e.adminPanelBtn.classList.add('hidden');
+            if (e.chatCommanderBtn) e.chatCommanderBtn.classList.add('hidden');
         }
     },
 
@@ -273,22 +304,60 @@ const ESCTRIX = {
         const e = this.elements;
 
         // Intro Screen Actions
-        e.introGetStartedBtn?.addEventListener('click', () => {
+        const handleGetStarted = () => {
             this.playSfx('click');
             if (this.state.user) {
                 this.showScreen('dashboard-screen');
+                this.showToast(`Welcome back, ${this.state.user.display_name || this.state.user.username}! 🚀`);
             } else {
                 this.auth.setRoleMode('user');
                 this.showScreen('login-screen');
             }
-        });
-        e.introAdminPortalBtn?.addEventListener('click', () => {
+        };
+
+        e.introGetStartedBtn?.addEventListener('click', handleGetStarted);
+        e.introNavGetStartedBtn?.addEventListener('click', handleGetStarted);
+        e.introBottomGetStartedBtn?.addEventListener('click', handleGetStarted);
+
+        const handleAdminPortal = () => {
             this.playSfx('click');
-            this.auth.setRoleMode('admin');
+            if (this.state.user && this.state.user.role === 'admin') {
+                this.admin.open();
+            } else {
+                this.auth.setRoleMode('admin');
+                this.showScreen('login-screen');
+            }
+        };
+
+        e.introAdminPortalBtn?.addEventListener('click', handleAdminPortal);
+        e.introNavAdminBtn?.addEventListener('click', handleAdminPortal);
+
+        e.introSwitchAccountBtn?.addEventListener('click', () => {
+            this.playSfx('click');
+            this.auth.setRoleMode('user');
             this.showScreen('login-screen');
         });
+
+        e.navToIntroBtn?.addEventListener('click', () => {
+            this.playSfx('click');
+            this.renderIntroUserState(this.state.user);
+            this.showScreen('intro-screen');
+        });
+
+        e.adminBackIntroBtn?.addEventListener('click', () => {
+            this.playSfx('click');
+            this.renderIntroUserState(this.state.user);
+            this.showScreen('intro-screen');
+        });
+
+        e.chatCommanderBtn?.addEventListener('click', () => {
+            this.playSfx('click');
+            this.admin.open();
+        });
+
         e.authBackToIntroBtn?.addEventListener('click', () => {
             this.playSfx('click');
+            this.renderIntroUserState(this.state.user);
             this.showScreen('intro-screen');
         });
         e.roleTabUser?.addEventListener('click', () => this.auth.setRoleMode('user'));
@@ -298,6 +367,7 @@ const ESCTRIX = {
             this.showScreen('dashboard-screen');
         });
         e.adminLogoutBtn?.addEventListener('click', () => this.auth.logout());
+        e.adminChangePwdBtn?.addEventListener('click', () => this.admin.changeMyPassword());
 
         // Auth Screen
         e.authToggle?.addEventListener('click', () => this.auth.toggleMode());
@@ -606,6 +676,7 @@ const ESCTRIX = {
             ESCTRIX.elements.profileDrawer.classList.add('hidden');
             ESCTRIX.elements.authUsername.value = '';
             ESCTRIX.elements.authPassword.value = '';
+            ESCTRIX.renderIntroUserState(null);
             ESCTRIX.showScreen('intro-screen');
             ESCTRIX.showToast('Session terminated securely.');
         }
@@ -1968,22 +2039,43 @@ const ESCTRIX = {
                 const res = await fetch(`/api/admin/stats?username=${encodeURIComponent(u)}`);
                 const data = await res.json();
                 if (data.status === 'success') {
-                    ESCTRIX.elements.statTotalUsers.textContent = data.total_users || 0;
-                    ESCTRIX.elements.statActiveHosts.textContent = data.active_hosts || 0;
-                    ESCTRIX.elements.statTotalConnections.textContent = data.total_connections || 0;
+                    if (ESCTRIX.elements.statTotalUsers) ESCTRIX.elements.statTotalUsers.textContent = data.total_users || 0;
+                    if (ESCTRIX.elements.statActiveHosts) ESCTRIX.elements.statActiveHosts.textContent = data.active_hosts || 0;
+                    if (ESCTRIX.elements.statTotalConnections) ESCTRIX.elements.statTotalConnections.textContent = data.total_connections || 0;
+                    if (ESCTRIX.elements.statAiStatus) {
+                        ESCTRIX.elements.statAiStatus.textContent = data.gemini_active ? 'ONLINE • GEMINI' : 'ONLINE • AURA';
+                    }
 
                     // Populate users table
                     const tbody = ESCTRIX.elements.adminUsersTbody;
-                    tbody.innerHTML = (data.user_list || []).map(usr => `
-                        <tr>
-                            <td style="font-family:var(--font-mono); color:var(--accent)">${usr.account_id || 'ESC-LIVE'}</td>
-                            <td><strong>${usr.username}</strong></td>
-                            <td><span class="badge-pill ${usr.role === 'admin' ? 'ai-badge' : ''}">${usr.role}</span></td>
-                            <td style="text-align:right">
-                                ${usr.role !== 'admin' ? `<button class="btn danger-outline-btn" style="padding:4px 8px; font-size:0.75rem;" onclick="ESCTRIX.admin.deleteUser('${usr.username}')">Purge</button>` : ''}
-                            </td>
-                        </tr>
-                    `).join('');
+                    tbody.innerHTML = (data.user_list || []).map(usr => {
+                        const createdDate = usr.created_at ? new Date(usr.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Active';
+                        const isRoot = ['ESCTRIX_Admin', 'Gayathri'].includes(usr.username);
+                        return `
+                            <tr>
+                                <td style="font-family:var(--font-mono); color:var(--accent); font-weight:700;">${usr.account_id || 'ESC-LIVE'}</td>
+                                <td>
+                                    <strong>${usr.display_name || usr.username}</strong>
+                                    <span style="display:block; font-size:0.75rem; color:var(--text-muted)">@${usr.username}</span>
+                                </td>
+                                <td><span class="badge-pill ${usr.role === 'admin' ? 'ai-badge' : ''}">${usr.role.toUpperCase()}</span></td>
+                                <td style="font-size:0.8rem; color:var(--text-muted)">${createdDate}</td>
+                                <td style="text-align:right">
+                                    ${!isRoot ? `
+                                        <button class="btn info-outline-btn" style="margin-right:4px;" onclick="ESCTRIX.admin.toggleRole('${usr.username}', '${usr.role}')">
+                                            ${usr.role === 'admin' ? 'Demote' : 'Promote'}
+                                        </button>
+                                        <button class="btn warning-outline-btn" style="margin-right:4px;" onclick="ESCTRIX.admin.promptResetPassword('${usr.username}')">
+                                            Reset Key
+                                        </button>
+                                        <button class="btn danger-outline-btn" onclick="ESCTRIX.admin.deleteUser('${usr.username}')">
+                                            Purge
+                                        </button>
+                                    ` : '<span class="badge-pill" style="opacity:0.6">ROOT</span>'}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
 
                     // Populate active hosts
                     const hList = ESCTRIX.elements.adminHostsUl;
@@ -2000,8 +2092,72 @@ const ESCTRIX = {
             } catch (err) {}
         },
 
+        async toggleRole(targetUsername, currentRole) {
+            const newRole = currentRole === 'admin' ? 'user' : 'admin';
+            if (!confirm(`Switch @${targetUsername} role to ${newRole.toUpperCase()}?`)) return;
+            const u = ESCTRIX.state.user?.username;
+            try {
+                const res = await fetch('/api/admin/update_role', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_username: u, target_username: targetUsername, new_role: newRole })
+                });
+                const data = await res.json();
+                ESCTRIX.showToast(data.message || 'Role updated.');
+                this.fetchStats();
+            } catch (e) {
+                ESCTRIX.showToast('Failed to update role.', true);
+            }
+        },
+
+        async promptResetPassword(targetUsername) {
+            const newPwd = prompt(`Enter new password for @${targetUsername} (minimum 4 characters):`);
+            if (!newPwd) return;
+            if (newPwd.length < 4) {
+                ESCTRIX.showToast('Password too short (min 4 characters).', true);
+                return;
+            }
+            const u = ESCTRIX.state.user?.username;
+            try {
+                const res = await fetch('/api/admin/reset_password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_username: u, target_username: targetUsername, new_password: newPwd })
+                });
+                const data = await res.json();
+                ESCTRIX.showToast(data.message || 'Password updated.');
+            } catch (e) {
+                ESCTRIX.showToast('Failed to reset password.', true);
+            }
+        },
+
+        async changeMyPassword() {
+            const newPwd = ESCTRIX.elements.adminNewPasswordInput?.value.trim();
+            if (!newPwd || newPwd.length < 4) {
+                ESCTRIX.showToast('Please enter at least 4 characters for new password.', true);
+                return;
+            }
+            const u = ESCTRIX.state.user?.username;
+            try {
+                const res = await fetch('/api/admin/reset_password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_username: u, target_username: u, new_password: newPwd })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    if (ESCTRIX.elements.adminNewPasswordInput) ESCTRIX.elements.adminNewPasswordInput.value = '';
+                    ESCTRIX.showToast('Commander key updated successfully! 🛡️');
+                } else {
+                    ESCTRIX.showToast(data.message || 'Update failed', true);
+                }
+            } catch (e) {
+                ESCTRIX.showToast('Server communication error', true);
+            }
+        },
+
         async deleteUser(targetUsername) {
-            if (!confirm(`Permanently delete user @${targetUsername}?`)) return;
+            if (!confirm(`Permanently purge identity @${targetUsername}? All account records will be deleted.`)) return;
             const u = ESCTRIX.state.user?.username;
             try {
                 const res = await fetch('/api/admin/delete_user', {

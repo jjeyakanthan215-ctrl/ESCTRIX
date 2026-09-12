@@ -16,19 +16,29 @@ from database import (
     store_offline_message, get_offline_messages, delete_offline_messages,
     get_user_profile, update_user_profile, search_users,
     add_saved_message, get_saved_messages, delete_saved_message,
-    add_contact, get_contacts
+    add_contact, get_contacts, update_user_role, reset_user_password
 )
 from ai_engine import (
     ai_chat, ai_vibe_analysis, ai_smart_reply,
-    ai_polish_text, ai_summarize_chat, ai_translate
+    ai_polish_text, ai_summarize_chat, ai_translate, GEMINI_AVAILABLE
 )
 from connection_manager import manager
 
 logger = logging.getLogger(__name__)
 
 # --- Configuration ---
-ADMIN_USERS = os.environ.get("ADMIN_USERS", "ESCTRIX_Admin,Gayathri").split(",")
+ADMIN_USERS = [u.strip() for u in os.environ.get("ADMIN_USERS", "ESCTRIX_Admin,Gayathri").split(",") if u.strip()]
 DEFAULT_PORT = int(os.environ.get("PORT", 8006))
+
+def is_admin_authorized(username: Optional[str]) -> bool:
+    """Check if the requesting user possesses Commander / Admin privileges."""
+    if not username:
+        return False
+    clean_u = username.strip()
+    if clean_u in ADMIN_USERS:
+        return True
+    profile = get_user_profile(clean_u)
+    return bool(profile and profile.get("role") == "admin")
 
 mdns_service = None
 
@@ -119,6 +129,18 @@ class AdminAction(BaseModel):
 class AdminBroadcast(BaseModel):
     admin_username: str
     message: str
+
+
+class AdminRoleUpdate(BaseModel):
+    admin_username: str
+    target_username: str
+    new_role: str
+
+
+class AdminPasswordReset(BaseModel):
+    admin_username: str
+    target_username: str
+    new_password: str
 
 
 class OfflineMessage(BaseModel):
@@ -317,8 +339,8 @@ async def fetch_offline_messages(username: str):
 
 @app.get("/api/admin/stats")
 async def get_admin_stats(username: str = None):
-    if username not in ADMIN_USERS:
-        return {"status": "error", "message": "Unauthorized"}
+    if not is_admin_authorized(username):
+        return {"status": "error", "message": "Unauthorized: Commander privileges required."}
 
     total_users = get_total_users()
     active_hosts_count = len(manager.rooms)
@@ -342,13 +364,35 @@ async def get_admin_stats(username: str = None):
         "active_hosts": active_hosts_count,
         "total_connections": total_connections,
         "active_hosts_list": active_hosts_list,
-        "user_list": get_all_users()
+        "user_list": get_all_users(),
+        "ai_engine_online": True,
+        "gemini_active": GEMINI_AVAILABLE
     }
+
+
+@app.post("/api/admin/update_role")
+async def admin_change_role(data: AdminRoleUpdate):
+    if not is_admin_authorized(data.admin_username):
+        return {"status": "error", "message": "Unauthorized"}
+    success = update_user_role(data.target_username, data.new_role)
+    if success:
+        return {"status": "success", "message": f"Updated @{data.target_username} role to {data.new_role}."}
+    return {"status": "error", "message": "Cannot modify master root admin or invalid role specified."}
+
+
+@app.post("/api/admin/reset_password")
+async def admin_change_password(data: AdminPasswordReset):
+    if not is_admin_authorized(data.admin_username):
+        return {"status": "error", "message": "Unauthorized"}
+    success = reset_user_password(data.target_username, data.new_password)
+    if success:
+        return {"status": "success", "message": f"Password for @{data.target_username} updated successfully."}
+    return {"status": "error", "message": "Failed to update password (minimum 4 characters required)."}
 
 
 @app.post("/api/admin/kick")
 async def kick_user_from_room(data: AdminAction):
-    if data.admin_username not in ADMIN_USERS:
+    if not is_admin_authorized(data.admin_username):
         return {"status": "error", "message": "Unauthorized"}
     success = await manager.kick_user(data.space_name, data.target_username, data.kick_message)
     if success:
@@ -358,17 +402,17 @@ async def kick_user_from_room(data: AdminAction):
 
 @app.delete("/api/admin/delete_user")
 async def delete_registered_user(data: AdminAction):
-    if data.admin_username not in ADMIN_USERS:
+    if not is_admin_authorized(data.admin_username):
         return {"status": "error", "message": "Unauthorized"}
     success = delete_user(data.target_username)
     if success:
         return {"status": "success", "message": f"{data.target_username} deleted."}
-    return {"status": "error", "message": "Cannot delete admin or user not found."}
+    return {"status": "error", "message": "Cannot delete root admin or user not found."}
 
 
 @app.post("/api/admin/broadcast")
 async def admin_broadcast(data: AdminBroadcast):
-    if data.admin_username not in ADMIN_USERS:
+    if not is_admin_authorized(data.admin_username):
         return {"status": "error", "message": "Unauthorized"}
     
     payload = {

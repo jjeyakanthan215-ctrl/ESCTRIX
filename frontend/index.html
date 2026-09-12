@@ -45,6 +45,30 @@
         <!-- ══════════════════════════════════════════ -->
         <section id="intro-screen" class="screen active">
             <div class="intro-container glass-panel">
+                
+                <!-- Intro Navigation Bar -->
+                <header class="intro-nav-bar">
+                    <div class="intro-nav-brand">
+                        <img src="/static/logo.png" alt="ESCTRIX" class="nav-brand-logo">
+                        <span class="nav-brand-title">ESCTRIX <span class="quantum-gradient-text">QUANTUM</span></span>
+                        <span class="nav-live-pill"><span class="presence-dot online"></span> MESH ACTIVE</span>
+                    </div>
+                    <div class="intro-nav-links">
+                        <a href="#intro-features" class="intro-nav-link"><i class="ph ph-squares-four"></i> Features</a>
+                        <a href="#intro-security" class="intro-nav-link"><i class="ph ph-shield-check"></i> Security</a>
+                        <a href="#intro-ai" class="intro-nav-link"><i class="ph ph-sparkle"></i> Aura AI</a>
+                    </div>
+                    <div class="intro-nav-actions">
+                        <button id="intro-nav-admin-btn" class="btn secondary-btn btn-sm">
+                            <i class="ph ph-shield-star"></i> Commander
+                        </button>
+                        <button id="intro-nav-get-started-btn" class="btn primary-btn btn-sm">
+                            <i class="ph ph-rocket-launch"></i> Get Started
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Hero Section -->
                 <div class="intro-hero-top">
                     <div class="intro-badge-row">
                         <span class="intro-pill-badge"><i class="ph ph-shield-check"></i> ZERO-KNOWLEDGE E2EE</span>
@@ -63,37 +87,80 @@
                         Zero third-party cloud surveillance.
                     </p>
 
+                    <!-- Active User Identity Card (Shown dynamically if authenticated) -->
+                    <div id="intro-user-card" class="intro-user-card hidden">
+                        <div class="intro-user-avatar" id="intro-user-avatar">U</div>
+                        <div class="intro-user-meta">
+                            <div class="intro-user-welcome">Active Identity Detected: <strong id="intro-user-displayname">Commander</strong> (<span id="intro-user-handle">@username</span>)</div>
+                            <div class="intro-user-sub">Account ID: <code id="intro-user-accountid">ESC-000000</code> • Session Synchronized</div>
+                        </div>
+                    </div>
+
+                    <!-- Main Gateway Action Group -->
                     <div class="intro-action-group">
                         <button id="intro-get-started-btn" class="btn primary-btn intro-btn-cta">
-                            <i class="ph ph-rocket-launch"></i> Get Started
+                            <i class="ph ph-rocket-launch"></i> <span id="intro-btn-label">Get Started</span>
                         </button>
                         <button id="intro-admin-portal-btn" class="btn secondary-btn intro-btn-portal">
                             <i class="ph ph-shield-star"></i> Admin Command Portal
                         </button>
+                        <button id="intro-switch-account-btn" class="btn ghost-btn hidden" style="font-size:0.85rem;">
+                            <i class="ph ph-arrows-left-right"></i> Switch Identity
+                        </button>
                     </div>
+                    <p class="intro-footnote">Single gateway to access your decentralized workspaces • No installation required</p>
+                </div>
+
+                <!-- Features Showcase Grid -->
+                <div class="intro-section-title" id="intro-features">
+                    <span class="badge-pill ai-badge">CORE CAPABILITIES</span>
+                    <h2>Engineered for Absolute Freedom and Intelligence</h2>
                 </div>
 
                 <div class="intro-features-grid">
                     <div class="intro-feature-card">
+                        <div class="feature-icon-box"><i class="ph ph-telegram-logo"></i></div>
+                        <h3>Telegram 2-Pane Architecture</h3>
+                        <p>Fluid, dual-pane desktop & mobile messenger with folder categories, instant contact search, voice notes with interactive SVG waveforms, and message reactions.</p>
+                    </div>
+                    <div class="intro-feature-card">
                         <div class="feature-icon-box"><i class="ph ph-lock-key"></i></div>
-                        <h3>Zero-Knowledge E2EE</h3>
-                        <p>Client-side Web Crypto (AES-GCM 256) ensures messages and files are encrypted directly in the browser before transit.</p>
+                        <h3>Zero-Knowledge Cryptography</h3>
+                        <p>Client-side Web Crypto (AES-GCM 256) guarantees that media, audio calls, and chat streams are encrypted in browser memory before hitting any network wire.</p>
                     </div>
-                    <div class="intro-feature-card">
-                        <div class="feature-icon-box"><i class="ph ph-identification-card"></i></div>
-                        <h3>Permanent Digital ID</h3>
-                        <p>Every user gets a permanent Account ID (e.g. <code>ESC-842910</code>) and unique <code>@handle</code> with persistent sessions.</p>
-                    </div>
-                    <div class="intro-feature-card">
+                    <div class="intro-feature-card" id="intro-ai">
                         <div class="feature-icon-box"><i class="ph ph-sparkle"></i></div>
                         <h3>Aura AI Neural Suite</h3>
-                        <p>Integrated conversational AI copilot, real-time sentiment/vibe scanner, tone polisher, 1-click summarizer, and polyglot translator.</p>
+                        <p>Integrated conversational AI copilot, real-time vibe & sentiment analysis, contextual smart reply suggestions, tone polisher, and 1-click summarizer.</p>
                     </div>
-                    <div class="intro-feature-card">
+                    <div class="intro-feature-card" id="intro-security">
                         <div class="feature-icon-box"><i class="ph ph-video-camera"></i></div>
-                        <h3>HD Mesh Media Calls</h3>
+                        <h3>HD Mesh Media & Calls</h3>
                         <p>Direct low-latency WebRTC mesh audio/video calling, camera flip, screen sharing, voice note waveforms, and 10s vanish mode.</p>
                     </div>
+                </div>
+
+                <!-- Security & Privacy Architecture Banner -->
+                <div class="intro-security-banner">
+                    <div class="security-banner-left">
+                        <i class="ph ph-shield-check banner-icon"></i>
+                        <div>
+                            <h4>Quantum Privacy Guarantee</h4>
+                            <p>All calls and peer messages travel directly peer-to-peer via DTLS/SRTP. Servers act purely as ephemeral signaling relays with zero plaintext access.</p>
+                        </div>
+                    </div>
+                    <div class="security-banner-badge">
+                        <code>AES-256-GCM • SHA-256</code>
+                    </div>
+                </div>
+
+                <!-- Bottom CTA Footer -->
+                <div class="intro-bottom-cta">
+                    <h3>Step into the Quantum Mesh</h3>
+                    <p>Experience communication without surveillance, limits, or telemetry tracking.</p>
+                    <button id="intro-bottom-get-started-btn" class="btn primary-btn intro-btn-cta">
+                        <i class="ph ph-rocket-launch"></i> Launch Quantum Experience
+                    </button>
                 </div>
             </div>
         </section>
@@ -174,6 +241,9 @@
                     <div class="sidebar-header">
                         <button id="drawer-open-btn" class="icon-btn-round" title="Profile & Settings">
                             <i class="ph ph-list"></i>
+                        </button>
+                        <button id="nav-to-intro-btn" class="icon-btn-round" title="Project Overview / Intro">
+                            <i class="ph ph-house"></i>
                         </button>
 
                         <div class="sidebar-search-box">
@@ -293,6 +363,10 @@
                                 <span id="vibe-emoji">✨</span>
                                 <span id="vibe-text">Positive & Clear</span>
                             </div>
+
+                            <button id="chat-commander-btn" class="btn secondary-btn btn-sm hidden" style="border-color:var(--accent); color:var(--accent); font-size:0.75rem; padding:5px 10px;" title="Switch to Admin Commander">
+                                <i class="ph ph-shield-star"></i> Admin Console
+                            </button>
 
                             <button id="video-call-btn" class="icon-btn-round" title="Start Audio / Video Call">
                                 <i class="ph ph-phone-call"></i>
@@ -452,11 +526,14 @@
                 <div class="admin-top-bar">
                     <div>
                         <h2><i class="ph ph-shield-star" style="color:var(--primary)"></i> Quantum Admin Command</h2>
-                        <p class="muted">Live Mesh Architecture & Infrastructure Telemetry</p>
+                        <p class="muted">Live Mesh Architecture, Access Control & Infrastructure Telemetry</p>
                     </div>
-                    <div style="display:flex; gap:10px;">
+                    <div style="display:flex; gap:10px; align-items:center;">
                         <button id="admin-enter-chat-btn" class="btn primary-btn">
                             <i class="ph ph-chat-circle-dots"></i> Enter Telegram Workspace
+                        </button>
+                        <button id="admin-back-intro-btn" class="btn secondary-btn">
+                            <i class="ph ph-house"></i> Overview
                         </button>
                         <button id="admin-logout-btn" class="btn danger-btn">
                             <i class="ph ph-power"></i> Sign Out
@@ -480,39 +557,52 @@
                         <h3 id="stat-total-connections">0</h3>
                         <p>Total P2P Connections</p>
                     </div>
+                    <div class="stat-card">
+                        <i class="ph ph-sparkle" style="color:var(--accent)"></i>
+                        <h3 id="stat-ai-status" style="font-size:1.15rem; letter-spacing:0.5px;">ONLINE</h3>
+                        <p>Aura Neural AI Engine</p>
+                    </div>
                 </div>
 
                 <div class="admin-grid">
-                    <div class="admin-panel">
-                        <h3><i class="ph ph-address-book"></i> User Database Registry</h3>
+                    <div class="admin-panel" style="grid-column: span 2;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <h3><i class="ph ph-address-book"></i> User Database Registry & Permission Controls</h3>
+                            <button class="btn secondary-btn btn-sm" onclick="ESCTRIX.admin.fetchStats()"><i class="ph ph-arrows-clockwise"></i> Refresh</button>
+                        </div>
                         <div class="table-wrap">
                             <table class="admin-table">
                                 <thead>
                                     <tr>
                                         <th>Account ID</th>
-                                        <th>Username</th>
+                                        <th>Identity</th>
                                         <th>Role</th>
-                                        <th style="text-align:right">Action</th>
+                                        <th>Created</th>
+                                        <th style="text-align:right">Commander Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="admin-users-tbody"></tbody>
                             </table>
                         </div>
                     </div>
-
-                    <div class="admin-panel">
-                        <h3><i class="ph ph-warning-octagon" style="color:var(--error)"></i> <span style="color:var(--error)">Live Server Intercept & Telemetry</span></h3>
-                        <div id="admin-chat-log" class="chat-log-terminal">
-                            <span>> System telemetry initialized. Zero-Knowledge E2EE payload data stream locked...</span>
-                        </div>
-                    </div>
                 </div>
 
-                <div class="admin-panel" style="margin-top:16px;">
-                    <h3><i class="ph ph-broadcast"></i> Active Space Topologies</h3>
-                    <ul id="admin-hosts-ul" class="hosts-list">
-                        <li class="muted-li">No active rooms at this time.</li>
-                    </ul>
+                <div class="admin-grid" style="margin-top:16px;">
+                    <div class="admin-panel">
+                        <h3><i class="ph ph-key"></i> Commander Key Management</h3>
+                        <p class="muted" style="font-size:0.85rem; margin-bottom:12px;">Quickly update your Commander account password.</p>
+                        <div style="display:flex; gap:8px;">
+                            <input type="password" id="admin-new-password-input" placeholder="Enter new password (min 4 chars)..." class="text-input">
+                            <button id="admin-change-pwd-btn" class="btn primary-btn"><i class="ph ph-check"></i> Update</button>
+                        </div>
+                    </div>
+
+                    <div class="admin-panel">
+                        <h3><i class="ph ph-broadcast"></i> Active Space Topologies</h3>
+                        <ul id="admin-hosts-ul" class="hosts-list">
+                            <li class="muted-li">No active rooms at this time.</li>
+                        </ul>
+                    </div>
                 </div>
 
                 <div class="admin-panel broadcast-panel" style="margin-top:16px;">

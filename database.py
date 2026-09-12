@@ -295,10 +295,40 @@ def get_total_users() -> int:
 def get_all_users():
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute('SELECT id, account_id, username, display_name, role FROM users')
+    cursor.execute('SELECT id, account_id, username, display_name, role, created_at FROM users ORDER BY id ASC')
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def update_user_role(target_username: str, new_role: str) -> bool:
+    """Promote or demote a user role ('admin' or 'user')."""
+    if target_username in ['ESCTRIX_Admin', 'Gayathri'] and new_role != 'admin':
+        return False
+    if new_role not in ['admin', 'user']:
+        return False
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('UPDATE users SET role = ? WHERE username = ?', (new_role, target_username))
+        conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        conn.close()
+
+
+def reset_user_password(target_username: str, new_password: str) -> bool:
+    """Reset a user's password."""
+    if not new_password or len(new_password) < 4:
+        return False
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('UPDATE users SET password_hash = ? WHERE username = ?', (hash_password(new_password), target_username))
+        conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        conn.close()
 
 
 def delete_user(username: str) -> bool:

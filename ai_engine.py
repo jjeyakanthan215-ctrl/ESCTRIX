@@ -19,6 +19,7 @@ from typing import List, Dict, Any, Optional
 logger = logging.getLogger(__name__)
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
+GEMINI_AVAILABLE = bool(GEMINI_API_KEY)
 
 
 def _call_gemini(prompt: str, system_instruction: str = "") -> Optional[str]:
