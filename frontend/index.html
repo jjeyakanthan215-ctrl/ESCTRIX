@@ -41,15 +41,84 @@
     <div class="quantum-app-shell">
 
         <!-- ══════════════════════════════════════════ -->
-        <!-- SCREEN 1: AUTH SCREEN (Login / Register)  -->
+        <!-- SCREEN 0: INTRODUCTION / HERO SHOWCASE      -->
         <!-- ══════════════════════════════════════════ -->
-        <section id="login-screen" class="screen active">
+        <section id="intro-screen" class="screen active">
+            <div class="intro-container glass-panel">
+                <div class="intro-hero-top">
+                    <div class="intro-badge-row">
+                        <span class="intro-pill-badge"><i class="ph ph-shield-check"></i> ZERO-KNOWLEDGE E2EE</span>
+                        <span class="intro-pill-badge"><i class="ph ph-sparkle"></i> AURA NEURAL AI</span>
+                        <span class="intro-pill-badge"><i class="ph ph-telegram-logo"></i> TELEGRAM-STYLE 2-PANE</span>
+                    </div>
+
+                    <div class="intro-logo-halo">
+                        <img src="/static/logo.png" alt="ESCTRIX" class="intro-logo-img">
+                    </div>
+
+                    <h1 class="intro-title">ESCTRIX <span class="quantum-gradient-text">QUANTUM</span></h1>
+                    <p class="intro-subtitle">
+                        The Next-Generation Decentralized Peer-to-Peer Communication Platform.
+                        Direct encrypted WebRTC media, permanent digital identities, and Aura AI Neural Copilot.
+                        Zero third-party cloud surveillance.
+                    </p>
+
+                    <div class="intro-action-group">
+                        <button id="intro-get-started-btn" class="btn primary-btn intro-btn-cta">
+                            <i class="ph ph-rocket-launch"></i> Get Started
+                        </button>
+                        <button id="intro-admin-portal-btn" class="btn secondary-btn intro-btn-portal">
+                            <i class="ph ph-shield-star"></i> Admin Command Portal
+                        </button>
+                    </div>
+                </div>
+
+                <div class="intro-features-grid">
+                    <div class="intro-feature-card">
+                        <div class="feature-icon-box"><i class="ph ph-lock-key"></i></div>
+                        <h3>Zero-Knowledge E2EE</h3>
+                        <p>Client-side Web Crypto (AES-GCM 256) ensures messages and files are encrypted directly in the browser before transit.</p>
+                    </div>
+                    <div class="intro-feature-card">
+                        <div class="feature-icon-box"><i class="ph ph-identification-card"></i></div>
+                        <h3>Permanent Digital ID</h3>
+                        <p>Every user gets a permanent Account ID (e.g. <code>ESC-842910</code>) and unique <code>@handle</code> with persistent sessions.</p>
+                    </div>
+                    <div class="intro-feature-card">
+                        <div class="feature-icon-box"><i class="ph ph-sparkle"></i></div>
+                        <h3>Aura AI Neural Suite</h3>
+                        <p>Integrated conversational AI copilot, real-time sentiment/vibe scanner, tone polisher, 1-click summarizer, and polyglot translator.</p>
+                    </div>
+                    <div class="intro-feature-card">
+                        <div class="feature-icon-box"><i class="ph ph-video-camera"></i></div>
+                        <h3>HD Mesh Media Calls</h3>
+                        <p>Direct low-latency WebRTC mesh audio/video calling, camera flip, screen sharing, voice note waveforms, and 10s vanish mode.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- SCREEN 1: AUTH SCREEN (User / Admin Login)  -->
+        <!-- ══════════════════════════════════════════ -->
+        <section id="login-screen" class="screen">
             <div class="auth-card glass-panel">
+                <div class="auth-top-nav">
+                    <button id="auth-back-to-intro-btn" class="icon-btn-round" title="Back to Overview">
+                        <i class="ph ph-arrow-left"></i>
+                    </button>
+                    <div class="auth-role-tabs">
+                        <button id="role-tab-user" class="role-tab-btn active"><i class="ph ph-user"></i> User</button>
+                        <button id="role-tab-admin" class="role-tab-btn"><i class="ph ph-shield-star"></i> Admin</button>
+                    </div>
+                </div>
+
                 <div class="auth-brand">
                     <div class="auth-logo-halo">
                         <img src="/static/logo.png" alt="ESCTRIX" class="auth-logo-img">
                     </div>
-                    <h2>ESCTRIX <span class="quantum-badge">QUANTUM</span></h2>
+                    <h2>ESCTRIX <span class="quantum-badge" id="auth-brand-badge">QUANTUM</span></h2>
                     <p id="auth-subtitle" class="muted">Decentralized P2P Messaging & Neural AI</p>
                 </div>
 
@@ -62,7 +131,7 @@
                     </div>
 
                     <div class="input-group">
-                        <i class="ph ph-user input-icon"></i>
+                        <i class="ph ph-user input-icon" id="auth-user-icon"></i>
                         <input type="text" id="auth-username" placeholder="Username (Handle)" autocomplete="off" class="text-input">
                     </div>
 
@@ -77,14 +146,14 @@
 
                     <div id="login-error" class="error-msg"></div>
 
-                    <div class="auth-switch-bar">
+                    <div class="auth-switch-bar" id="auth-switch-bar">
                         <span id="auth-toggle-msg">Don't have an account?</span>
                         <button id="auth-toggle" class="link-btn">Register New Identity</button>
                     </div>
 
                     <div class="auth-security-notice">
                         <i class="ph ph-shield-check"></i>
-                        <span>Zero-Knowledge AES-256 E2EE Client Secured</span>
+                        <span id="auth-security-text">Zero-Knowledge AES-256 E2EE Client Secured</span>
                     </div>
                 </div>
             </div>
@@ -385,9 +454,14 @@
                         <h2><i class="ph ph-shield-star" style="color:var(--primary)"></i> Quantum Admin Command</h2>
                         <p class="muted">Live Mesh Architecture & Infrastructure Telemetry</p>
                     </div>
-                    <button id="admin-back-btn" class="btn secondary-btn">
-                        <i class="ph ph-arrow-left"></i> Return to Chat
-                    </button>
+                    <div style="display:flex; gap:10px;">
+                        <button id="admin-enter-chat-btn" class="btn primary-btn">
+                            <i class="ph ph-chat-circle-dots"></i> Enter Telegram Workspace
+                        </button>
+                        <button id="admin-logout-btn" class="btn danger-btn">
+                            <i class="ph ph-power"></i> Sign Out
+                        </button>
+                    </div>
                 </div>
 
                 <div class="stats-grid">

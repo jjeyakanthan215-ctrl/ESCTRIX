@@ -36,6 +36,7 @@ const ESCTRIX = {
         voiceTimerInterval: null,
         voiceSeconds: 0,
         currentAudioPlayer: null,
+        isAdminAuthMode: false,
 
         // WebRTC & Calls
         isVideoCalling: false,
@@ -71,6 +72,9 @@ const ESCTRIX = {
 
     cacheElements() {
         const ids = [
+            'intro-screen', 'intro-get-started-btn', 'intro-admin-portal-btn', 'auth-back-to-intro-btn',
+            'role-tab-user', 'role-tab-admin', 'admin-enter-chat-btn', 'admin-logout-btn',
+            'auth-brand-badge', 'auth-user-icon', 'auth-security-text', 'auth-switch-bar',
             'login-screen', 'dashboard-screen', 'admin-screen',
             'auth-title', 'auth-subtitle', 'auth-username', 'auth-password', 'auth-displayname',
             'display-name-group', 'auth-submit-btn', 'auth-toggle', 'auth-toggle-msg', 'login-error',
@@ -226,7 +230,7 @@ const ESCTRIX = {
                 localStorage.removeItem('esctrix_quantum_session');
             }
         }
-        this.showScreen('login-screen');
+        this.showScreen('intro-screen');
     },
 
     applyUserProfile(user) {
@@ -267,6 +271,33 @@ const ESCTRIX = {
     // --- Event Bindings ---
     bindEvents() {
         const e = this.elements;
+
+        // Intro Screen Actions
+        e.introGetStartedBtn?.addEventListener('click', () => {
+            this.playSfx('click');
+            if (this.state.user) {
+                this.showScreen('dashboard-screen');
+            } else {
+                this.auth.setRoleMode('user');
+                this.showScreen('login-screen');
+            }
+        });
+        e.introAdminPortalBtn?.addEventListener('click', () => {
+            this.playSfx('click');
+            this.auth.setRoleMode('admin');
+            this.showScreen('login-screen');
+        });
+        e.authBackToIntroBtn?.addEventListener('click', () => {
+            this.playSfx('click');
+            this.showScreen('intro-screen');
+        });
+        e.roleTabUser?.addEventListener('click', () => this.auth.setRoleMode('user'));
+        e.roleTabAdmin?.addEventListener('click', () => this.auth.setRoleMode('admin'));
+        e.adminEnterChatBtn?.addEventListener('click', () => {
+            this.playSfx('click');
+            this.showScreen('dashboard-screen');
+        });
+        e.adminLogoutBtn?.addEventListener('click', () => this.auth.logout());
 
         // Auth Screen
         e.authToggle?.addEventListener('click', () => this.auth.toggleMode());
@@ -445,6 +476,41 @@ const ESCTRIX = {
     // AUTHENTICATION MODULE
     // ─────────────────────────────────────────────────────────
     auth: {
+        setRoleMode(mode) {
+            const e = ESCTRIX.elements;
+            e.loginError.textContent = '';
+            if (mode === 'admin') {
+                ESCTRIX.state.isAdminAuthMode = true;
+                e.roleTabAdmin?.classList.add('active', 'admin-mode');
+                e.roleTabUser?.classList.remove('active');
+                e.authTitle.textContent = 'Admin Commander Portal';
+                e.authSubtitle.textContent = 'Enter administrator credentials for live telemetry & moderation';
+                if (e.authBrandBadge) {
+                    e.authBrandBadge.textContent = 'COMMANDER';
+                    e.authBrandBadge.style.background = 'linear-gradient(135deg, #ef4444, #8b5cf6)';
+                }
+                if (e.authSwitchBar) e.authSwitchBar.style.display = 'none';
+                if (e.displayNameGroup) e.displayNameGroup.style.display = 'none';
+                e.authUsername.placeholder = 'Admin Handle (e.g. ESCTRIX_Admin, Gayathri)';
+                e.authSubmitBtn.innerHTML = '<i class="ph ph-shield-star"></i> Access Command Console';
+                if (e.authSecurityText) e.authSecurityText.textContent = 'Encrypted TLS Root Administrator Channel';
+            } else {
+                ESCTRIX.state.isAdminAuthMode = false;
+                e.roleTabUser?.classList.add('active');
+                e.roleTabAdmin?.classList.remove('active', 'admin-mode');
+                e.authTitle.textContent = ESCTRIX.state.isLoginMode ? 'Account Login' : 'Create Quantum Identity';
+                e.authSubtitle.textContent = 'Decentralized P2P Messaging & Neural AI';
+                if (e.authBrandBadge) {
+                    e.authBrandBadge.textContent = 'QUANTUM';
+                    e.authBrandBadge.style.background = 'linear-gradient(135deg, var(--primary), var(--accent))';
+                }
+                if (e.authSwitchBar) e.authSwitchBar.style.display = 'block';
+                e.authUsername.placeholder = 'Username (Handle)';
+                e.authSubmitBtn.innerHTML = ESCTRIX.state.isLoginMode ? '<i class="ph ph-sign-in"></i> Sign In' : '<i class="ph ph-user-plus"></i> Generate Account';
+                if (e.authSecurityText) e.authSecurityText.textContent = 'Zero-Knowledge AES-256 E2EE Client Secured';
+            }
+        },
+
         toggleMode() {
             ESCTRIX.state.isLoginMode = !ESCTRIX.state.isLoginMode;
             const e = ESCTRIX.elements;
@@ -480,7 +546,7 @@ const ESCTRIX = {
             e.loginError.textContent = 'Authenticating quantum frequency...';
             e.authSubmitBtn.disabled = true;
 
-            const endpoint = ESCTRIX.state.isLoginMode ? '/api/auth/login' : '/api/auth/register';
+            const endpoint = (ESCTRIX.state.isLoginMode || ESCTRIX.state.isAdminAuthMode) ? '/api/auth/login' : '/api/auth/register';
             const payload = { username, password, display_name: displayName };
 
             try {
@@ -500,13 +566,26 @@ const ESCTRIX = {
                         const pData = await pRes.json();
                         user = pData.profile || { username, account_id: 'ESC-LIVE', display_name: username, role: data.role || 'user' };
                     }
+
+                    // Check admin role if in admin mode
+                    if (ESCTRIX.state.isAdminAuthMode && user.role !== 'admin') {
+                        e.loginError.textContent = 'Access Denied: This identity does not possess Commander privileges.';
+                        return;
+                    }
+
                     ESCTRIX.state.user = user;
                     localStorage.setItem('esctrix_quantum_session', JSON.stringify(user));
                     ESCTRIX.applyUserProfile(user);
-                    ESCTRIX.showScreen('dashboard-screen');
-                    ESCTRIX.loadSavedMessages();
-                    ESCTRIX.loadContacts();
-                    ESCTRIX.showToast(`Identity verified: ${user.display_name || user.username} 🚀`);
+
+                    if (ESCTRIX.state.isAdminAuthMode) {
+                        ESCTRIX.admin.open();
+                        ESCTRIX.showToast(`Commander Verified: Welcome to Command Console 🛡️`);
+                    } else {
+                        ESCTRIX.showScreen('dashboard-screen');
+                        ESCTRIX.loadSavedMessages();
+                        ESCTRIX.loadContacts();
+                        ESCTRIX.showToast(`Identity verified: ${user.display_name || user.username} 🚀`);
+                    }
                 } else {
                     e.loginError.textContent = data.message || 'Authentication failed. Please check credentials.';
                 }
@@ -527,7 +606,7 @@ const ESCTRIX = {
             ESCTRIX.elements.profileDrawer.classList.add('hidden');
             ESCTRIX.elements.authUsername.value = '';
             ESCTRIX.elements.authPassword.value = '';
-            ESCTRIX.showScreen('login-screen');
+            ESCTRIX.showScreen('intro-screen');
             ESCTRIX.showToast('Session terminated securely.');
         }
     },
