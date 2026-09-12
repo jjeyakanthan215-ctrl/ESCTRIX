@@ -160,13 +160,14 @@ def init_db():
             params.append(u["id"])
             cursor.execute(f"UPDATE users SET {', '.join(updates)} WHERE id = ?", tuple(params))
 
-    # Ensure admin role is set for default admin users and purge any obsolete personal accounts
-    cursor.execute("DELETE FROM users WHERE username = 'Gayathri'")
-    cursor.execute("UPDATE users SET role = 'admin' WHERE username = 'ESCTRIX_Admin' AND (role IS NULL OR role = 'user')")
+    # Ensure admin role is set for default admin users and purge any obsolete personal/test accounts
+    cursor.execute("DELETE FROM users WHERE username IN ('HABIB_Admin', 'Gayathri')")
+    cursor.execute("DELETE FROM contacts WHERE contact_username IN ('HABIB_Admin', 'ESCTRIX_Admin') OR contact_username LIKE '%Admin%'")
+    cursor.execute("UPDATE users SET role = 'admin' WHERE username = 'ESCTRIX_Admin'")
     conn.commit()
     conn.close()
 
-    # Create default admin user if not present
+    # Create default admin user if not present (Stealth system account)
     create_user('ESCTRIX_Admin', 'Esctrix@215', role='admin', display_name='ESCTRIX Commander')
 
 
@@ -267,14 +268,17 @@ def update_user_profile(username: str, display_name: str, bio: str, avatar_color
 
 
 def search_users(query: str) -> List[Dict[str, Any]]:
-    """Search registered users by username, account_id, or display_name."""
+    """Search registered users by username, account_id, or display_name (excluding admin/system accounts)."""
     q = f"%{query.strip()}%"
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
         '''SELECT account_id, username, display_name, bio, avatar_color 
            FROM users 
-           WHERE username LIKE ? OR account_id LIKE ? OR display_name LIKE ?
+           WHERE (role IS NULL OR role != 'admin')
+             AND LOWER(username) NOT LIKE '%admin%'
+             AND LOWER(display_name) NOT LIKE '%admin%'
+             AND (username LIKE ? OR account_id LIKE ? OR display_name LIKE ?)
            LIMIT 15''',
         (q, q, q)
     )
@@ -392,9 +396,11 @@ def delete_saved_message(username: str, message_id: int) -> bool:
 # ─────────────────────────────────────────────────────────────
 
 def add_contact(owner_username: str, contact_username: str) -> bool:
-    """Add a contact to the user's permanent contact list."""
+    """Add a contact to the user's permanent contact list (admins cannot be added as contacts)."""
+    if 'admin' in contact_username.lower() or contact_username == 'ESCTRIX_Admin':
+        return False
     profile = get_user_profile(contact_username)
-    if not profile:
+    if not profile or profile.get('role') == 'admin':
         return False
     conn = get_db()
     cursor = conn.cursor()
@@ -411,7 +417,7 @@ def add_contact(owner_username: str, contact_username: str) -> bool:
 
 
 def get_contacts(owner_username: str) -> List[Dict[str, Any]]:
-    """Retrieve all saved contacts for a user with their latest profile info."""
+    """Retrieve all saved contacts for a user with their latest profile info (excluding admin accounts)."""
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
@@ -422,6 +428,8 @@ def get_contacts(owner_username: str) -> List[Dict[str, Any]]:
            FROM contacts c
            LEFT JOIN users u ON c.contact_username = u.username
            WHERE c.owner_username = ?
+             AND (u.role IS NULL OR u.role != 'admin')
+             AND LOWER(c.contact_username) NOT LIKE '%admin%'
            ORDER BY c.created_at DESC''',
         (owner_username,)
     )
