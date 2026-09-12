@@ -99,6 +99,8 @@ communicate with these FastAPI REST endpoints:
 
 [ADMIN DASHBOARD]
 - GET `/api/admin/stats?username=ADMIN_NAME`
+- POST `/api/admin/update_role` (Body: {admin_username, target_username, new_role})
+- POST `/api/admin/reset_password` (Body: {admin_username, target_username, new_password})
 - POST `/api/admin/kick` (Body: {admin_username, target_username, space_name, kick_message})
 - DELETE `/api/admin/delete_user` (Body: {admin_username, target_username})
 - POST `/api/admin/broadcast` (Body: {admin_username, message})
@@ -165,7 +167,7 @@ Go to the "Secrets" (Tools -> Secrets) section in the Replit sidebar.
 
 Add the following Secret:
 - Key: ADMIN_USERS
-- Value: ESCTRIX_Admin,YourName
+- Value: ESCTRIX_Admin
 
 -------------------------------------------------------------
 PART 8: STARTING THE SERVER ON REPLIT
