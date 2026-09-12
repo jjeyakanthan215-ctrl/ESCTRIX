@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import List, Optional
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse
@@ -10,7 +11,17 @@ import os
 from contextlib import asynccontextmanager
 from discovery import MDNSService
 from security import generate_qr_base64
-from database import init_db, create_user, verify_user, get_total_users, get_all_users, delete_user, store_offline_message, get_offline_messages, delete_offline_messages
+from database import (
+    init_db, create_user, verify_user, get_total_users, get_all_users, delete_user,
+    store_offline_message, get_offline_messages, delete_offline_messages,
+    get_user_profile, update_user_profile, search_users,
+    add_saved_message, get_saved_messages, delete_saved_message,
+    add_contact, get_contacts
+)
+from ai_engine import (
+    ai_chat, ai_vibe_analysis, ai_smart_reply,
+    ai_polish_text, ai_summarize_chat, ai_translate
+)
 from connection_manager import manager
 
 logger = logging.getLogger(__name__)
@@ -26,7 +37,7 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Initializing database...")
     init_db()
-    logger.info("Server started. Waiting for host setup...")
+    logger.info("ESCTRIX Quantum server online. Ready for connections...")
     yield
     # Shutdown
     if mdns_service:
@@ -39,6 +50,53 @@ app = FastAPI(lifespan=lifespan)
 class AuthData(BaseModel):
     username: str
     password: str
+    display_name: Optional[str] = None
+
+
+class ProfileUpdate(BaseModel):
+    username: str
+    display_name: str
+    bio: str = ''
+    avatar_color: str = ''
+
+
+class ContactAdd(BaseModel):
+    owner_username: str
+    contact_username: str
+
+
+class SavedMessageCreate(BaseModel):
+    username: str
+    content: str
+    msg_type: str = 'text'
+    file_meta: str = ''
+
+
+class AIChatRequest(BaseModel):
+    message: str
+    history: Optional[List[dict]] = None
+
+
+class AIVibeRequest(BaseModel):
+    messages: List[str] = []
+
+
+class AISmartReplyRequest(BaseModel):
+    messages: List[str] = []
+
+
+class AIPolishRequest(BaseModel):
+    text: str
+    tone: str = 'cyberpunk'
+
+
+class AISummarizeRequest(BaseModel):
+    messages: List[str] = []
+
+
+class AITranslateRequest(BaseModel):
+    text: str
+    target_lang: str = 'es'
 
 
 class HostStart(BaseModel):
@@ -55,7 +113,7 @@ class AdminAction(BaseModel):
     admin_username: str
     target_username: str
     space_name: str = ''
-    kick_message: str = ''   # custom kick reason
+    kick_message: str = ''
 
 
 class AdminBroadcast(BaseModel):
@@ -79,7 +137,7 @@ templates = Jinja2Templates(directory="frontend")
 @app.get("/health")
 async def health_check():
     """Render uses this to verify the service is running."""
-    return {"status": "ok"}
+    return {"status": "ok", "version": "2.0.0-quantum"}
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -107,21 +165,136 @@ async def get_offline(request: Request):
     return templates.TemplateResponse(request=request, name="offline.html", context={})
 
 
+# ─────────────────────────────────────────────────────────────
+# Authentication & Identity
+# ─────────────────────────────────────────────────────────────
 
 @app.post("/api/auth/register")
 async def register_user(data: AuthData):
-    if create_user(data.username, data.password):
-        return {"status": "success"}
+    if create_user(data.username, data.password, display_name=data.display_name or data.username):
+        user_profile = get_user_profile(data.username)
+        return {"status": "success", "user": user_profile}
     return {"status": "error", "message": "That username is already taken. Please choose a different one."}
 
 
 @app.post("/api/auth/login")
 async def login_user(data: AuthData):
-    role = verify_user(data.username, data.password)
-    if role:
-        return {"status": "success", "role": role}
+    user = verify_user(data.username, data.password)
+    if user:
+        return {"status": "success", "user": user, "role": user["role"]}
     return {"status": "error", "message": "Incorrect username or password. Please try again."}
 
+
+# ─────────────────────────────────────────────────────────────
+# User Profile & Contacts
+# ─────────────────────────────────────────────────────────────
+
+@app.get("/api/user/profile")
+async def fetch_user_profile(username: str):
+    profile = get_user_profile(username)
+    if profile:
+        return {"status": "success", "profile": profile}
+    return {"status": "error", "message": "User not found"}
+
+
+@app.post("/api/user/profile/update")
+async def update_profile(data: ProfileUpdate):
+    success = update_user_profile(data.username, data.display_name, data.bio, data.avatar_color)
+    if success:
+        updated = get_user_profile(data.username)
+        return {"status": "success", "profile": updated}
+    return {"status": "error", "message": "Failed to update profile"}
+
+
+@app.get("/api/user/search")
+async def search_registered_users(q: str):
+    if not q or len(q.strip()) < 1:
+        return {"status": "success", "users": []}
+    results = search_users(q)
+    return {"status": "success", "users": results}
+
+
+@app.get("/api/user/contacts")
+async def fetch_contacts(username: str):
+    contacts = get_contacts(username)
+    return {"status": "success", "contacts": contacts}
+
+
+@app.post("/api/user/contacts/add")
+async def add_new_contact(data: ContactAdd):
+    if add_contact(data.owner_username, data.contact_username):
+        return {"status": "success"}
+    return {"status": "error", "message": "User not found or already in contacts"}
+
+
+# ─────────────────────────────────────────────────────────────
+# Saved Messages (Personal Cloud Vault)
+# ─────────────────────────────────────────────────────────────
+
+@app.get("/api/user/saved_messages")
+async def fetch_saved_messages(username: str):
+    messages = get_saved_messages(username)
+    return {"status": "success", "messages": messages}
+
+
+@app.post("/api/user/saved_messages")
+async def create_saved_message(data: SavedMessageCreate):
+    msg_id = add_saved_message(data.username, data.content, data.msg_type, data.file_meta)
+    if msg_id:
+        return {"status": "success", "id": msg_id}
+    return {"status": "error", "message": "Failed to save message"}
+
+
+@app.delete("/api/user/saved_messages/{message_id}")
+async def remove_saved_message(message_id: int, username: str):
+    if delete_saved_message(username, message_id):
+        return {"status": "success"}
+    return {"status": "error", "message": "Failed to delete saved message"}
+
+
+# ─────────────────────────────────────────────────────────────
+# AI Suite Endpoints
+# ─────────────────────────────────────────────────────────────
+
+@app.post("/api/ai/chat")
+async def handle_ai_chat(data: AIChatRequest):
+    reply = ai_chat(data.message, data.history)
+    return {"status": "success", "reply": reply}
+
+
+@app.post("/api/ai/vibe")
+async def handle_ai_vibe(data: AIVibeRequest):
+    vibe = ai_vibe_analysis(data.messages)
+    return {"status": "success", "vibe": vibe}
+
+
+@app.post("/api/ai/smart_reply")
+async def handle_ai_smart_reply(data: AISmartReplyRequest):
+    replies = ai_smart_reply(data.messages)
+    return {"status": "success", "replies": replies}
+
+
+@app.post("/api/ai/polish")
+async def handle_ai_polish(data: AIPolishRequest):
+    polished = ai_polish_text(data.text, data.tone)
+    return {"status": "success", "polished": polished}
+
+
+@app.post("/api/ai/summarize")
+async def handle_ai_summarize(data: AISummarizeRequest):
+    summary = ai_summarize_chat(data.messages)
+    return {"status": "success", "summary": summary}
+
+
+@app.post("/api/ai/translate")
+async def handle_ai_translate(data: AITranslateRequest):
+    result = ai_translate(data.text, data.target_lang)
+    return {"status": "success", **result}
+
+
+# ─────────────────────────────────────────────────────────────
+# Offline Messages
+# ─────────────────────────────────────────────────────────────
 
 @app.post("/api/messages/offline")
 async def post_offline_message(data: OfflineMessage):
@@ -137,6 +310,10 @@ async def fetch_offline_messages(username: str):
         delete_offline_messages(username)
     return {"status": "success", "messages": messages}
 
+
+# ─────────────────────────────────────────────────────────────
+# Admin & Hosting
+# ─────────────────────────────────────────────────────────────
 
 @app.get("/api/admin/stats")
 async def get_admin_stats(username: str = None):
@@ -156,7 +333,7 @@ async def get_admin_stats(username: str = None):
         active_hosts_list.append({
             "hostname": host_uname,
             "clients": client_count,
-            "users": users_in_room   # ← per-user list for targeted kick
+            "users": users_in_room
         })
 
     return {
@@ -198,7 +375,6 @@ async def admin_broadcast(data: AdminBroadcast):
         "type": "admin_broadcast",
         "message": data.message
     }
-    # Broadcast to all active rooms
     for space_name in manager.rooms.keys():
         await manager.broadcast_to_room(space_name, payload)
     
@@ -217,7 +393,7 @@ async def start_hosting(data: HostStart):
 
     try:
         if is_cloud:
-            connect_url = render_url or "https://your-app.onrender.com"
+            connect_url = render_url or "https://esctrix.onrender.com"
         else:
             if mdns_service is None:
                 port = DEFAULT_PORT
@@ -243,10 +419,13 @@ async def stop_hosting(data: HostStop):
     return {"status": "success"}
 
 
+# ─────────────────────────────────────────────────────────────
+# WebSockets Signaling & Routing
+# ─────────────────────────────────────────────────────────────
+
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
     await websocket.accept()
-
     current_room = None
 
     try:
@@ -265,14 +444,10 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                     await websocket.send_text(json.dumps({"type": "auth_fail", "reason": "no_room"}))
                     continue
 
-                # Determine if this connection is the legitimate host:
-                # Either the host slot is unclaimed and the username matches, OR
-                # this exact client_id is already the registered host.
                 claiming_host = (client_username == room['host_username'])
                 host_slot_taken = room['host_client_id'] is not None
 
                 if claiming_host and host_slot_taken and room['host_client_id'] != client_id:
-                    # Someone else is pretending to be the host — reject
                     await websocket.send_text(json.dumps({
                         "type": "auth_fail",
                         "reason": "host_taken",
@@ -298,7 +473,6 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 
                     current_room = space_name
 
-                    # Send list of already-connected peers to the new joiner
                     existing_peers = [
                         {"client_id": cid, "username": uname}
                         for cid, uname in room['usernames'].items()
@@ -313,7 +487,6 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                         "existing_peers": existing_peers
                     }))
 
-                    # Notify others that a new peer joined
                     await manager.broadcast_to_room(
                         space_name,
                         {"type": "peer_joined", "username": client_username, "client_id": client_id},
@@ -327,8 +500,8 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                 username     = message.get("data", {}).get("username", "ESCTRIX_Admin")
                 provided_pwd = message.get("data", {}).get("password")
 
-                role = verify_user(username, provided_pwd)
-                if role == 'admin':
+                user = verify_user(username, provided_pwd)
+                if user and user['role'] == 'admin':
                     manager.add_admin(client_id, websocket)
                     await websocket.send_text(json.dumps({"type": "admin_auth_success"}))
                 else:
@@ -338,22 +511,20 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
             elif message.get("type") == "admin_chat_log":
                 await manager.broadcast_to_admins(message)
 
-            # ── WebRTC Signaling (targeted) ──
+            # ── WebRTC Signaling & Dynamic Quantum Relay ──
             elif current_room and message.get("type") in [
                 "offer", "answer", "candidate",
                 "call_request", "call_accepted", "call_declined",
-                "typing"
+                "typing", "vibe_update"
             ]:
                 target = message.get("target")
 
                 if target:
-                    # Targeted relay — used in mesh for peer-specific signaling
                     await manager.send_to_client(current_room, target, {
                         **message,
                         "sender": client_id
                     })
                 else:
-                    # Broadcast to all others in room
                     payload = {
                         "type": message.get("type"),
                         "sender": client_id,

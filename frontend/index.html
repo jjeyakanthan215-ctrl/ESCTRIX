@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ESCTRIX — Secure P2P Messenger</title>
-    <meta name="description" content="ESCTRIX: Secure peer-to-peer messaging, file transfer, and video calls.">
-    <meta name="theme-color" content="#8b5cf6">
+    <title>ESCTRIX Quantum — Futuristic Telegram P2P Messenger & AI Suite</title>
+    <meta name="description" content="ESCTRIX Quantum: Futuristic Telegram-style peer-to-peer messaging, Zero-Knowledge E2EE, WebRTC audio/video calls, and Aura AI Neural Companion.">
+    <meta name="theme-color" content="#070b14">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="manifest" href="/manifest.json">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
-<body>
-    <!-- Animated Background -->
+<body class="quantum-body">
+    <!-- Animated Cyber Background Mesh -->
     <div class="background-mesh">
         <video autoplay loop muted playsinline id="bg-video">
             <source src="https://cdn.pixabay.com/video/2021/08/04/83897-584704049_tiny.mp4" type="video/mp4">
@@ -28,325 +28,769 @@
         <div class="blob blob-3"></div>
     </div>
 
-    <!-- Toast Notification -->
+    <!-- Global Toast Notification -->
     <div id="toast" class="toast hidden">
         <i class="ph ph-check-circle toast-icon"></i>
-        <span id="toast-msg">Message</span>
+        <span id="toast-msg">Notification</span>
     </div>
 
-    <div class="app-container glass-panel">
-        <!-- Header -->
-        <header class="app-header">
-            <div class="header-left">
-                <button id="back-btn" class="icon-btn back-btn hidden" title="Go Back">
-                    <i class="ph ph-arrow-left"></i>
-                </button>
-                <h1><img src="/static/logo.png" alt="Logo" style="height:24px; vertical-align:middle; margin-right:8px; border-radius:4px;"> ESCTRIX</h1>
-            </div>
-            <div class="header-actions">
-                <button id="logout-btn" class="icon-btn hidden" title="Logout" style="color:var(--error);">
-                    <i class="ph ph-power"></i>
-                </button>
-                <button id="video-call-btn" class="icon-btn call-btn hidden" title="Start Call">
-                    <i class="ph ph-phone"></i>
-                </button>
-                <div class="status-indicator" id="connection-status">
-                    <span id="ping-indicator" class="ping-indicator hidden" style="font-size:0.75rem; margin-right:8px; opacity:0.8; font-weight:600; font-family:monospace;"></span>
-                    <span class="dot disconnected"></span>
-                    <span class="status-text">Offline</span>
-                </div>
-            </div>
-        </header>
+    <!-- Hidden Media Elements for Calls -->
+    <audio id="remote-audio" autoplay hidden></audio>
 
-        <!-- Hidden media elements -->
-        <audio id="remote-audio" autoplay hidden></audio>
+    <!-- ── Main App Shell ── -->
+    <div class="quantum-app-shell">
 
-        <main class="app-content">
-            <!-- ── Screen 1: Login / Register ── -->
-            <section id="login-screen" class="screen active">
-                <div class="auth-card">
-                    <div class="auth-logo">
-                        <img src="/static/logo.png" alt="ESCTRIX Logo" style="width:100%; height:100%; object-fit:cover; border-radius:12px;">
+        <!-- ══════════════════════════════════════════ -->
+        <!-- SCREEN 1: AUTH SCREEN (Login / Register)  -->
+        <!-- ══════════════════════════════════════════ -->
+        <section id="login-screen" class="screen active">
+            <div class="auth-card glass-panel">
+                <div class="auth-brand">
+                    <div class="auth-logo-halo">
+                        <img src="/static/logo.png" alt="ESCTRIX" class="auth-logo-img">
                     </div>
-                    <h2 id="auth-title">Welcome Back</h2>
-                    <p id="auth-subtitle" class="muted">Login to access your secure space.</p>
+                    <h2>ESCTRIX <span class="quantum-badge">QUANTUM</span></h2>
+                    <p id="auth-subtitle" class="muted">Decentralized P2P Messaging & Neural AI</p>
+                </div>
+
+                <div class="auth-form-container">
+                    <h3 id="auth-title">Account Login</h3>
+
+                    <div class="input-group" id="display-name-group" style="display:none;">
+                        <i class="ph ph-identification-card input-icon"></i>
+                        <input type="text" id="auth-displayname" placeholder="Display Name (e.g. Jai Jeyakanthan)" autocomplete="off" class="text-input">
+                    </div>
 
                     <div class="input-group">
                         <i class="ph ph-user input-icon"></i>
-                        <input type="text" id="auth-username" placeholder="Username" autocomplete="off" class="text-input">
+                        <input type="text" id="auth-username" placeholder="Username (Handle)" autocomplete="off" class="text-input">
                     </div>
+
                     <div class="input-group">
-                        <i class="ph ph-lock-simple input-icon"></i>
+                        <i class="ph ph-lock-key input-icon"></i>
                         <input type="password" id="auth-password" placeholder="Password" autocomplete="off" class="text-input">
                     </div>
 
                     <button id="auth-submit-btn" class="btn primary-btn full-width">
-                        <i class="ph ph-sign-in"></i> Login
+                        <i class="ph ph-sign-in"></i> Sign In
                     </button>
+
                     <div id="login-error" class="error-msg"></div>
-                    <p class="auth-toggle-text" id="auth-toggle">Don't have an account? <span class="link">Register</span></p>
-                </div>
-            </section>
 
-            <!-- ── Screen 2: Dashboard ── -->
-            <section id="dashboard-screen" class="screen">
-                <div class="welcome-banner">
-                    <i class="ph ph-house-line"></i>
+                    <div class="auth-switch-bar">
+                        <span id="auth-toggle-msg">Don't have an account?</span>
+                        <button id="auth-toggle" class="link-btn">Register New Identity</button>
+                    </div>
+
+                    <div class="auth-security-notice">
+                        <i class="ph ph-shield-check"></i>
+                        <span>Zero-Knowledge AES-256 E2EE Client Secured</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- SCREEN 2: TELEGRAM-STYLE WORKSPACE SHELL  -->
+        <!-- ══════════════════════════════════════════ -->
+        <section id="dashboard-screen" class="screen">
+            <div class="telegram-shell glass-panel">
+
+                <!-- ────────────────────────────────────── -->
+                <!-- LEFT PANE: TELEGRAM SIDEBAR           -->
+                <!-- ────────────────────────────────────── -->
+                <aside class="telegram-sidebar" id="telegram-sidebar">
+                    <!-- Sidebar Top Header -->
+                    <div class="sidebar-header">
+                        <button id="drawer-open-btn" class="icon-btn-round" title="Profile & Settings">
+                            <i class="ph ph-list"></i>
+                        </button>
+
+                        <div class="sidebar-search-box">
+                            <i class="ph ph-magnifying-glass search-icon"></i>
+                            <input type="text" id="chat-search-input" placeholder="Search chats, contacts, @users...">
+                            <button id="search-clear-btn" class="search-clear-btn hidden"><i class="ph ph-x"></i></button>
+                        </div>
+
+                        <button id="new-space-btn" class="icon-btn-round accent" title="Host or Join Space">
+                            <i class="ph ph-plus"></i>
+                        </button>
+                    </div>
+
+                    <!-- Category Tabs (Telegram Folders) -->
+                    <div class="telegram-folder-tabs">
+                        <button class="folder-tab active" data-folder="all">All</button>
+                        <button class="folder-tab" data-folder="direct">Direct</button>
+                        <button class="folder-tab" data-folder="spaces">Spaces</button>
+                        <button class="folder-tab" data-folder="ai">Aura AI</button>
+                        <button class="folder-tab" data-folder="saved">Saved</button>
+                    </div>
+
+                    <!-- Chat Threads List -->
+                    <div class="chat-threads-container" id="chat-threads-list">
+                        <!-- Pinned: Aura AI Companion Bot -->
+                        <div class="chat-thread-item pinned active" id="thread-aura-ai" data-chat-type="ai">
+                            <div class="thread-avatar-wrap ai-avatar-glow">
+                                <div class="thread-avatar ai-avatar">
+                                    <i class="ph ph-sparkle"></i>
+                                </div>
+                                <span class="presence-dot online"></span>
+                            </div>
+                            <div class="thread-info">
+                                <div class="thread-top-line">
+                                    <span class="thread-title">Aura AI Neural Companion</span>
+                                    <span class="thread-time">Bot</span>
+                                </div>
+                                <div class="thread-bottom-line">
+                                    <span class="thread-preview">Ready to assist with code, ideas, and privacy</span>
+                                    <span class="badge-pill ai-badge">AI</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pinned: Saved Messages (Personal Encrypted Cloud Vault) -->
+                        <div class="chat-thread-item pinned" id="thread-saved-messages" data-chat-type="saved">
+                            <div class="thread-avatar-wrap">
+                                <div class="thread-avatar saved-avatar">
+                                    <i class="ph ph-bookmark-simple"></i>
+                                </div>
+                            </div>
+                            <div class="thread-info">
+                                <div class="thread-top-line">
+                                    <span class="thread-title">Saved Messages</span>
+                                    <span class="thread-time">Cloud</span>
+                                </div>
+                                <div class="thread-bottom-line">
+                                    <span class="thread-preview">Personal encrypted vault for notes & files</span>
+                                    <i class="ph ph-lock-key" style="font-size:0.8rem; opacity:0.6;"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Conversations & Spaces inserted here by JS -->
+                        <div id="dynamic-chat-threads"></div>
+                    </div>
+
+                    <!-- Sidebar Bottom Quick Bar -->
+                    <div class="sidebar-footer">
+                        <div class="user-chip" id="footer-user-chip">
+                            <div class="user-avatar-small" id="footer-user-avatar">U</div>
+                            <div class="user-chip-meta">
+                                <span class="user-chip-name" id="footer-user-name">User</span>
+                                <span class="user-chip-id" id="footer-user-id">ESC-000000</span>
+                            </div>
+                        </div>
+                        <div class="footer-actions">
+                            <button id="cmd-palette-btn" class="footer-icon-btn" title="Command Palette (Ctrl+K)">
+                                <i class="ph ph-command"></i>
+                            </button>
+                            <button id="admin-panel-btn" class="footer-icon-btn hidden" title="Admin Dashboard">
+                                <i class="ph ph-shield-check"></i>
+                            </button>
+                        </div>
+                    </div>
+                </aside>
+
+
+                <!-- ────────────────────────────────────── -->
+                <!-- RIGHT PANE: MAIN CHAT INTERFACE       -->
+                <!-- ────────────────────────────────────── -->
+                <main class="telegram-chat-pane" id="telegram-chat-pane">
+                    
+                    <!-- Chat View Top Header -->
+                    <header class="chat-pane-header">
+                        <div class="chat-header-left">
+                            <button id="back-to-threads-btn" class="icon-btn-round mobile-back-btn" title="Back to Chats">
+                                <i class="ph ph-arrow-left"></i>
+                            </button>
+                            <div class="chat-active-avatar-wrap">
+                                <div class="chat-active-avatar" id="active-chat-avatar">
+                                    <i class="ph ph-sparkle"></i>
+                                </div>
+                                <span class="presence-dot online" id="active-chat-dot"></span>
+                            </div>
+                            <div class="chat-header-meta">
+                                <h3 id="active-chat-name">Aura AI Neural Companion</h3>
+                                <div class="chat-header-sub">
+                                    <span id="active-chat-status" class="status-sub">Neural link synchronized • E2EE</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chat-header-right">
+                            <!-- Real-time Sentiment / Vibe Badge -->
+                            <div id="vibe-indicator-badge" class="vibe-badge" title="AI Real-Time Vibe & Sentiment">
+                                <span id="vibe-emoji">✨</span>
+                                <span id="vibe-text">Positive & Clear</span>
+                            </div>
+
+                            <button id="video-call-btn" class="icon-btn-round" title="Start Audio / Video Call">
+                                <i class="ph ph-phone-call"></i>
+                            </button>
+
+                            <button id="screen-share-btn" class="icon-btn-round" title="Share Screen">
+                                <i class="ph ph-monitor-arrow-up"></i>
+                            </button>
+
+                            <button id="e2ee-verify-btn" class="icon-btn-round e2ee-btn" title="Zero-Knowledge E2EE Verification">
+                                <i class="ph ph-shield-check"></i>
+                            </button>
+
+                            <div class="dropdown-wrap">
+                                <button id="chat-menu-btn" class="icon-btn-round" title="Chat Options">
+                                    <i class="ph ph-dots-three-vertical"></i>
+                                </button>
+                                <div id="chat-dropdown-menu" class="chat-dropdown hidden">
+                                    <button id="menu-vanish-btn" class="dropdown-item">
+                                        <i class="ph ph-ghost"></i> <span>Vanish Mode (10s)</span>
+                                    </button>
+                                    <button id="menu-burn-btn" class="dropdown-item text-danger">
+                                        <i class="ph ph-fire"></i> <span>Burn Space (Wipe Chat)</span>
+                                    </button>
+                                    <button id="menu-summarize-btn" class="dropdown-item">
+                                        <i class="ph ph-list-bullets"></i> <span>AI Summarize Thread</span>
+                                    </button>
+                                    <button id="menu-export-btn" class="dropdown-item">
+                                        <i class="ph ph-download-simple"></i> <span>Export Chat History</span>
+                                    </button>
+                                    <button id="menu-clear-btn" class="dropdown-item">
+                                        <i class="ph ph-trash"></i> <span>Clear Local View</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <!-- Chat Messages Stream -->
+                    <div class="chat-messages-viewport" id="messages-viewport">
+                        <div class="messages-list" id="messages-list">
+                            <!-- Security Beacon Notice -->
+                            <div class="message system-bubble">
+                                <i class="ph ph-lock-key"></i>
+                                <span>Quantum Zero-Knowledge E2EE Active. Server and cloud hosts cannot read messages.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Typing Waveform Indicator -->
+                    <div id="typing-indicator" class="typing-indicator hidden">
+                        <div class="typing-avatar" id="typing-avatar">P</div>
+                        <span id="typing-name">Peer</span> is typing
+                        <div class="typing-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                    </div>
+
+                    <!-- AI Contextual Smart Reply Chips -->
+                    <div id="smart-replies" class="smart-replies-bar hidden"></div>
+
+                    <!-- Voice Recording Overlay -->
+                    <div id="voice-recording-bar" class="voice-recording-bar hidden">
+                        <div class="voice-rec-pulse"></div>
+                        <span class="voice-rec-label"><i class="ph ph-microphone"></i> Recording Voice Note...</span>
+                        <span class="voice-rec-timer" id="voice-rec-timer">0:00</span>
+                        <span class="voice-rec-hint">Release or click send</span>
+                    </div>
+
+                    <!-- File Transfer Progress Bar -->
+                    <div id="file-upload-progress" class="file-upload-progress hidden">
+                        <div class="progress-label">
+                            <span id="progress-filename" class="progress-fn">document.pdf</span>
+                            <span id="progress-speed" class="progress-spd">0 KB/s</span>
+                        </div>
+                        <div class="progress-bar-track">
+                            <div id="progress-bar-fill" class="progress-bar-fill"></div>
+                        </div>
+                        <span id="progress-percent" class="progress-pct">0%</span>
+                    </div>
+
+                    <!-- Bottom Input Bar (Telegram-Style) -->
+                    <footer class="chat-input-footer">
+                        <input type="file" id="file-input" style="display:none">
+
+                        <button id="file-btn" class="input-tool-btn" title="Attach File or Media">
+                            <i class="ph ph-paperclip"></i>
+                        </button>
+
+                        <button id="emoji-picker-btn" class="input-tool-btn" title="Emoji Reactions">
+                            <i class="ph ph-smiley"></i>
+                        </button>
+
+                        <!-- AI Tools Popover Trigger -->
+                        <div class="ai-tools-wrap">
+                            <button id="ai-assist-btn" class="ai-magic-btn" title="Aura AI Suite">
+                                <i class="ph ph-magic-wand"></i>
+                                <span class="ai-label">AI</span>
+                            </button>
+                            <div id="ai-tools-popover" class="ai-popover hidden">
+                                <div class="ai-popover-header">
+                                    <i class="ph ph-sparkle"></i> Aura AI Quantum Suite
+                                </div>
+                                <button class="ai-popover-item" id="ai-tool-polish">
+                                    <i class="ph ph-pen-nib"></i>
+                                    <div>
+                                        <strong>Tone Polisher</strong>
+                                        <p>Rewrite draft to Cyberpunk, Executive, or Friendly</p>
+                                    </div>
+                                </button>
+                                <button class="ai-popover-item" id="ai-tool-translate">
+                                    <i class="ph ph-translate"></i>
+                                    <div>
+                                        <strong>Polyglot Translator</strong>
+                                        <p>Translate message into 12+ world languages</p>
+                                    </div>
+                                </button>
+                                <button class="ai-popover-item" id="ai-tool-summarize">
+                                    <i class="ph ph-list-bullets"></i>
+                                    <div>
+                                        <strong>Thread Summarizer</strong>
+                                        <p>1-Click recap of conversation highlights</p>
+                                    </div>
+                                </button>
+                                <button class="ai-popover-item" id="ai-tool-vibe">
+                                    <i class="ph ph-wave-sine"></i>
+                                    <div>
+                                        <strong>Analyze Chat Vibe</strong>
+                                        <p>Deep emotional & urgency sentiment scan</p>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="message-input-box">
+                            <input type="text" id="message-input" placeholder="Message... (Type '/' for commands)" autocomplete="off">
+                        </div>
+
+                        <button id="voice-note-btn" class="input-tool-btn mic-btn" title="Record Voice Note">
+                            <i class="ph ph-microphone"></i>
+                        </button>
+
+                        <button id="send-btn" class="send-btn-round" title="Send Message (Enter)">
+                            <i class="ph ph-paper-plane-right"></i>
+                        </button>
+                    </footer>
+                </main>
+            </div>
+        </section>
+
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- SCREEN 3: ADMIN MODERATION SCREEN         -->
+        <!-- ══════════════════════════════════════════ -->
+        <section id="admin-screen" class="screen">
+            <div class="admin-shell glass-panel">
+                <div class="admin-top-bar">
                     <div>
-                        <h3 id="welcome-username">Welcome</h3>
-                        <p class="muted" style="font-size:0.8rem;">Choose how you want to connect</p>
+                        <h2><i class="ph ph-shield-star" style="color:var(--primary)"></i> Quantum Admin Command</h2>
+                        <p class="muted">Live Mesh Architecture & Infrastructure Telemetry</p>
                     </div>
-                </div>
-
-                <div class="tab-bar">
-                    <button id="tab-host" class="tab-btn active-tab">
-                        <i class="ph ph-broadcast"></i> Host Space
+                    <button id="admin-back-btn" class="btn secondary-btn">
+                        <i class="ph ph-arrow-left"></i> Return to Chat
                     </button>
-                    <button id="tab-join" class="tab-btn">
-                        <i class="ph ph-link-simple"></i> Join Space
-                    </button>
-                </div>
-
-                <!-- Host Setup -->
-                <div class="card" id="host-setup">
-                    <h2><i class="ph ph-broadcast" style="color:var(--primary)"></i> Host a Private Space</h2>
-                    <p class="muted">Start a secure room with a custom name.</p>
-                    <div class="input-group" style="margin-top:16px">
-                        <i class="ph ph-text-t input-icon"></i>
-                        <input type="text" id="host-space-name" placeholder="Space Name (e.g. My Room)" autocomplete="off" class="text-input">
-                    </div>
-                    <div class="input-group">
-                        <i class="ph ph-key input-icon"></i>
-                        <input type="text" id="host-pin" maxlength="4" placeholder="Optional 4-Digit PIN" autocomplete="off" class="text-input">
-                    </div>
-                    <button id="start-host-btn" class="btn primary-btn full-width" style="margin-top:12px">
-                        <i class="ph ph-rocket-launch"></i> Start Hosting
-                    </button>
-                    <div id="host-error" class="error-msg" style="margin-top:8px;"></div>
-                </div>
-
-                <!-- Host Waiting -->
-                <div class="card" id="host-waiting" style="display:none; text-align:center;">
-                    <h2>Your Space is Live</h2>
-                    <p class="muted">Share the QR or your username + PIN</p>
-                    <div class="qr-container">
-                        <img id="qr-code-img" src="" alt="QR Code">
-                    </div>
-                    <div class="pin-display">
-                        <span class="pin-label">Room PIN</span>
-                        <div class="pin-code" id="display-pin">----</div>
-                    </div>
-                    <p class="muted" style="margin-top:12px; font-size:0.85rem;">Hosting as <strong id="my-space-name" style="color:var(--accent)"></strong></p>
-                    <button id="stop-host-btn" class="btn" style="margin-top:16px; width:100%; background:rgba(255,50,50,0.1); border:1px solid rgba(255,50,50,0.3); color:var(--error);">
-                        <i class="ph ph-x-circle"></i> Stop Hosting
-                    </button>
-                </div>
-
-                <!-- Client Join -->
-                <div class="card" id="client-setup" style="display:none;">
-                    <h2><i class="ph ph-link-simple" style="color:var(--accent)"></i> Join a Space</h2>
-                    <p class="muted">Enter the space info to connect securely.</p>
-                    <div class="input-group" style="margin-top:16px">
-                        <i class="ph ph-users input-icon"></i>
-                        <input type="text" id="join-space-name" placeholder="Space Name" autocomplete="off" class="text-input">
-                    </div>
-                    <div class="input-group">
-                        <i class="ph ph-key input-icon"></i>
-                        <input type="text" id="join-pin" maxlength="4" placeholder="Host PIN" autocomplete="off" class="text-input">
-                    </div>
-                    <button id="connect-btn" class="btn primary-btn full-width" style="margin-top:12px">
-                        <i class="ph ph-plugs-connected"></i> Connect
-                    </button>
-                    <div id="auth-error" class="error-msg"></div>
-                </div>
-            </section>
-
-            <!-- ── Screen 3: Admin ── -->
-            <section id="admin-screen" class="screen">
-                <div class="admin-header-bar">
-                    <h2><i class="ph ph-shield-star" style="color:var(--primary)"></i> Admin Dashboard</h2>
-                    <p class="muted" style="font-size:0.85rem;">Live System Metrics</p>
                 </div>
 
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <i class="ph ph-users" style="font-size:1.8rem; color:var(--accent)"></i>
+                        <i class="ph ph-users" style="color:var(--accent)"></i>
                         <h3 id="stat-total-users">0</h3>
-                        <p>Total Users</p>
+                        <p>Total Registered Identities</p>
                     </div>
                     <div class="stat-card">
-                        <i class="ph ph-house" style="font-size:1.8rem; color:var(--primary)"></i>
+                        <i class="ph ph-broadcast" style="color:var(--primary)"></i>
                         <h3 id="stat-active-hosts">0</h3>
-                        <p>Active Spaces</p>
+                        <p>Active Live Spaces</p>
                     </div>
                     <div class="stat-card">
-                        <i class="ph ph-plugs-connected" style="font-size:1.8rem; color:var(--success)"></i>
+                        <i class="ph ph-plugs-connected" style="color:var(--success)"></i>
                         <h3 id="stat-total-connections">0</h3>
-                        <p>Connections</p>
+                        <p>Total P2P Connections</p>
                     </div>
                 </div>
 
                 <div class="admin-grid">
                     <div class="admin-panel">
-                        <h3><i class="ph ph-address-book"></i> Registered Users</h3>
-                        <table class="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Username</th>
-                                    <th style="text-align:right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="admin-users-tbody"></tbody>
-                        </table>
+                        <h3><i class="ph ph-address-book"></i> User Database Registry</h3>
+                        <div class="table-wrap">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Account ID</th>
+                                        <th>Username</th>
+                                        <th>Role</th>
+                                        <th style="text-align:right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-users-tbody"></tbody>
+                            </table>
+                        </div>
                     </div>
-                    <div class="admin-panel intercept-panel">
-                        <h3><i class="ph ph-warning-octagon" style="color:var(--error)"></i> <span style="color:var(--error)">Live Chat Intercept</span></h3>
+
+                    <div class="admin-panel">
+                        <h3><i class="ph ph-warning-octagon" style="color:var(--error)"></i> <span style="color:var(--error)">Live Server Intercept & Telemetry</span></h3>
                         <div id="admin-chat-log" class="chat-log-terminal">
-                            <span style="color:#666">> Listening for private messages...</span><br>
+                            <span>> System telemetry initialized. Zero-Knowledge E2EE payload data stream locked...</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="admin-panel" style="margin-top:16px">
-                    <h3><i class="ph ph-broadcast"></i> Active Hosted Spaces</h3>
+                <div class="admin-panel" style="margin-top:16px;">
+                    <h3><i class="ph ph-broadcast"></i> Active Space Topologies</h3>
                     <ul id="admin-hosts-ul" class="hosts-list">
-                        <li class="muted-li">No active spaces.</li>
+                        <li class="muted-li">No active rooms at this time.</li>
                     </ul>
                 </div>
 
-                <div class="admin-panel" style="margin-top:16px; background:rgba(240,180,0,0.1); border-color:rgba(240,180,0,0.3)">
-                    <h3 style="color:#ffcc00"><i class="ph ph-megaphone"></i> Global Broadcast</h3>
-                    <div style="display:flex; gap:8px; margin-top:8px;">
-                        <input type="text" id="admin-broadcast-msg" placeholder="Type system alert..." class="text-input" style="flex:1">
-                        <button id="admin-broadcast-btn" class="btn" style="background:#ffcc00; color:#000; font-weight:bold"><i class="ph ph-paper-plane-right"></i> Send</button>
+                <div class="admin-panel broadcast-panel" style="margin-top:16px;">
+                    <h3><i class="ph ph-megaphone"></i> Emergency Global Mesh Broadcast</h3>
+                    <div class="broadcast-row">
+                        <input type="text" id="admin-broadcast-msg" placeholder="Broadcast system announcement to all active rooms..." class="text-input">
+                        <button id="admin-broadcast-btn" class="btn warning-btn"><i class="ph ph-paper-plane-right"></i> Broadcast</button>
                     </div>
                 </div>
-
-                <button id="admin-enter-app-btn" class="btn full-width" style="margin-top:16px; background:rgba(255,255,255,0.08); border:1px solid var(--panel-border); color:white;">
-                    Continue to Chat <i class="ph ph-arrow-right"></i>
-                </button>
-            </section>
-
-            <!-- ── Screen 4: Chat ── -->
-            <section id="chat-screen" class="screen">
-                <div class="chat-container">
-                    <div class="messages-list" id="messages-list">
-                        <div class="message system">
-                            <i class="ph ph-lock-key" style="margin-right:4px"></i>
-                            End-to-end encrypted via WebRTC
-                        </div>
-                    </div>
-                    <!-- Typing Indicator -->
-                    <div id="typing-indicator" class="typing-indicator hidden">
-                        <span>Peer is typing</span>
-                        <div class="typing-dots">
-                            <div class="dot"></div>
-                            <div class="dot"></div>
-                            <div class="dot"></div>
-                        </div>
-                    </div>
-                    <!-- Smart Reply Chips -->
-                    <div id="smart-replies" class="smart-replies hidden"></div>
-                    <!-- Voice Recording Overlay -->
-                    <div id="voice-recording-bar" class="voice-recording-bar hidden">
-                        <div class="voice-rec-pulse"></div>
-                        <span class="voice-rec-label"><i class="ph ph-microphone"></i> Recording...</span>
-                        <span class="voice-rec-timer" id="voice-rec-timer">0:00</span>
-                        <span class="voice-rec-hint">Release to send</span>
-                    </div>
-
-                    <div class="input-area">
-                        <!-- File Upload Progress -->
-                        <div id="file-upload-progress" class="file-upload-progress hidden">
-                            <div class="progress-label">
-                                <span id="progress-filename" class="progress-fn">file.pdf</span>
-                                <span id="progress-speed" class="progress-spd">0 KB/s</span>
-                            </div>
-                            <div class="progress-bar-track">
-                                <div id="progress-bar-fill" class="progress-bar-fill"></div>
-                            </div>
-                            <span id="progress-percent" class="progress-pct">0%</span>
-                        </div>
-                        <div class="input-actions-row">
-                            <button id="burn-room-btn" class="action-chip" style="color:var(--error); border-color:rgba(240,74,74,0.3); background:rgba(240,74,74,0.1)" title="Burn Room (Wipe Chat for All)">
-                                <i class="ph ph-fire"></i>
-                                <span>Burn</span>
-                            </button>
-                            <button id="vanish-mode-btn" class="action-chip" title="Toggle Vanish Mode">
-                                <i class="ph ph-ghost"></i>
-                                <span>Vanish</span>
-                            </button>
-                            <button id="file-btn" class="action-chip" title="Attach File">
-                                <i class="ph ph-paperclip"></i>
-                                <span>Attach</span>
-                            </button>
-                            <button id="export-chat-btn" class="action-chip" title="Export Chat History">
-                                <i class="ph ph-download-simple"></i>
-                                <span>Export</span>
-                            </button>
-                            <button id="ai-assist-btn" class="action-chip ai-chip" title="AI Smart Reply">
-                                <i class="ph ph-magic-wand"></i>
-                                <span>AI Reply</span>
-                            </button>
-                            <button id="e2ee-chat-verify-btn" class="action-chip e2ee-chip" title="Verify E2EE">
-                                <i class="ph ph-shield-check"></i>
-                                <span>Verify</span>
-                            </button>
-                        </div>
-                        <!-- Row 2: main bar -->
-                        <div class="input-main-row">
-                            <input type="file" id="file-input" style="display:none">
-                            <input type="text" id="message-input" placeholder="Message...">
-                            <button id="voice-note-btn" class="input-icon-btn mic-btn" title="Hold to Record Voice Note">
-                                <i class="ph ph-microphone"></i>
-                            </button>
-                            <button id="send-btn" class="input-icon-btn send-btn-main" title="Send">
-                                <i class="ph ph-paper-plane-right"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
+            </div>
+        </section>
     </div>
 
-    <!-- ── Video Call Overlay ── -->
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- TELEGRAM SLIDE-OUT PROFILE DRAWER          -->
+    <!-- ══════════════════════════════════════════ -->
+    <div id="profile-drawer" class="profile-drawer hidden">
+        <div class="drawer-backdrop" id="drawer-backdrop"></div>
+        <div class="drawer-content glass-panel">
+            <div class="drawer-header">
+                <h3>Identity Profile</h3>
+                <button id="drawer-close-btn" class="icon-btn-round"><i class="ph ph-x"></i></button>
+            </div>
+
+            <div class="drawer-profile-card">
+                <div class="drawer-avatar-halo" id="drawer-avatar-halo">
+                    <div class="drawer-avatar" id="drawer-avatar-text">U</div>
+                    <button class="drawer-avatar-change" id="drawer-avatar-change-btn" title="Cycle Avatar Theme">
+                        <i class="ph ph-palette"></i>
+                    </button>
+                </div>
+                <h2 id="drawer-displayname">User Name</h2>
+                <span class="drawer-handle" id="drawer-username">@username</span>
+
+                <!-- Holographic Account ID Card -->
+                <div class="account-id-card">
+                    <span class="account-id-label">Permanent Quantum Account ID</span>
+                    <div class="account-id-row">
+                        <span class="account-id-val" id="drawer-account-id">ESC-000000</span>
+                        <button class="copy-id-btn" id="copy-account-id-btn" title="Copy Account ID">
+                            <i class="ph ph-copy"></i> Copy
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Settings Form -->
+            <div class="drawer-section">
+                <h4>Profile Information</h4>
+                <div class="drawer-input-group">
+                    <label>Display Name</label>
+                    <input type="text" id="drawer-input-displayname" class="text-input" placeholder="Your Display Name">
+                </div>
+                <div class="drawer-input-group">
+                    <label>Bio / Status</label>
+                    <input type="text" id="drawer-input-bio" class="text-input" placeholder="Status or bio line">
+                </div>
+                <button id="drawer-save-profile-btn" class="btn primary-btn full-width" style="margin-top:8px;">
+                    <i class="ph ph-floppy-disk"></i> Save Profile
+                </button>
+            </div>
+
+            <!-- Settings & Preferences -->
+            <div class="drawer-section">
+                <h4>Quantum Preferences</h4>
+                <div class="drawer-toggle-row">
+                    <div class="toggle-meta">
+                        <strong>Futuristic Synthesizer SFX</strong>
+                        <p class="muted">Sci-Fi audio feedback for messages & calls</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-sfx" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div class="drawer-toggle-row">
+                    <div class="toggle-meta">
+                        <strong>Zero-Knowledge E2EE Blindness</strong>
+                        <p class="muted">Client-side Web Crypto (Always Active)</p>
+                    </div>
+                    <span class="badge-pill active-badge">Active</span>
+                </div>
+            </div>
+
+            <!-- Drawer Footer -->
+            <div class="drawer-footer">
+                <button id="logout-btn" class="btn danger-btn full-width">
+                    <i class="ph ph-power"></i> Log Out of Session
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- NEW SPACE / DIRECT CONNECT MODAL           -->
+    <!-- ══════════════════════════════════════════ -->
+    <div id="new-space-modal" class="modal hidden">
+        <div class="modal-content glass-panel" style="max-width:440px;">
+            <div class="modal-top">
+                <h3><i class="ph ph-broadcast" style="color:var(--primary)"></i> Connect to P2P Space</h3>
+                <button id="new-space-close-btn" class="icon-btn-round"><i class="ph ph-x"></i></button>
+            </div>
+
+            <div class="tab-bar">
+                <button id="tab-host" class="tab-btn active-tab"><i class="ph ph-broadcast"></i> Host Space</button>
+                <button id="tab-join" class="tab-btn"><i class="ph ph-link-simple"></i> Join Space</button>
+            </div>
+
+            <!-- Host Setup View -->
+            <div id="host-setup" class="space-tab-pane">
+                <p class="muted">Start a secure peer-to-peer room with custom name & PIN.</p>
+                <div class="input-group" style="margin-top:14px;">
+                    <i class="ph ph-text-t input-icon"></i>
+                    <input type="text" id="host-space-name" placeholder="Space Name (e.g. CyberRoom)" autocomplete="off" class="text-input">
+                </div>
+                <div class="input-group">
+                    <i class="ph ph-key input-icon"></i>
+                    <input type="text" id="host-pin" maxlength="4" placeholder="Optional 4-Digit PIN" autocomplete="off" class="text-input">
+                </div>
+                <button id="start-host-btn" class="btn primary-btn full-width" style="margin-top:12px;">
+                    <i class="ph ph-rocket-launch"></i> Launch Space
+                </button>
+                <div id="host-error" class="error-msg"></div>
+            </div>
+
+            <!-- Host Waiting View (Active Space) -->
+            <div id="host-waiting" class="space-tab-pane" style="display:none; text-align:center;">
+                <h4 style="color:var(--success)">Your Space is Active</h4>
+                <p class="muted">Share the QR code or your space name with peers.</p>
+                <div class="qr-container">
+                    <img id="qr-code-img" src="" alt="QR Code">
+                </div>
+                <div class="pin-display">
+                    <span class="pin-label">Room PIN</span>
+                    <div class="pin-code" id="display-pin">----</div>
+                </div>
+                <p class="muted" style="margin-top:10px; font-size:0.85rem;">Space: <strong id="my-space-name" style="color:var(--accent)"></strong></p>
+                <button id="stop-host-btn" class="btn danger-outline-btn full-width" style="margin-top:14px;">
+                    <i class="ph ph-x-circle"></i> Close Space
+                </button>
+            </div>
+
+            <!-- Join Space View -->
+            <div id="client-setup" class="space-tab-pane" style="display:none;">
+                <p class="muted">Enter space name or peer account handle to join.</p>
+                <div class="input-group" style="margin-top:14px;">
+                    <i class="ph ph-users input-icon"></i>
+                    <input type="text" id="join-space-name" placeholder="Space Name or Account ID" autocomplete="off" class="text-input">
+                </div>
+                <div class="input-group">
+                    <i class="ph ph-key input-icon"></i>
+                    <input type="text" id="join-pin" maxlength="4" placeholder="Host PIN (If required)" autocomplete="off" class="text-input">
+                </div>
+                <button id="connect-btn" class="btn primary-btn full-width" style="margin-top:12px;">
+                    <i class="ph ph-plugs-connected"></i> Connect
+                </button>
+                <div id="auth-error" class="error-msg"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- INTERACTIVE COMMAND PALETTE (Ctrl+K or /)  -->
+    <!-- ══════════════════════════════════════════ -->
+    <div id="cmd-palette-modal" class="modal hidden">
+        <div class="modal-content cmd-palette-content glass-panel">
+            <div class="cmd-input-row">
+                <i class="ph ph-command"></i>
+                <input type="text" id="cmd-palette-input" placeholder="Type a command or search action (/ai, /call, /polish, /burn)...">
+                <button id="cmd-palette-close" class="icon-btn-round"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="cmd-list" id="cmd-list">
+                <div class="cmd-item" data-cmd="/ai">
+                    <i class="ph ph-sparkle"></i>
+                    <div class="cmd-item-info">
+                        <strong>/ai [prompt]</strong>
+                        <span>Ask Aura AI anything right here</span>
+                    </div>
+                    <span class="cmd-badge">Prompt</span>
+                </div>
+                <div class="cmd-item" data-cmd="/polish">
+                    <i class="ph ph-pen-nib"></i>
+                    <div class="cmd-item-info">
+                        <strong>/polish [text]</strong>
+                        <span>Rewrite draft to Cyberpunk or Executive</span>
+                    </div>
+                    <span class="cmd-badge">Rewrite</span>
+                </div>
+                <div class="cmd-item" data-cmd="/translate">
+                    <i class="ph ph-translate"></i>
+                    <div class="cmd-item-info">
+                        <strong>/translate [lang]</strong>
+                        <span>Instant multi-language translation</span>
+                    </div>
+                    <span class="cmd-badge">Language</span>
+                </div>
+                <div class="cmd-item" data-cmd="/summarize">
+                    <i class="ph ph-list-bullets"></i>
+                    <div class="cmd-item-info">
+                        <strong>/summarize</strong>
+                        <span>Generate bullet-point recap of chat</span>
+                    </div>
+                    <span class="cmd-badge">AI</span>
+                </div>
+                <div class="cmd-item" data-cmd="/call">
+                    <i class="ph ph-phone"></i>
+                    <div class="cmd-item-info">
+                        <strong>/call</strong>
+                        <span>Initiate WebRTC audio or video call</span>
+                    </div>
+                    <span class="cmd-badge">P2P</span>
+                </div>
+                <div class="cmd-item" data-cmd="/vanish">
+                    <i class="ph ph-ghost"></i>
+                    <div class="cmd-item-info">
+                        <strong>/vanish</strong>
+                        <span>Toggle 10-second self-destructing messages</span>
+                    </div>
+                    <span class="cmd-badge">Privacy</span>
+                </div>
+                <div class="cmd-item" data-cmd="/burn">
+                    <i class="ph ph-fire"></i>
+                    <div class="cmd-item-info">
+                        <strong>/burn</strong>
+                        <span>Permanently wipe chat history for all</span>
+                    </div>
+                    <span class="cmd-badge danger">Wipe</span>
+                </div>
+                <div class="cmd-item" data-cmd="/export">
+                    <i class="ph ph-download-simple"></i>
+                    <div class="cmd-item-info">
+                        <strong>/export</strong>
+                        <span>Export encrypted chat log to JSON</span>
+                    </div>
+                    <span class="cmd-badge">Backup</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- AI TONE POLISHER MODAL                     -->
+    <!-- ══════════════════════════════════════════ -->
+    <div id="ai-polish-modal" class="modal hidden">
+        <div class="modal-content glass-panel" style="max-width:440px;">
+            <div class="modal-top">
+                <h3><i class="ph ph-pen-nib" style="color:var(--primary)"></i> Aura AI Tone Polisher</h3>
+                <button id="ai-polish-close-btn" class="icon-btn-round"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="polish-form">
+                <label>Draft Message</label>
+                <textarea id="ai-polish-input" rows="3" class="text-input" placeholder="Type or paste draft here..."></textarea>
+
+                <label style="margin-top:12px;">Choose Target Tone</label>
+                <div class="tone-buttons-grid">
+                    <button class="tone-btn active" data-tone="cyberpunk">⚡ Cyberpunk</button>
+                    <button class="tone-btn" data-tone="executive">👔 Executive</button>
+                    <button class="tone-btn" data-tone="friendly">✨ Friendly</button>
+                    <button class="tone-btn" data-tone="concise">🎯 Concise</button>
+                </div>
+
+                <div id="ai-polish-output-wrap" class="hidden" style="margin-top:14px;">
+                    <label>Polished Result</label>
+                    <div class="polished-result-box" id="ai-polish-output"></div>
+                    <button id="apply-polished-btn" class="btn primary-btn full-width" style="margin-top:8px;">
+                        <i class="ph ph-check"></i> Insert into Chat Input
+                    </button>
+                </div>
+
+                <button id="execute-polish-btn" class="btn primary-btn full-width" style="margin-top:12px;">
+                    <i class="ph ph-magic-wand"></i> Transform Tone
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- AI TRANSLATION MODAL                       -->
+    <!-- ══════════════════════════════════════════ -->
+    <div id="ai-translate-modal" class="modal hidden">
+        <div class="modal-content glass-panel" style="max-width:420px;">
+            <div class="modal-top">
+                <h3><i class="ph ph-translate" style="color:var(--accent)"></i> Polyglot Translator</h3>
+                <button id="ai-translate-close-btn" class="icon-btn-round"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="translate-form">
+                <label>Target Language</label>
+                <select id="translate-lang-select" class="text-input" style="margin-bottom:12px;">
+                    <option value="es">Spanish (Español)</option>
+                    <option value="fr">French (Français)</option>
+                    <option value="de">German (Deutsch)</option>
+                    <option value="ta">Tamil (தமிழ்)</option>
+                    <option value="hi">Hindi (हिन्दी)</option>
+                    <option value="ja">Japanese (日本語)</option>
+                    <option value="zh">Chinese (中文)</option>
+                    <option value="ar">Arabic (العربية)</option>
+                    <option value="ru">Russian (Русский)</option>
+                    <option value="pt">Portuguese (Português)</option>
+                    <option value="it">Italian (Italiano)</option>
+                    <option value="en">English</option>
+                </select>
+
+                <label>Text to Translate</label>
+                <textarea id="ai-translate-input" rows="3" class="text-input" placeholder="Type text to translate..."></textarea>
+
+                <div id="ai-translate-output-wrap" class="hidden" style="margin-top:14px;">
+                    <label>Translation</label>
+                    <div class="polished-result-box" id="ai-translate-output"></div>
+                    <button id="apply-translated-btn" class="btn primary-btn full-width" style="margin-top:8px;">
+                        <i class="ph ph-paper-plane-right"></i> Send Translated
+                    </button>
+                </div>
+
+                <button id="execute-translate-btn" class="btn primary-btn full-width" style="margin-top:12px;">
+                    <i class="ph ph-translate"></i> Translate
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- WEBRTC VIDEO CALL OVERLAY                  -->
+    <!-- ══════════════════════════════════════════ -->
     <div id="video-overlay" class="video-overlay hidden">
         <div id="group-video-grid" class="group-video-grid" data-count="0"></div>
         <video id="local-video" class="local-video" autoplay playsinline muted></video>
+        
         <div class="video-info-bar">
             <span id="video-peer-name">Peer</span>
             <span class="call-duration" id="call-timer">00:00</span>
-            <button id="e2ee-verify-btn" class="icon-btn" title="Verify Security" style="margin-left:auto; background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); width:34px; height:34px; font-size:0.95rem;">
+            <button id="e2ee-call-verify-btn" class="icon-btn" title="Verify Security" style="margin-left:auto; background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); width:34px; height:34px; font-size:0.95rem;">
                 <i class="ph ph-shield-check"></i>
             </button>
         </div>
+
         <div class="video-controls">
-            <button id="switch-speaker-btn" class="vc-btn" title="Toggle Speaker/Earpiece">
-                <i class="ph ph-speaker-high"></i>
-            </button>
-            <button id="mute-btn" class="vc-btn" title="Mute">
-                <i class="ph ph-microphone"></i>
-            </button>
-            <button id="cam-off-btn" class="vc-btn" title="Camera Off">
-                <i class="ph ph-video-camera"></i>
-            </button>
-            <button id="switch-cam-btn" class="vc-btn" title="Flip Camera">
-                <i class="ph ph-camera-rotate"></i>
-            </button>
-            <button id="screen-share-btn" class="vc-btn" title="Share Screen">
-                <i class="ph ph-monitor-arrow-up"></i>
-            </button>
-            <button id="incall-chat-btn" class="vc-btn" title="Chat">
-                <i class="ph ph-chat-circle-dots"></i>
-            </button>
-            <button id="end-video-call-btn" class="vc-btn end-call-btn" title="End Call">
-                <i class="ph ph-phone-x"></i>
-            </button>
+            <button id="switch-speaker-btn" class="vc-btn" title="Toggle Speaker"><i class="ph ph-speaker-high"></i></button>
+            <button id="mute-btn" class="vc-btn" title="Mute/Unmute Mic"><i class="ph ph-microphone"></i></button>
+            <button id="cam-off-btn" class="vc-btn" title="Camera On/Off"><i class="ph ph-video-camera"></i></button>
+            <button id="switch-cam-btn" class="vc-btn" title="Flip Camera"><i class="ph ph-camera-rotate"></i></button>
+            <button id="call-screen-share-btn" class="vc-btn" title="Screen Share"><i class="ph ph-monitor-arrow-up"></i></button>
+            <button id="incall-chat-btn" class="vc-btn" title="In-Call Chat"><i class="ph ph-chat-circle-dots"></i></button>
+            <button id="end-video-call-btn" class="vc-btn end-call-btn" title="End Call"><i class="ph ph-phone-x"></i></button>
         </div>
 
-        <!-- ── In-Call Chat Panel ── -->
+        <!-- In-Call Chat Drawer -->
         <div id="incall-chat-panel" class="incall-chat-panel hidden">
             <div class="incall-chat-header">
                 <span><i class="ph ph-chat-circle-dots"></i> In-Call Chat</span>
@@ -355,105 +799,128 @@
             <div class="incall-messages" id="incall-messages"></div>
             <div class="incall-input-row">
                 <input type="text" id="incall-message-input" placeholder="Type a message..." autocomplete="off">
-                <button id="incall-send-btn" class="vc-btn incall-send" title="Send">
-                    <i class="ph ph-paper-plane-right"></i>
-                </button>
+                <button id="incall-send-btn" class="vc-btn incall-send" title="Send"><i class="ph ph-paper-plane-right"></i></button>
             </div>
         </div>
     </div>
 
-    <!-- ── Call Type Chooser Modal ── -->
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- CALL TYPE CHOOSER MODAL                    -->
+    <!-- ══════════════════════════════════════════ -->
     <div id="call-type-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="caller-avatar" style="background:linear-gradient(135deg,#8b5cf6,#06d6c7)">
+        <div class="modal-content glass-panel" style="max-width:340px; text-align:center;">
+            <div class="caller-avatar" style="background:linear-gradient(135deg,#8b5cf6,#06d6c7); margin:0 auto 12px;">
                 <i class="ph ph-phone-call"></i>
             </div>
-            <h3>Start a Call</h3>
-            <p>Choose your call type with <span id="call-type-peer-name">Peer</span>.</p>
-            <div class="modal-actions" style="flex-direction:column; gap:10px;">
-                <button id="start-audio-call-btn" class="btn" style="background:linear-gradient(135deg,#10b981,#059669); color:white; width:100%;">
+            <h3>Initiate Call</h3>
+            <p class="muted">Select call modality with <span id="call-type-peer-name">Peer</span></p>
+            <div class="modal-actions" style="flex-direction:column; gap:10px; margin-top:16px;">
+                <button id="start-audio-call-btn" class="btn success-btn full-width">
                     <i class="ph ph-phone"></i> Audio Call
                 </button>
-                <button id="start-video-call-btn" class="btn primary-btn" style="width:100%;">
+                <button id="start-video-call-btn" class="btn primary-btn full-width">
                     <i class="ph ph-video-camera"></i> Video Call
                 </button>
-                <button id="cancel-call-type-btn" class="btn" style="background:rgba(255,255,255,0.07); color:var(--text-muted); width:100%; border:1px solid var(--panel-border);">
+                <button id="cancel-call-type-btn" class="btn secondary-btn full-width">
                     Cancel
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- ── Incoming Call Modal ── -->
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- INCOMING CALL MODAL                        -->
+    <!-- ══════════════════════════════════════════ -->
     <div id="call-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="caller-avatar">
+        <div class="modal-content glass-panel" style="max-width:340px; text-align:center;">
+            <div class="caller-avatar ringing-pulse" style="margin:0 auto 12px;">
                 <i class="ph ph-phone-incoming"></i>
             </div>
             <h3 id="incoming-call-title">Incoming Call</h3>
-            <p><span id="caller-name">Someone</span> is calling you.</p>
-            <div class="modal-actions">
-                <button id="accept-call-btn" class="btn accept-btn">
+            <p class="muted"><span id="caller-name">Peer</span> is requesting a secure call.</p>
+            <div class="modal-actions" style="margin-top:20px; gap:12px;">
+                <button id="accept-call-btn" class="btn success-btn" style="flex:1;">
                     <i class="ph ph-phone-incoming"></i> Accept
                 </button>
-                <button id="decline-call-btn" class="btn decline-btn">
+                <button id="decline-call-btn" class="btn danger-btn" style="flex:1;">
                     <i class="ph ph-phone-x"></i> Decline
                 </button>
             </div>
         </div>
-    </div> 
+    </div>
 
-    <!-- ── Emoji Picker ── -->
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- EMOJI QUICK PICKER                         -->
+    <!-- ══════════════════════════════════════════ -->
     <div id="emoji-picker" class="emoji-picker hidden">
         <span class="emoji-btn">👍</span>
         <span class="emoji-btn">❤️</span>
         <span class="emoji-btn">😂</span>
         <span class="emoji-btn">🔥</span>
+        <span class="emoji-btn">⚡</span>
+        <span class="emoji-btn">🚀</span>
+        <span class="emoji-btn">🎉</span>
         <span class="emoji-btn">😲</span>
     </div>
 
-    <!-- ── E2EE Verification Modal ── -->
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- ZERO-KNOWLEDGE E2EE VERIFICATION MODAL     -->
+    <!-- ══════════════════════════════════════════ -->
     <div id="e2ee-modal" class="modal-overlay hidden">
-        <div class="modal-card" style="max-width:360px; text-align:center;">
-            <i class="ph ph-shield-check" style="font-size:2.5rem; color:#10b981;"></i>
-            <h3 style="margin:12px 0 4px">Connection Verified</h3>
-            <p style="font-size:0.82rem; opacity:0.6; margin-bottom:16px">Both peers should see the same pattern. If they match, your connection is secure.</p>
-            <canvas id="e2ee-canvas" width="200" height="200" style="border-radius:12px; border:2px solid rgba(16,185,129,0.4);"></canvas>
-            <p id="e2ee-hash-label" style="font-size:0.7rem; opacity:0.4; margin-top:10px; word-break:break-all;"></p>
-            <button id="e2ee-close-btn" class="btn full-width" style="margin-top:16px; background:rgba(255,255,255,0.08); color:white;">Close</button>
+        <div class="modal-card glass-panel" style="max-width:360px; text-align:center;">
+            <i class="ph ph-shield-check" style="font-size:2.6rem; color:#10b981;"></i>
+            <h3 style="margin:12px 0 4px">Zero-Knowledge E2EE Verified</h3>
+            <p style="font-size:0.82rem; opacity:0.7; margin-bottom:16px">
+                Both peers must display identical visual patterns. If they match, your cryptographic channel is immune to man-in-the-middle tampering.
+            </p>
+            <canvas id="e2ee-canvas" width="200" height="200" style="border-radius:14px; border:2px solid rgba(16,185,129,0.4); margin:0 auto;"></canvas>
+            <p id="e2ee-hash-label" style="font-size:0.7rem; font-family:var(--font-mono); opacity:0.6; margin-top:10px; word-break:break-all;"></p>
+            <button id="e2ee-close-btn" class="btn secondary-btn full-width" style="margin-top:16px;">Dismiss</button>
         </div>
     </div>
-    <!-- Kick Admin Modal -->
+
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- ADMIN KICK MODAL                           -->
+    <!-- ══════════════════════════════════════════ -->
     <div id="kick-admin-modal" class="modal hidden">
-        <div class="modal-content" style="max-width:360px">
-            <div class="caller-avatar" style="background:linear-gradient(135deg,#f04a4a,#c53030);animation:none">
+        <div class="modal-content glass-panel" style="max-width:360px">
+            <div class="caller-avatar" style="background:linear-gradient(135deg,#f04a4a,#c53030); margin:0 auto 12px;">
                 <i class="ph ph-user-minus"></i>
             </div>
             <h3>Kick User</h3>
             <p>Removing <strong id="kick-modal-target">user</strong> from the room.</p>
-            <div class="kick-reasons">
-                <button class="kick-reason-btn" data-reason="Violation of room rules.">🚫 Violation</button>
-                <button class="kick-reason-btn" data-reason="Spam or disruptive behaviour.">🗑️ Spam</button>
+            <div class="kick-reasons" style="margin:12px 0;">
+                <button class="kick-reason-btn" data-reason="Violation of space protocol.">🚫 Violation</button>
+                <button class="kick-reason-btn" data-reason="Spam or disruptive noise.">🗑️ Spam</button>
                 <button class="kick-reason-btn" data-reason="Unauthorized access attempt.">🔒 Unauthorized</button>
             </div>
-            <textarea id="kick-custom-msg" class="kick-msg-input" placeholder="Or type a custom reason..." rows="2"></textarea>
+            <textarea id="kick-custom-msg" class="kick-msg-input text-input" placeholder="Or type a custom reason..." rows="2"></textarea>
             <div class="modal-actions" style="margin-top:16px">
-                <button id="kick-confirm-btn" class="btn decline-btn" style="flex:1"><i class="ph ph-user-minus"></i> Kick</button>
-                <button id="kick-cancel-btn" class="btn" style="flex:1;background:rgba(255,255,255,0.07);color:var(--text-muted)">Cancel</button>
+                <button id="kick-confirm-btn" class="btn danger-btn" style="flex:1"><i class="ph ph-user-minus"></i> Kick</button>
+                <button id="kick-cancel-btn" class="btn secondary-btn" style="flex:1">Cancel</button>
             </div>
         </div>
     </div>
 
-    <!-- Kicked Notification Overlay -->
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- KICKED OVERLAY                             -->
+    <!-- ══════════════════════════════════════════ -->
     <div id="kicked-overlay" class="kicked-overlay hidden">
-        <div class="kicked-card">
+        <div class="kicked-card glass-panel">
             <div class="kicked-icon"><i class="ph ph-prohibit"></i></div>
-            <h2>Removed from Room</h2>
+            <h2>Removed from Space</h2>
             <p id="kicked-message">You have been removed by the administrator.</p>
-            <button id="kicked-ok-btn" class="btn primary-btn" style="width:100%;margin-top:20px"><i class="ph ph-arrow-left"></i> Go Back</button>
+            <button id="kicked-ok-btn" class="btn primary-btn full-width" style="margin-top:20px"><i class="ph ph-arrow-left"></i> Return</button>
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="/static/js/webrtc.js"></script>
     <script src="/static/js/app.js"></script>
 </body>

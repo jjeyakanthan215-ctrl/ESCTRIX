@@ -1,0 +1,190 @@
+=============================================================
+         ESCTRIX - MASTER SPECIFICATION & APPLICATION GUIDE
+=============================================================
+
+This document is the exhaustive master guide for the ESCTRIX 
+platform. It contains every technical specification required to 
+run the project, build custom clients (like dedicated Android/iOS 
+apps), and deploy the backend on Replit.
+
+-------------------------------------------------------------
+PART 1: PROJECT OVERVIEW & CORE CAPABILITIES
+-------------------------------------------------------------
+ESCTRIX is a high-end, privacy-first peer-to-peer (P2P) 
+communication platform. It utilizes WebRTC to establish direct 
+connections between users.
+1. End-to-End Encryption (E2EE): Direct WebRTC channels (DTLS/SRTP).
+2. Mesh Networking: Group rooms supporting up to 4 peers.
+3. Media Streaming: Real-time, low-latency Video & Audio.
+4. Secure File Transfer: Direct arbitrary file sharing.
+5. Vanish Mode: 10-second disappearing messages.
+6. Burn Room: Instantly destroys the room and all local histories.
+7. Offline Messages: E2EE payloads held temporarily in SQLite.
+
+-------------------------------------------------------------
+PART 2: DATABASE SCHEMA SPECIFICATIONS
+-------------------------------------------------------------
+The backend uses SQLite (`users.db`) with optional Firebase Cloud sync:
+
+TABLE: `users`
+- `id` (INTEGER PRIMARY KEY)
+- `account_id` (TEXT UNIQUE) - Permanent Public ID (e.g. ESC-842910)
+- `username` (TEXT UNIQUE NOT NULL)
+- `password_hash` (TEXT NOT NULL) - Uses Bcrypt
+- `display_name` (TEXT)
+- `bio` (TEXT DEFAULT '')
+- `avatar_color` (TEXT)
+- `role` (TEXT DEFAULT 'user') - 'user' or 'admin'
+- `created_at` (TEXT)
+
+TABLE: `offline_messages`
+- `id` (INTEGER PRIMARY KEY)
+- `recipient_username` (TEXT NOT NULL)
+- `sender_username` (TEXT NOT NULL)
+- `space_name` (TEXT NOT NULL)
+- `payload` (TEXT NOT NULL) - Encrypted message blob
+- `timestamp` (DATETIME DEFAULT CURRENT_TIMESTAMP)
+
+TABLE: `saved_messages`
+- `id` (INTEGER PRIMARY KEY)
+- `username` (TEXT NOT NULL)
+- `content` (TEXT NOT NULL)
+- `msg_type` (TEXT DEFAULT 'text')
+- `file_meta` (TEXT DEFAULT '')
+- `timestamp` (DATETIME DEFAULT CURRENT_TIMESTAMP)
+
+TABLE: `contacts`
+- `id` (INTEGER PRIMARY KEY)
+- `owner_username` (TEXT NOT NULL)
+- `contact_account_id` (TEXT NOT NULL)
+- `contact_username` (TEXT NOT NULL)
+- `contact_name` (TEXT DEFAULT '')
+- `created_at` (DATETIME DEFAULT CURRENT_TIMESTAMP)
+
+-------------------------------------------------------------
+PART 3: REST API ENDPOINTS SPECIFICATION
+-------------------------------------------------------------
+To build a custom mobile application, your frontend needs to 
+communicate with these FastAPI REST endpoints:
+
+[AUTH & USERS]
+- POST `/api/auth/register` (Body: {username, password, display_name}) -> Returns user profile & Account ID.
+- POST `/api/auth/login` (Body: {username, password}) -> Returns user profile & Account ID.
+- GET `/api/user/profile?username=XYZ`
+- POST `/api/user/profile/update` (Body: {username, display_name, bio, avatar_color})
+- GET `/api/user/search?q=XYZ`
+
+[CONTACTS & SAVED VAULT]
+- GET `/api/user/contacts?username=XYZ`
+- POST `/api/user/contacts/add` (Body: {owner_username, contact_username})
+- GET `/api/user/saved_messages?username=XYZ`
+- POST `/api/user/saved_messages` (Body: {username, content, msg_type, file_meta})
+- DELETE `/api/user/saved_messages/{id}?username=XYZ`
+
+[AURA AI SUITE]
+- POST `/api/ai/chat` (Body: {message, history})
+- POST `/api/ai/vibe` (Body: {messages})
+- POST `/api/ai/smart_reply` (Body: {messages})
+- POST `/api/ai/polish` (Body: {text, tone})
+- POST `/api/ai/summarize` (Body: {messages})
+- POST `/api/ai/translate` (Body: {text, target_lang})
+
+[HOSTING ROOMS]
+- POST `/api/host/start` (Body: {username, space_name, pin}) -> Returns QR.
+- POST `/api/host/stop` (Body: {space_name})
+
+[OFFLINE MESSAGING]
+- POST `/api/messages/offline` (Body: {recipient_username, sender_username, space_name, payload})
+- GET `/api/messages/offline?username=XYZ`
+
+[ADMIN DASHBOARD]
+- GET `/api/admin/stats?username=ADMIN_NAME`
+- POST `/api/admin/kick` (Body: {admin_username, target_username, space_name, kick_message})
+- DELETE `/api/admin/delete_user` (Body: {admin_username, target_username})
+- POST `/api/admin/broadcast` (Body: {admin_username, message})
+
+-------------------------------------------------------------
+PART 4: WEBSOCKET PROTOCOL SPECIFICATION
+-------------------------------------------------------------
+The core signaling for WebRTC happens over WebSockets.
+Endpoint: `ws://<server-ip>/ws/{client_id}`
+
+Client-to-Server JSON Payload Types:
+1. `auth` - Authenticates a user into a specific space/room.
+2. `admin_auth` - Authenticates an admin to receive logs.
+3. `offer` / `answer` / `candidate` - WebRTC SDP negotiations.
+4. `call_request` / `call_accepted` / `call_declined` - A/V Calls.
+5. `typing` - Live typing indicators.
+6. `admin_chat_log` - Forwards chat logs to admins.
+
+Server-to-Client JSON Payload Types:
+1. `auth_success` / `auth_fail` - Response to connection attempts.
+2. `peer_joined` / `peer_disconnected` - Mesh network updates.
+3. `host_disconnected` - Tells clients the room is closed.
+
+-------------------------------------------------------------
+PART 5: HOW TO BUILD THIS AS A NATIVE MOBILE APP (APK/IPA)
+-------------------------------------------------------------
+While this app is already a PWA, if you want to compile it into a 
+standalone native application (to publish on Google Play or App Store):
+
+**Method 1: Capacitor (Recommended)**
+1. Install Node.js on your computer.
+2. Run `npm install -g @capacitor/cli`
+3. In this project folder, run `npx cap init ESCTRIX com.esctrix.app`
+4. Make sure your `frontend` folder is set as the "webDir" in capacitor.config.json.
+5. Run `npx cap add android` (and iOS if on Mac).
+6. Run `npx cap sync android` and open it in Android Studio to build the APK!
+
+**Method 2: Webview App**
+1. Host the backend on Replit (see Part 6).
+2. Create a basic Android Studio project.
+3. Add an Android `WebView` pointing directly to your Replit URL.
+4. Enable JavaScript, DOM Storage, and WebRTC Camera/Mic permissions 
+   in the `AndroidManifest.xml`.
+
+-------------------------------------------------------------
+PART 6: REPLIT CONTAINER SETUP (QUICK START)
+-------------------------------------------------------------
+To perfectly configure the Replit environment and install all 
+dependencies, copy and paste this exact command into the Replit 
+Shell (Console tab) and press Enter:
+
+    echo 'run = "uvicorn server:app --host 0.0.0.0 --port 8080"' > .replit && pip install -r requirements.txt
+
+*Why do we need this?* By default, Replit tries to execute `main.py`. 
+However, `main.py` is built for local desktop execution (it opens 
+SSH tunnels). We need to explicitly tell Replit to run the Uvicorn 
+FastAPI server instead.
+
+-------------------------------------------------------------
+PART 7: ENVIRONMENT VARIABLES (SECRETS)
+-------------------------------------------------------------
+For admin dashboard access, you must configure Environment Variables.
+Go to the "Secrets" (Tools -> Secrets) section in the Replit sidebar.
+
+Add the following Secret:
+- Key: ADMIN_USERS
+- Value: ESCTRIX_Admin,YourName
+
+-------------------------------------------------------------
+PART 8: STARTING THE SERVER ON REPLIT
+-------------------------------------------------------------
+1. Click the big green "Run" button at the top of Replit.
+2. Replit will start the server on Port 8080 and provide a 
+   permanent public web URL in the webview panel.
+
+-------------------------------------------------------------
+PART 9: PROGRESSIVE WEB APP (PWA) INSTALLATION
+-------------------------------------------------------------
+If you don't want to build a native app (Part 5), you can just install 
+it directly from the browser!
+
+**Android (Chrome/Brave):**
+1. Tap the three dots (menu) in the top right.
+2. Tap "Add to Home screen" or "Install App".
+
+**iOS (Safari):**
+1. Tap the "Share" button at the bottom center.
+2. Scroll down and tap "Add to Home Screen".
+=============================================================
