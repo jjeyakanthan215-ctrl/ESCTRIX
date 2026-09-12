@@ -63,6 +63,8 @@ const ESCTRIX = {
     init() {
         this.cacheElements();
         this.initAudioContext();
+        this.cursor?.init();
+        this.contextMenu?.init();
         this.bindEvents();
         this.initPWA();
         this.initSavedPreferences();
@@ -87,7 +89,14 @@ const ESCTRIX = {
             'e2ee-verify-btn', 'chat-menu-btn', 'chat-dropdown-menu', 'menu-vanish-btn', 'menu-burn-btn',
             'menu-summarize-btn', 'menu-export-btn', 'menu-clear-btn',
             'messages-viewport', 'messages-list', 'typing-indicator', 'typing-avatar', 'typing-name',
-            'smart-replies', 'voice-recording-bar', 'voice-rec-timer',
+            // WhatsApp-Style Voice Recording HUD
+            'voice-recording-bar', 'voice-rec-timer', 'voice-rec-status',
+            'voice-discard-btn', 'voice-pause-btn', 'voice-preview-btn', 'voice-send-btn',
+            // Context Menu & Custom Dialog & Cursor
+            'custom-context-menu', 'context-menu-items',
+            'custom-dialog-modal', 'dialog-icon', 'dialog-icon-halo', 'dialog-title', 'dialog-message',
+            'dialog-input', 'dialog-cancel-btn', 'dialog-confirm-btn',
+            'quantum-cursor-dot', 'quantum-cursor-ring',
             'file-upload-progress', 'progress-bar-fill', 'progress-percent', 'progress-filename', 'progress-speed',
             'file-input', 'file-btn', 'emoji-picker-btn', 'emoji-picker', 'ai-assist-btn', 'ai-tools-popover',
             'ai-tool-polish', 'ai-tool-translate', 'ai-tool-summarize', 'ai-tool-vibe',
@@ -512,10 +521,12 @@ const ESCTRIX = {
             });
         });
 
-        // Voice Note Recorder
-        if (e.voiceNoteBtn) {
-            e.voiceNoteBtn.addEventListener('click', () => this.voice.toggle());
-        }
+        // Voice Note Recorder Controls (WhatsApp-Style)
+        e.voiceNoteBtn?.addEventListener('click', () => this.voice.start());
+        e.voiceDiscardBtn?.addEventListener('click', () => this.voice.discard());
+        e.voicePauseBtn?.addEventListener('click', () => this.voice.togglePause());
+        e.voicePreviewBtn?.addEventListener('click', () => this.voice.togglePreview());
+        e.voiceSendBtn?.addEventListener('click', () => this.voice.sendVoice());
 
         // AI Suite Popover & Tools
         e.aiAssistBtn?.addEventListener('click', (ev) => {
@@ -1010,12 +1021,17 @@ const ESCTRIX = {
         },
 
         clearChatHistory() {
-            if (confirm('Clear local history across all conversations? (Encrypted cloud vault is untouched)')) {
-                ESCTRIX.state.chatHistories['ai'] = [];
-                ESCTRIX.state.chatHistories['space'] = [];
-                ESCTRIX.chat.renderMessages();
-                ESCTRIX.showToast('Local conversation view purged.');
-            }
+            ESCTRIX.dialog.confirm(
+                'Purge Local History',
+                'Clear local message cache across all conversations? (Encrypted cloud vault is untouched)',
+                () => {
+                    ESCTRIX.state.chatHistories['ai'] = [];
+                    ESCTRIX.state.chatHistories['space'] = [];
+                    ESCTRIX.chat.renderMessages();
+                    ESCTRIX.showToast('Local conversation view purged.');
+                },
+                true
+            );
         }
     },
 
@@ -1041,23 +1057,33 @@ const ESCTRIX = {
         promptSetup() {
             const existing = localStorage.getItem('esctrix_passcode_pin');
             if (existing) {
-                const choice = confirm('Passcode is currently active. Click OK to remove passcode, or Cancel to change it.');
-                if (choice) {
-                    localStorage.removeItem('esctrix_passcode_pin');
-                    ESCTRIX.showToast('Passcode screen lock removed.');
-                    ESCTRIX.settings.loadPreferences();
-                    return;
-                }
+                ESCTRIX.dialog.confirm(
+                    'Passcode Security',
+                    'A 4-digit Passcode PIN is currently active. Remove security PIN or set a new one?',
+                    () => {
+                        localStorage.removeItem('esctrix_passcode_pin');
+                        ESCTRIX.showToast('Passcode screen lock removed.');
+                        ESCTRIX.settings.loadPreferences();
+                    }
+                );
+                return;
             }
 
-            const pin = prompt('Enter a 4-digit security PIN for screen lock:');
-            if (pin && /^\d{4}$/.test(pin)) {
-                localStorage.setItem('esctrix_passcode_pin', pin);
-                ESCTRIX.showToast('4-Digit Passcode Lock Enabled! 🔒');
-                ESCTRIX.settings.loadPreferences();
-            } else if (pin) {
-                alert('PIN must be exactly 4 digits (0-9).');
-            }
+            ESCTRIX.dialog.prompt(
+                'Setup Screen Lock',
+                'Enter a 4-digit security PIN for screen lock:',
+                'e.g. 1234',
+                '',
+                (pin) => {
+                    if (pin && /^\d{4}$/.test(pin)) {
+                        localStorage.setItem('esctrix_passcode_pin', pin);
+                        ESCTRIX.showToast('4-Digit Passcode Lock Enabled! 🔒');
+                        ESCTRIX.settings.loadPreferences();
+                    } else if (pin) {
+                        ESCTRIX.showToast('PIN must be exactly 4 digits (0-9).', true);
+                    }
+                }
+            );
         },
 
         lock() {
@@ -1389,15 +1415,20 @@ const ESCTRIX = {
         },
 
         burnSpace() {
-            if (confirm('🔥 Burn Space: Permanently wipe this room and purge all data for everyone?')) {
-                ESCTRIX.playSfx('call');
-                if (ESCTRIX.state.p2p) {
-                    ESCTRIX.state.p2p.sendData({ type: 'burn_room' });
-                }
-                ESCTRIX.state.chatHistories[ESCTRIX.state.activeChat.type] = [];
-                ESCTRIX.chat.renderMessages();
-                ESCTRIX.showToast('Room Purged & Cryptographically Burned. 🧹');
-            }
+            ESCTRIX.dialog.confirm(
+                'Burn Space Room',
+                'Permanently wipe this room, flush cryptographic keys, and purge all data for everyone?',
+                () => {
+                    ESCTRIX.playSfx('call');
+                    if (ESCTRIX.state.p2p) {
+                        ESCTRIX.state.p2p.sendData({ type: 'burn_room' });
+                    }
+                    ESCTRIX.state.chatHistories[ESCTRIX.state.activeChat.type] = [];
+                    ESCTRIX.chat.renderMessages();
+                    ESCTRIX.showToast('Room Purged & Cryptographically Burned. 🧹');
+                },
+                true
+            );
         },
 
         exportHistory() {
@@ -1776,81 +1807,183 @@ const ESCTRIX = {
     },
 
     // ─────────────────────────────────────────────────────────
-    // VOICE NOTE RECORDER MODULE
+    // WHATSAPP-STYLE ADVANCED VOICE NOTE MODULE
     // ─────────────────────────────────────────────────────────
     voice: {
-        async toggle() {
-            const s = ESCTRIX.state;
-            if (s.mediaRecorder && s.mediaRecorder.state === 'recording') {
-                this.stop();
-            } else {
-                this.start();
-            }
-        },
+        stream: null,
+        recorder: null,
+        chunks: [],
+        timerInterval: null,
+        seconds: 0,
+        isPaused: false,
+        previewAudio: null,
+        previewBlob: null,
 
         async start() {
             const e = ESCTRIX.elements;
-            const s = ESCTRIX.state;
+            if (this.recorder && this.recorder.state === 'recording') {
+                return;
+            }
+
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                s.voiceChunks = [];
-                s.mediaRecorder = new MediaRecorder(stream);
+                this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                this.chunks = [];
+                this.seconds = 0;
+                this.isPaused = false;
+                this.previewBlob = null;
+                if (this.previewAudio) {
+                    this.previewAudio.pause();
+                    this.previewAudio = null;
+                }
 
-                s.mediaRecorder.ondataavailable = (event) => {
-                    if (event.data.size > 0) s.voiceChunks.push(event.data);
+                this.recorder = new MediaRecorder(this.stream);
+                this.recorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) this.chunks.push(event.data);
                 };
 
-                s.mediaRecorder.onstop = () => {
-                    const blob = new Blob(s.voiceChunks, { type: 'audio/webm' });
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        const base64 = reader.result;
-                        const durationStr = `${Math.floor(s.voiceSeconds / 60)}:${(s.voiceSeconds % 60).toString().padStart(2, '0')}`;
-                        const voiceMsg = {
-                            sender: 'me',
-                            type: 'voice',
-                            data: base64,
-                            duration: durationStr,
-                            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                        };
-                        s.chatHistories[s.activeChat.type].push(voiceMsg);
-                        ESCTRIX.chat.appendMessageDOM(voiceMsg);
-                        ESCTRIX.playSfx('send');
-
-                        if (s.activeChat.type === 'space' && s.p2p) {
-                            s.p2p.sendData({
-                                type: 'voice_note',
-                                payload: base64,
-                                duration: durationStr
-                            });
-                        }
-                    };
-                    reader.readAsDataURL(blob);
-                    stream.getTracks().forEach(t => t.stop());
-                };
-
-                s.mediaRecorder.start();
-                s.voiceSeconds = 0;
-                e.voiceRecordingBar.classList.remove('hidden');
-                e.voiceRecTimer.textContent = '0:00';
-                s.voiceTimerInterval = setInterval(() => {
-                    s.voiceSeconds++;
-                    e.voiceRecTimer.textContent = `${Math.floor(s.voiceSeconds / 60)}:${(s.voiceSeconds % 60).toString().padStart(2, '0')}`;
-                }, 1000);
+                this.recorder.start(250); // Slice chunks every 250ms for live preview
                 ESCTRIX.playSfx('click');
+
+                // Update HUD DOM
+                e.voiceRecordingBar?.classList.remove('hidden');
+                if (e.voiceRecTimer) e.voiceRecTimer.textContent = '0:00';
+                if (e.voiceRecStatus) e.voiceRecStatus.textContent = 'Recording...';
+                if (e.voicePauseBtn) e.voicePauseBtn.innerHTML = '<i class="ph ph-pause"></i>';
+                if (e.voicePreviewBtn) e.voicePreviewBtn.classList.add('hidden');
+
+                clearInterval(this.timerInterval);
+                this.timerInterval = setInterval(() => {
+                    if (!this.isPaused) {
+                        this.seconds++;
+                        const mins = Math.floor(this.seconds / 60);
+                        const secs = (this.seconds % 60).toString().padStart(2, '0');
+                        if (e.voiceRecTimer) e.voiceRecTimer.textContent = `${mins}:${secs}`;
+                    }
+                }, 1000);
             } catch (err) {
                 ESCTRIX.showToast('Microphone access denied or unavailable.', true);
             }
         },
 
-        stop() {
-            const s = ESCTRIX.state;
+        togglePause() {
             const e = ESCTRIX.elements;
-            if (s.mediaRecorder && s.mediaRecorder.state === 'recording') {
-                s.mediaRecorder.stop();
+            if (!this.recorder) return;
+
+            if (this.recorder.state === 'recording') {
+                this.recorder.pause();
+                this.isPaused = true;
+                if (e.voicePauseBtn) e.voicePauseBtn.innerHTML = '<i class="ph ph-play"></i>';
+                if (e.voiceRecStatus) e.voiceRecStatus.textContent = 'Paused';
+                if (e.voicePreviewBtn) e.voicePreviewBtn.classList.remove('hidden');
+                this.preparePreviewBlob();
+                ESCTRIX.playSfx('click');
+            } else if (this.recorder.state === 'paused') {
+                if (this.previewAudio) {
+                    this.previewAudio.pause();
+                    this.previewAudio = null;
+                }
+                this.recorder.resume();
+                this.isPaused = false;
+                if (e.voicePauseBtn) e.voicePauseBtn.innerHTML = '<i class="ph ph-pause"></i>';
+                if (e.voiceRecStatus) e.voiceRecStatus.textContent = 'Recording...';
+                ESCTRIX.playSfx('click');
             }
-            clearInterval(s.voiceTimerInterval);
-            e.voiceRecordingBar.classList.add('hidden');
+        },
+
+        preparePreviewBlob() {
+            if (this.chunks.length > 0) {
+                this.previewBlob = new Blob(this.chunks, { type: 'audio/webm' });
+            }
+        },
+
+        togglePreview() {
+            const e = ESCTRIX.elements;
+            if (!this.previewBlob && this.chunks.length > 0) {
+                this.preparePreviewBlob();
+            }
+            if (!this.previewBlob) return;
+
+            if (this.previewAudio && !this.previewAudio.paused) {
+                this.previewAudio.pause();
+                if (e.voicePreviewBtn) e.voicePreviewBtn.innerHTML = '<i class="ph ph-play"></i>';
+            } else {
+                const url = URL.createObjectURL(this.previewBlob);
+                this.previewAudio = new Audio(url);
+                this.previewAudio.play();
+                if (e.voicePreviewBtn) e.voicePreviewBtn.innerHTML = '<i class="ph ph-pause"></i>';
+                this.previewAudio.onended = () => {
+                    if (e.voicePreviewBtn) e.voicePreviewBtn.innerHTML = '<i class="ph ph-play"></i>';
+                };
+            }
+        },
+
+        discard() {
+            this.cleanup();
+            ESCTRIX.playSfx('call');
+            ESCTRIX.showToast('Voice note discarded.');
+        },
+
+        sendVoice() {
+            if (!this.recorder || this.chunks.length === 0) {
+                this.cleanup();
+                return;
+            }
+
+            const durationSecs = Math.max(1, this.seconds);
+            const durationStr = `${Math.floor(durationSecs / 60)}:${(durationSecs % 60).toString().padStart(2, '0')}`;
+
+            this.preparePreviewBlob();
+            const blob = this.previewBlob || new Blob(this.chunks, { type: 'audio/webm' });
+            const reader = new FileReader();
+
+            reader.onloadend = () => {
+                const base64 = reader.result;
+                const voiceMsg = {
+                    sender: 'me',
+                    type: 'voice',
+                    data: base64,
+                    duration: durationStr,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                };
+
+                const chatType = ESCTRIX.state.activeChat.type;
+                if (!ESCTRIX.state.chatHistories[chatType]) ESCTRIX.state.chatHistories[chatType] = [];
+                ESCTRIX.state.chatHistories[chatType].push(voiceMsg);
+                ESCTRIX.chat.appendMessageDOM(voiceMsg);
+                ESCTRIX.playSfx('send');
+
+                if (chatType === 'space' && ESCTRIX.state.p2p) {
+                    ESCTRIX.state.p2p.sendData({
+                        type: 'voice_note',
+                        payload: base64,
+                        duration: durationStr
+                    });
+                }
+                this.cleanup();
+            };
+
+            reader.readAsDataURL(blob);
+        },
+
+        cleanup() {
+            if (this.recorder && this.recorder.state !== 'inactive') {
+                try { this.recorder.stop(); } catch (e) {}
+            }
+            if (this.stream) {
+                this.stream.getTracks().forEach(t => t.stop());
+                this.stream = null;
+            }
+            if (this.previewAudio) {
+                this.previewAudio.pause();
+                this.previewAudio = null;
+            }
+            clearInterval(this.timerInterval);
+            this.recorder = null;
+            this.chunks = [];
+            this.seconds = 0;
+            this.isPaused = false;
+            this.previewBlob = null;
+            ESCTRIX.elements.voiceRecordingBar?.classList.add('hidden');
         },
 
         playAudio(base64Url, buttonEl, speedPillEl = null) {
@@ -2130,6 +2263,16 @@ const ESCTRIX = {
                         ESCTRIX.state.chatHistories['space'].push(vMsg);
                         if (ESCTRIX.state.activeChat.type === 'space') {
                             ESCTRIX.chat.appendMessageDOM(vMsg);
+                        }
+                    } else if (data.type === 'typing') {
+                        const e = ESCTRIX.elements;
+                        if (e.typingIndicator && e.typingName) {
+                            e.typingName.textContent = data.username || 'Peer';
+                            e.typingIndicator.classList.remove('hidden');
+                            clearTimeout(ESCTRIX._peerTypingTimer);
+                            ESCTRIX._peerTypingTimer = setTimeout(() => {
+                                e.typingIndicator.classList.add('hidden');
+                            }, 3000);
                         }
                     } else if (data.type === 'file') {
                         const fMsg = {
@@ -2490,41 +2633,52 @@ const ESCTRIX = {
 
         async toggleRole(targetUsername, currentRole) {
             const newRole = currentRole === 'admin' ? 'user' : 'admin';
-            if (!confirm(`Switch @${targetUsername} role to ${newRole.toUpperCase()}?`)) return;
-            const u = ESCTRIX.state.user?.username;
-            try {
-                const res = await fetch('/api/admin/update_role', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ admin_username: u, target_username: targetUsername, new_role: newRole })
-                });
-                const data = await res.json();
-                ESCTRIX.showToast(data.message || 'Role updated.');
-                this.fetchStats();
-            } catch (e) {
-                ESCTRIX.showToast('Failed to update role.', true);
-            }
+            ESCTRIX.dialog.confirm(
+                'Update Role Permission',
+                `Switch @${targetUsername} role to ${newRole.toUpperCase()}?`,
+                async () => {
+                    const u = ESCTRIX.state.user?.username;
+                    try {
+                        const res = await fetch('/api/admin/update_role', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ admin_username: u, target_username: targetUsername, new_role: newRole })
+                        });
+                        const data = await res.json();
+                        ESCTRIX.showToast(data.message || 'Role updated.');
+                        this.fetchStats();
+                    } catch (e) {
+                        ESCTRIX.showToast('Failed to update role.', true);
+                    }
+                }
+            );
         },
 
         async promptResetPassword(targetUsername) {
-            const newPwd = prompt(`Enter new password for @${targetUsername} (minimum 4 characters):`);
-            if (!newPwd) return;
-            if (newPwd.length < 4) {
-                ESCTRIX.showToast('Password too short (min 4 characters).', true);
-                return;
-            }
-            const u = ESCTRIX.state.user?.username;
-            try {
-                const res = await fetch('/api/admin/reset_password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ admin_username: u, target_username: targetUsername, new_password: newPwd })
-                });
-                const data = await res.json();
-                ESCTRIX.showToast(data.message || 'Password updated.');
-            } catch (e) {
-                ESCTRIX.showToast('Failed to reset password.', true);
-            }
+            ESCTRIX.dialog.prompt(
+                'Reset Identity Key',
+                `Enter new password for @${targetUsername}:`,
+                'Minimum 4 characters',
+                '',
+                async (newPwd) => {
+                    if (!newPwd || newPwd.length < 4) {
+                        ESCTRIX.showToast('Password too short (min 4 characters).', true);
+                        return;
+                    }
+                    const u = ESCTRIX.state.user?.username;
+                    try {
+                        const res = await fetch('/api/admin/reset_password', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ admin_username: u, target_username: targetUsername, new_password: newPwd })
+                        });
+                        const data = await res.json();
+                        ESCTRIX.showToast(data.message || 'Password updated.');
+                    } catch (e) {
+                        ESCTRIX.showToast('Failed to reset password.', true);
+                    }
+                }
+            );
         },
 
         async changeMyPassword() {
@@ -2553,18 +2707,24 @@ const ESCTRIX = {
         },
 
         async deleteUser(targetUsername) {
-            if (!confirm(`Permanently purge identity @${targetUsername}? All account records will be deleted.`)) return;
-            const u = ESCTRIX.state.user?.username;
-            try {
-                const res = await fetch('/api/admin/delete_user', {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ admin_username: u, target_username: targetUsername })
-                });
-                const data = await res.json();
-                ESCTRIX.showToast(data.message || 'Action executed.');
-                this.fetchStats();
-            } catch (e) {}
+            ESCTRIX.dialog.confirm(
+                'Purge Account Identity',
+                `Permanently purge identity @${targetUsername}? All account records and keys will be deleted.`,
+                async () => {
+                    const u = ESCTRIX.state.user?.username;
+                    try {
+                        const res = await fetch('/api/admin/delete_user', {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ admin_username: u, target_username: targetUsername })
+                        });
+                        const data = await res.json();
+                        ESCTRIX.showToast(data.message || 'Action executed.');
+                        this.fetchStats();
+                    } catch (e) {}
+                },
+                true
+            );
         },
 
         async broadcast() {
@@ -2580,6 +2740,330 @@ const ESCTRIX = {
                 ESCTRIX.elements.adminBroadcastMsg.value = '';
                 ESCTRIX.showToast('Global announcement transmitted.');
             } catch (e) {}
+        }
+    },
+
+    // ─────────────────────────────────────────────────────────
+    // IN-APP GLASS DIALOG SYSTEM (No Native Alerts)
+    // ─────────────────────────────────────────────────────────
+    dialog: {
+        confirm(title, message, onConfirm, isDanger = false) {
+            const e = ESCTRIX.elements;
+            if (!e.customDialogModal) return;
+            if (e.dialogTitle) e.dialogTitle.textContent = title;
+            if (e.dialogMessage) e.dialogMessage.textContent = message;
+            if (e.dialogInput) e.dialogInput.classList.add('hidden');
+            if (e.dialogIconHalo) e.dialogIconHalo.className = `dialog-icon-halo ${isDanger ? 'danger' : ''}`;
+            if (e.dialogIcon) e.dialogIcon.className = `ph ${isDanger ? 'ph-warning-octagon' : 'ph-question'}`;
+
+            e.customDialogModal.classList.add('active');
+
+            const handleConfirm = () => {
+                cleanup();
+                if (onConfirm) onConfirm();
+            };
+            const handleCancel = () => {
+                cleanup();
+            };
+            const cleanup = () => {
+                e.customDialogModal.classList.remove('active');
+                e.dialogConfirmBtn?.removeEventListener('click', handleConfirm);
+                e.dialogCancelBtn?.removeEventListener('click', handleCancel);
+            };
+
+            e.dialogConfirmBtn?.addEventListener('click', handleConfirm);
+            e.dialogCancelBtn?.addEventListener('click', handleCancel);
+        },
+
+        prompt(title, message, placeholder = '', defaultValue = '', onConfirm) {
+            const e = ESCTRIX.elements;
+            if (!e.customDialogModal) return;
+            if (e.dialogTitle) e.dialogTitle.textContent = title;
+            if (e.dialogMessage) e.dialogMessage.textContent = message;
+            if (e.dialogInput) {
+                e.dialogInput.classList.remove('hidden');
+                e.dialogInput.placeholder = placeholder;
+                e.dialogInput.value = defaultValue;
+                setTimeout(() => e.dialogInput.focus(), 100);
+            }
+            if (e.dialogIconHalo) e.dialogIconHalo.className = 'dialog-icon-halo';
+            if (e.dialogIcon) e.dialogIcon.className = 'ph ph-pencil-simple';
+
+            e.customDialogModal.classList.add('active');
+
+            const handleConfirm = () => {
+                const val = e.dialogInput ? e.dialogInput.value.trim() : '';
+                cleanup();
+                if (onConfirm) onConfirm(val);
+            };
+            const handleCancel = () => {
+                cleanup();
+            };
+            const cleanup = () => {
+                e.customDialogModal.classList.remove('active');
+                e.dialogConfirmBtn?.removeEventListener('click', handleConfirm);
+                e.dialogCancelBtn?.removeEventListener('click', handleCancel);
+            };
+
+            e.dialogConfirmBtn?.addEventListener('click', handleConfirm);
+            e.dialogCancelBtn?.addEventListener('click', handleCancel);
+        },
+
+        alert(title, message, isError = false) {
+            const e = ESCTRIX.elements;
+            if (!e.customDialogModal) return;
+            if (e.dialogTitle) e.dialogTitle.textContent = title;
+            if (e.dialogMessage) e.dialogMessage.textContent = message;
+            if (e.dialogInput) e.dialogInput.classList.add('hidden');
+            if (e.dialogCancelBtn) e.dialogCancelBtn.style.display = 'none';
+            if (e.dialogIconHalo) e.dialogIconHalo.className = `dialog-icon-halo ${isError ? 'danger' : ''}`;
+            if (e.dialogIcon) e.dialogIcon.className = `ph ${isError ? 'ph-x-circle' : 'ph-info'}`;
+
+            e.customDialogModal.classList.add('active');
+
+            const handleClose = () => {
+                e.customDialogModal.classList.remove('active');
+                if (e.dialogCancelBtn) e.dialogCancelBtn.style.display = 'inline-block';
+                e.dialogConfirmBtn?.removeEventListener('click', handleClose);
+            };
+            e.dialogConfirmBtn?.addEventListener('click', handleClose);
+        }
+    },
+
+    // ─────────────────────────────────────────────────────────
+    // DYNAMIC CUSTOM CONTEXT MENU & LONG-PRESS (WhatsApp-Style)
+    // ─────────────────────────────────────────────────────────
+    contextMenu: {
+        activeTarget: null,
+        targetType: null, // 'message' | 'thread' | 'canvas'
+
+        init() {
+            // Block native browser context menu
+            document.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                this.handleTrigger(e.clientX, e.clientY, e.target);
+            });
+
+            // Long Press handler for mobile & touchscreens (500ms)
+            let touchTimer = null;
+            let touchStartPos = { x: 0, y: 0 };
+
+            document.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    touchStartPos = { x: touch.clientX, y: touch.clientY };
+                    touchTimer = setTimeout(() => {
+                        this.handleTrigger(touchStartPos.x, touchStartPos.y, e.target);
+                    }, 500);
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    const dist = Math.hypot(touch.clientX - touchStartPos.x, touch.clientY - touchStartPos.y);
+                    if (dist > 10) clearTimeout(touchTimer);
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchend', () => clearTimeout(touchTimer), { passive: true });
+
+            // Close context menu on outside click or escape
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#custom-context-menu')) {
+                    this.close();
+                }
+            });
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') this.close();
+            });
+        },
+
+        handleTrigger(x, y, targetEl) {
+            ESCTRIX.playSfx('click');
+            const menu = ESCTRIX.elements.customContextMenu;
+            const container = ESCTRIX.elements.contextMenuItems;
+            if (!menu || !container) return;
+
+            const msgEl = targetEl.closest('.message');
+            const threadEl = targetEl.closest('.chat-thread-item');
+
+            let itemsHtml = '';
+
+            if (msgEl) {
+                this.activeTarget = msgEl;
+                this.targetType = 'message';
+                const textContent = msgEl.querySelector('.message-text')?.textContent || '';
+                itemsHtml = `
+                    <button class="context-menu-item" data-action="copy">
+                        <i class="ph ph-copy"></i> Copy Message
+                    </button>
+                    <button class="context-menu-item" data-action="reply">
+                        <i class="ph ph-arrow-bend-up-left"></i> Reply
+                    </button>
+                    <button class="context-menu-item" data-action="forward">
+                        <i class="ph ph-share-fat"></i> Forward
+                    </button>
+                    <button class="context-menu-item" data-action="star">
+                        <i class="ph ph-star"></i> Star / Save
+                    </button>
+                    <div class="context-menu-divider"></div>
+                    <button class="context-menu-item danger" data-action="delete_msg">
+                        <i class="ph ph-trash"></i> Delete for Me
+                    </button>
+                `;
+            } else if (threadEl) {
+                this.activeTarget = threadEl;
+                this.targetType = 'thread';
+                const username = threadEl.dataset.contact || threadEl.dataset.username;
+                itemsHtml = `
+                    ${username ? `
+                    <button class="context-menu-item" data-action="view_profile" data-username="${username}">
+                        <i class="ph ph-user"></i> View Profile Card
+                    </button>` : ''}
+                    <button class="context-menu-item" data-action="pin_chat">
+                        <i class="ph ph-push-pin"></i> Pin to Top
+                    </button>
+                    <button class="context-menu-item" data-action="mute_chat">
+                        <i class="ph ph-bell-slash"></i> Mute Alerts
+                    </button>
+                    <div class="context-menu-divider"></div>
+                    <button class="context-menu-item danger" data-action="clear_thread">
+                        <i class="ph ph-broom"></i> Clear History
+                    </button>
+                `;
+            } else {
+                this.activeTarget = targetEl;
+                this.targetType = 'canvas';
+                itemsHtml = `
+                    <button class="context-menu-item" data-action="new_space">
+                        <i class="ph ph-broadcast"></i> Host New Space
+                    </button>
+                    <button class="context-menu-item" data-action="verify_e2ee">
+                        <i class="ph ph-shield-check"></i> E2EE Security Safety
+                    </button>
+                    <button class="context-menu-item" data-action="settings">
+                        <i class="ph ph-gear"></i> Settings Suite
+                    </button>
+                    <div class="context-menu-divider"></div>
+                    <button class="context-menu-item danger" data-action="clear_view">
+                        <i class="ph ph-trash"></i> Clear Chat View
+                    </button>
+                `;
+            }
+
+            container.innerHTML = itemsHtml;
+
+            // Bind actions
+            container.querySelectorAll('.context-menu-item').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const action = e.currentTarget.dataset.action;
+                    this.executeAction(action, e.currentTarget);
+                });
+            });
+
+            // Positioning within viewport
+            menu.style.left = `${Math.min(x, window.innerWidth - 210)}px`;
+            menu.style.top = `${Math.min(y, window.innerHeight - 240)}px`;
+            menu.classList.add('active');
+        },
+
+        close() {
+            ESCTRIX.elements.customContextMenu?.classList.remove('active');
+        },
+
+        executeAction(action, btnEl) {
+            this.close();
+            if (action === 'copy') {
+                const text = this.activeTarget?.querySelector('.message-text')?.textContent || '';
+                if (text) {
+                    navigator.clipboard.writeText(text);
+                    ESCTRIX.showToast('Message copied to clipboard! 📋');
+                }
+            } else if (action === 'reply') {
+                const text = this.activeTarget?.querySelector('.message-text')?.textContent || '';
+                if (ESCTRIX.elements.messageInput) {
+                    ESCTRIX.elements.messageInput.value = `> ${text}\n`;
+                    ESCTRIX.elements.messageInput.focus();
+                }
+            } else if (action === 'forward') {
+                const text = this.activeTarget?.querySelector('.message-text')?.textContent || '';
+                ESCTRIX.showToast('Forwarding message to active thread...');
+                if (ESCTRIX.elements.messageInput) {
+                    ESCTRIX.elements.messageInput.value = text;
+                    ESCTRIX.elements.messageInput.focus();
+                }
+            } else if (action === 'star') {
+                const text = this.activeTarget?.querySelector('.message-text')?.textContent || '';
+                if (text) {
+                    ESCTRIX.savedMessages.save(text);
+                    ESCTRIX.showToast('Message starred & saved to Cloud Vault! ⭐');
+                }
+            } else if (action === 'delete_msg') {
+                this.activeTarget?.remove();
+                ESCTRIX.showToast('Message removed from view.');
+            } else if (action === 'view_profile') {
+                const uname = btnEl?.dataset.username;
+                if (uname) {
+                    fetch(`/api/user/profile?username=${encodeURIComponent(uname)}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.profile) ESCTRIX.profileModal.open(data.profile);
+                        });
+                }
+            } else if (action === 'pin_chat') {
+                ESCTRIX.showToast('Thread pinned to top of workspace 📌');
+            } else if (action === 'mute_chat') {
+                ESCTRIX.showToast('Chat notifications muted 🔇');
+            } else if (action === 'clear_thread' || action === 'clear_view') {
+                ESCTRIX.chat.clearCurrentView();
+            } else if (action === 'new_space') {
+                ESCTRIX.modal.open('new-space-modal');
+            } else if (action === 'verify_e2ee') {
+                ESCTRIX.verification.openModal();
+            } else if (action === 'settings') {
+                ESCTRIX.settings.open();
+            }
+        }
+    },
+
+    // ─────────────────────────────────────────────────────────
+    // GLOWING QUANTUM CURSOR ENGINE
+    // ─────────────────────────────────────────────────────────
+    cursor: {
+        dot: null,
+        ring: null,
+        mouseX: window.innerWidth / 2,
+        mouseY: window.innerHeight / 2,
+        ringX: window.innerWidth / 2,
+        ringY: window.innerHeight / 2,
+
+        init() {
+            this.dot = document.getElementById('quantum-cursor-dot');
+            this.ring = document.getElementById('quantum-cursor-ring');
+            if (!this.dot || !this.ring) return;
+
+            window.addEventListener('mousemove', (e) => {
+                this.mouseX = e.clientX;
+                this.mouseY = e.clientY;
+                this.dot.style.transform = `translate(${this.mouseX}px, ${this.mouseY}px) translate(-50%, -50%)`;
+
+                // Interactive target hover detection
+                const target = e.target;
+                const isHoverable = target.closest('button, a, input, textarea, select, .chat-thread-item, .message, .pin-key, .wallpaper-card, .voice-speed-pill');
+                this.ring.classList.toggle('hovering', Boolean(isHoverable));
+            });
+
+            // Smooth trailing lerp animation for outer magnetic ring
+            const animate = () => {
+                this.ringX += (this.mouseX - this.ringX) * 0.18;
+                this.ringY += (this.mouseY - this.ringY) * 0.18;
+                if (this.ring) {
+                    this.ring.style.transform = `translate(${this.ringX}px, ${this.ringY}px) translate(-50%, -50%)`;
+                }
+                requestAnimationFrame(animate);
+            };
+            requestAnimationFrame(animate);
         }
     },
 

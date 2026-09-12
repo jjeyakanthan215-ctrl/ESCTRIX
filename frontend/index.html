@@ -417,12 +417,30 @@
                     <!-- AI Contextual Smart Reply Chips -->
                     <div id="smart-replies" class="smart-replies-bar hidden"></div>
 
-                    <!-- Voice Recording Overlay -->
+                    <!-- Voice Recording Overlay (WhatsApp-Style) -->
                     <div id="voice-recording-bar" class="voice-recording-bar hidden">
-                        <div class="voice-rec-pulse"></div>
-                        <span class="voice-rec-label"><i class="ph ph-microphone"></i> Recording Voice Note...</span>
-                        <span class="voice-rec-timer" id="voice-rec-timer">0:00</span>
-                        <span class="voice-rec-hint">Release or click send</span>
+                        <div class="voice-rec-left">
+                            <div class="voice-rec-pulse"></div>
+                            <span class="voice-rec-timer" id="voice-rec-timer">0:00</span>
+                            <div class="voice-live-waveform">
+                                <span></span><span></span><span></span><span></span><span></span>
+                            </div>
+                            <span class="voice-rec-status" id="voice-rec-status">Recording...</span>
+                        </div>
+                        <div class="voice-rec-actions">
+                            <button id="voice-discard-btn" class="voice-action-btn discard" title="Discard / Cancel Note">
+                                <i class="ph ph-trash"></i>
+                            </button>
+                            <button id="voice-pause-btn" class="voice-action-btn pause" title="Pause / Resume Recording">
+                                <i class="ph ph-pause"></i>
+                            </button>
+                            <button id="voice-preview-btn" class="voice-action-btn preview hidden" title="Listen / Preview Audio">
+                                <i class="ph ph-play"></i>
+                            </button>
+                            <button id="voice-send-btn" class="voice-action-btn send-voice" title="Send Voice Note">
+                                <i class="ph ph-paper-plane-right"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- File Transfer Progress Bar -->
@@ -1409,6 +1427,37 @@
             <button id="kicked-ok-btn" class="btn primary-btn full-width" style="margin-top:20px"><i class="ph ph-arrow-left"></i> Return</button>
         </div>
     </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- DYNAMIC CUSTOM CONTEXT MENU (WhatsApp-Style)-->
+    <!-- ══════════════════════════════════════════ -->
+    <div id="custom-context-menu" class="custom-context-menu">
+        <div id="context-menu-items"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- IN-APP GLASS DIALOG MODAL (No Native Alert)-->
+    <!-- ══════════════════════════════════════════ -->
+    <div id="custom-dialog-modal" class="custom-dialog-modal">
+        <div class="custom-dialog-card">
+            <div class="dialog-icon-halo" id="dialog-icon-halo">
+                <i class="ph ph-sparkle" id="dialog-icon"></i>
+            </div>
+            <h3 class="dialog-title" id="dialog-title">Dialog Title</h3>
+            <p class="dialog-message" id="dialog-message">Dialog message description.</p>
+            <input type="text" id="dialog-input" class="dialog-input hidden" placeholder="Enter value...">
+            <div class="dialog-actions">
+                <button id="dialog-cancel-btn" class="btn secondary-btn btn-sm">Cancel</button>
+                <button id="dialog-confirm-btn" class="btn primary-btn btn-sm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- GLOWING QUANTUM CURSOR                      -->
+    <!-- ══════════════════════════════════════════ -->
+    <div id="quantum-cursor-dot" class="quantum-cursor-dot"></div>
+    <div id="quantum-cursor-ring" class="quantum-cursor-ring"></div>
 
     <!-- Scripts -->
     <script src="/static/js/webrtc.js"></script>
