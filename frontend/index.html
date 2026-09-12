@@ -8,11 +8,28 @@
     <meta name="theme-color" content="#070b14">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="/static/icon-192.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="/static/css/style.css?v=2.1.0">
     <link rel="manifest" href="/manifest.json">
+    <script>
+        /* ── Automated Self-Healing Cache Cleaner (Purges stale PWA cache on load) ── */
+        (function() {
+            var CURRENT_VER = '2.1.0-quantum';
+            var lastVer = localStorage.getItem('esctrix_cache_ver');
+            if (lastVer !== CURRENT_VER) {
+                localStorage.setItem('esctrix_cache_ver', CURRENT_VER);
+                if (window.caches) {
+                    caches.keys().then(function(names) {
+                        names.forEach(function(n) { caches.delete(n); });
+                    });
+                }
+                if (navigator.serviceWorker) {
+                    navigator.serviceWorker.getRegistrations().then(function(regs) {
+                        regs.forEach(function(r) { r.unregister(); });
+                    });
+                }
+            }
+        })();
+    </script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
         /* ── Critical In-Head Guard Styles (Prevents FOUC & oversize images) ── */

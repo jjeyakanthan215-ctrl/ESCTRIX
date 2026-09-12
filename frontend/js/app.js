@@ -3083,7 +3083,9 @@ const ESCTRIX = {
 
     initPWA() {
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').catch(() => {});
+            navigator.serviceWorker.register('/sw.js?v=2.1.0').then(reg => {
+                reg.update();
+            }).catch(() => {});
         }
     }
 };
