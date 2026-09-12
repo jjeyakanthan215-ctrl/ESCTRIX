@@ -237,22 +237,24 @@ img {
 /* ══════════════════════════════════════════════════ */
 /* INTRODUCTION / HERO SHOWCASE SCREEN                */
 /* ══════════════════════════════════════════════════ */
-/* ══════════════════════════════════════════════════ */
-/* INTRODUCTION / HERO SHOWCASE SCREEN                */
-/* ══════════════════════════════════════════════════ */
 .intro-container {
     width: 100%;
+    max-width: 100%;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    align-items: center;
     position: relative;
     z-index: 10;
     padding-bottom: 60px;
+    overflow-x: hidden;
+    box-sizing: border-box;
 }
 
 /* ── Top Navigation Bar (Full-Width Sticky Glass) ── */
 .intro-nav-bar {
     width: 100%;
+    max-width: 100%;
     padding: 16px 36px;
     display: flex;
     align-items: center;
@@ -265,6 +267,7 @@ img {
     -webkit-backdrop-filter: blur(24px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.07);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    box-sizing: border-box;
 }
 
 .intro-nav-brand {
@@ -342,18 +345,25 @@ img {
 
 /* ── Hero Center Section ── */
 .intro-hero-top {
+    width: 100%;
     max-width: 860px;
     margin: 0 auto;
-    padding: 48px 24px 36px;
+    padding: 44px 20px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
+    box-sizing: border-box;
 }
 
 .intro-badge-row {
     display: flex;
     justify-content: center;
+    align-items: center;
     gap: 10px;
     flex-wrap: wrap;
     margin-bottom: 22px;
+    width: 100%;
 }
 
 .intro-pill-badge {
@@ -381,6 +391,7 @@ img {
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
 .intro-logo-img {
@@ -396,6 +407,8 @@ img {
     letter-spacing: -0.5px;
     margin-bottom: 16px;
     line-height: 1.15;
+    text-align: center;
+    width: 100%;
 }
 
 .quantum-gradient-text {
@@ -413,13 +426,16 @@ img {
     max-width: 720px;
     margin-left: auto;
     margin-right: auto;
+    text-align: center;
+    width: 100%;
 }
 
 /* ── Active User Identity Card ── */
 .intro-user-card {
-    max-width: 620px;
-    margin: 0 auto 24px;
-    padding: 16px 22px;
+    width: 100%;
+    max-width: 580px;
+    margin: 0 auto 22px;
+    padding: 16px 20px;
     display: flex;
     align-items: center;
     text-align: left;
@@ -431,6 +447,7 @@ img {
     -webkit-backdrop-filter: blur(16px);
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
     transition: all 0.3s ease;
+    box-sizing: border-box;
 }
 
 .intro-user-avatar {
@@ -487,6 +504,7 @@ img {
     gap: 14px;
     flex-wrap: wrap;
     margin-bottom: 16px;
+    width: 100%;
 }
 
 .intro-btn-cta {
@@ -501,16 +519,50 @@ img {
     font-size: 0.82rem;
     color: var(--text-muted);
     margin-top: 10px;
+    text-align: center;
+}
+
+/* ── Features Showcase Grid ── */
+.intro-section-title {
+    width: 100% !important;
+    max-width: 860px !important;
+    margin: 44px auto 28px !important;
+    padding: 0 24px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    align-self: center !important;
+    box-sizing: border-box !important;
+}
+
+.intro-section-title .badge-pill {
+    align-self: center !important;
+    margin: 0 auto !important;
+    display: inline-flex !important;
+}
+
+.intro-section-title h2 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    margin-top: 14px;
+    letter-spacing: -0.3px;
+    text-align: center !important;
+    width: 100% !important;
+    line-height: 1.25;
 }
 
 .intro-features-grid {
-    max-width: 1280px;
+    width: 100%;
+    max-width: 1240px;
     margin: 0 auto 54px;
-    padding: 0 32px;
+    padding: 0 24px;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 22px;
     text-align: left;
+    box-sizing: border-box;
 }
 
 .intro-feature-card {
@@ -524,6 +576,7 @@ img {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
 }
 
 .intro-feature-card:hover {
@@ -545,6 +598,7 @@ img {
     font-size: 1.5rem;
     color: var(--accent);
     margin-bottom: 18px;
+    flex-shrink: 0;
 }
 
 .intro-feature-card h3 {
@@ -554,18 +608,10 @@ img {
     color: var(--text-main);
 }
 
-.intro-section-title {
-    text-align: center;
-    max-width: 700px;
-    margin: 0 auto 32px;
-    padding: 0 20px;
-}
-
-.intro-section-title h2 {
-    font-size: 2rem;
-    font-weight: 800;
-    margin-top: 10px;
-    letter-spacing: -0.3px;
+.intro-feature-card p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.55;
 }
 
 .intro-security-banner {
@@ -899,7 +945,7 @@ img {
 }
 
 /* ══════════════════════════════════════════════════ */
-/* TELEGRAM WORKSPACE SHELL                           */
+/* QUANTUM WORKSPACE SHELL                            */
 /* ══════════════════════════════════════════════════ */
 .telegram-shell {
     width: 100vw;
@@ -916,7 +962,7 @@ img {
     }
 }
 
-/* ── Telegram Left Sidebar ── */
+/* ── Workspace Left Sidebar ── */
 .telegram-sidebar {
     background: rgba(10, 15, 29, 0.88);
     border-right: 1px solid var(--panel-border);
@@ -1446,7 +1492,7 @@ img {
     margin-top: auto;
 }
 
-/* Telegram Message Bubbles */
+/* Quantum Message Bubbles */
 .message {
     max-width: 68%;
     padding: 11px 16px;
@@ -1885,7 +1931,7 @@ pre.code-block {
 }
 
 /* ══════════════════════════════════════════════════ */
-/* TELEGRAM PROFILE DRAWER                            */
+/* QUANTUM PROFILE DRAWER                             */
 /* ══════════════════════════════════════════════════ */
 .profile-drawer {
     position: fixed;
@@ -2589,208 +2635,8 @@ input:checked + .slider:before {
 }
 
 /* ══════════════════════════════════════════════════ */
-/* INTRO ENHANCEMENTS & ADMIN CONTROL BUTTONS        */
+/* ADMIN & CONTROL BUTTON UTILITIES                   */
 /* ══════════════════════════════════════════════════ */
-.intro-nav-bar {
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 18px 48px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(6, 10, 20, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    margin: 0;
-}
-
-.intro-nav-brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.nav-brand-logo {
-    width: 32px;
-    height: 32px;
-    object-fit: contain;
-}
-
-.nav-brand-title {
-    font-weight: 800;
-    letter-spacing: 0.5px;
-    font-size: 1.15rem;
-}
-
-.nav-live-pill {
-    font-size: 0.72rem;
-    font-weight: 700;
-    padding: 4px 12px;
-    border-radius: 12px;
-    background: rgba(16, 185, 129, 0.15);
-    border: 1px solid rgba(16, 185, 129, 0.35);
-    color: var(--success);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.intro-nav-links {
-    display: flex;
-    gap: 28px;
-    align-items: center;
-}
-
-.intro-nav-link {
-    color: var(--text-muted);
-    text-decoration: none;
-    font-size: 0.92rem;
-    font-weight: 600;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.intro-nav-link:hover {
-    color: var(--accent);
-}
-
-.intro-nav-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.intro-user-card {
-    max-width: 540px;
-    margin: 18px auto;
-    padding: 12px 20px;
-    border-radius: 14px;
-    background: rgba(6, 214, 199, 0.08);
-    border: 1px solid rgba(6, 214, 199, 0.3);
-    box-shadow: 0 4px 20px rgba(6, 214, 199, 0.12);
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    text-align: left;
-    backdrop-filter: blur(8px);
-}
-
-.intro-user-avatar {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), var(--accent));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    font-size: 1.1rem;
-    color: #fff;
-    flex-shrink: 0;
-    box-shadow: 0 0 12px var(--accent-glow);
-}
-
-.intro-user-welcome {
-    font-size: 0.92rem;
-    color: var(--text-main);
-}
-
-.intro-user-sub {
-    font-size: 0.78rem;
-    color: var(--text-muted);
-    margin-top: 2px;
-}
-
-.intro-footnote {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    margin-top: 14px;
-}
-
-.intro-section-title {
-    text-align: center;
-    margin: 48px 0 24px;
-}
-
-.intro-section-title h2 {
-    font-size: 1.8rem;
-    font-weight: 800;
-    margin-top: 8px;
-    letter-spacing: -0.5px;
-}
-
-.intro-security-banner {
-    margin-top: 36px;
-    padding: 22px 28px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(6, 214, 199, 0.08));
-    border: 1px solid rgba(6, 214, 199, 0.25);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-}
-
-.security-banner-left {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-
-.security-banner-left .banner-icon {
-    font-size: 2.2rem;
-    color: var(--accent);
-    flex-shrink: 0;
-}
-
-.security-banner-left h4 {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--text-main);
-}
-
-.security-banner-left p {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    margin-top: 4px;
-}
-
-.security-banner-badge code {
-    background: rgba(0, 0, 0, 0.4);
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-family: var(--font-mono);
-    color: var(--accent);
-    border: 1px solid rgba(6, 214, 199, 0.3);
-    font-size: 0.82rem;
-}
-
-.intro-bottom-cta {
-    text-align: center;
-    margin-top: 48px;
-    padding: 36px 24px;
-    border-radius: 20px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(139, 92, 246, 0.12));
-    border: 1px solid rgba(139, 92, 246, 0.3);
-}
-
-.intro-bottom-cta h3 {
-    font-size: 1.5rem;
-    font-weight: 800;
-    margin-bottom: 8px;
-}
-
-.intro-bottom-cta p {
-    color: var(--text-muted);
-    font-size: 0.95rem;
-    margin-bottom: 20px;
-}
-
 .info-outline-btn {
     border: 1px solid var(--accent);
     color: var(--accent);
@@ -2837,21 +2683,8 @@ input:checked + .slider:before {
     background: rgba(239, 68, 68, 0.15);
 }
 
-@media (max-width: 768px) {
-    .intro-nav-links {
-        display: none;
-    }
-    .intro-security-banner {
-        flex-direction: column;
-        text-align: center;
-    }
-    .security-banner-left {
-        flex-direction: column;
-    }
-}
-
 /* ══════════════════════════════════════════════════ */
-/* INSTAGRAM-STYLE PROFILE & QR NAMETAG               */
+/* QUANTUM USER PROFILE & QR NAMETAG                  */
 /* ══════════════════════════════════════════════════ */
 .profile-modal-content {
     max-width: 440px;
@@ -3460,7 +3293,7 @@ input:checked + .slider:before {
 }
 
 /* ══════════════════════════════════════════════════ */
-/* TELEGRAM SAFETY EMOJI FINGERPRINT                  */
+/* QUANTUM SAFETY EMOJI FINGERPRINT                   */
 /* ══════════════════════════════════════════════════ */
 .safety-emojis-row {
     display: flex;
@@ -3479,7 +3312,7 @@ input:checked + .slider:before {
 }
 
 /* ══════════════════════════════════════════════════ */
-/* WHATSAPP-STYLE MESSAGE TICKS & VOICE SPEED BADGE   */
+/* QUANTUM MESSAGE TICKS & VOICE SPEED BADGE          */
 /* ══════════════════════════════════════════════════ */
 .msg-status-tick {
     display: inline-flex;
@@ -3498,7 +3331,7 @@ input:checked + .slider:before {
 }
 
 .tick-read {
-    color: #38bdf8 !important; /* WhatsApp signature cyan/blue read tick */
+    color: #38bdf8 !important; /* Quantum signature cyan read tick */
 }
 
 .voice-speed-pill {
@@ -3519,7 +3352,7 @@ input:checked + .slider:before {
 }
 
 /* ══════════════════════════════════════════════════ */
-/* WHATSAPP-STYLE VOICE NOTE RECORDING HUD            */
+/* DYNAMIC VOICE NOTE RECORDING HUD                   */
 /* ══════════════════════════════════════════════════ */
 .voice-recording-bar {
     display: flex;
@@ -3646,7 +3479,7 @@ input:checked + .slider:before {
 }
 
 /* ══════════════════════════════════════════════════ */
-/* DYNAMIC CUSTOM CONTEXT MENU (WhatsApp / Telegram)  */
+/* DYNAMIC CUSTOM CONTEXT MENU                        */
 /* ══════════════════════════════════════════════════ */
 .custom-context-menu {
     position: fixed;
@@ -3972,6 +3805,18 @@ input:checked + .slider:before {
     .intro-btn-cta {
         padding: 13px 24px;
         font-size: 0.95rem;
+    }
+
+    .intro-section-title {
+        margin: 36px auto 20px;
+        padding: 0 16px;
+        text-align: center;
+    }
+
+    .intro-section-title h2 {
+        font-size: 1.55rem;
+        line-height: 1.25;
+        text-align: center;
     }
 
     .intro-features-grid {

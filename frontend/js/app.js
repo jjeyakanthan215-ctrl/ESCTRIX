@@ -1,5 +1,5 @@
 /**
- * ESCTRIX Quantum — Futuristic Telegram P2P Messenger & AI Suite
+ * ESCTRIX Quantum — Futuristic Decentralized P2P Messenger & AI Suite
  * Client-Side Engine: Permanent Identity, Aura AI Companion, Vibe Analyzer,
  * Web Audio Synthesizer, Zero-Knowledge E2EE, and WebRTC Mesh Calling.
  */
@@ -89,7 +89,7 @@ const ESCTRIX = {
             'e2ee-verify-btn', 'chat-menu-btn', 'chat-dropdown-menu', 'menu-vanish-btn', 'menu-burn-btn',
             'menu-summarize-btn', 'menu-export-btn', 'menu-clear-btn',
             'messages-viewport', 'messages-list', 'typing-indicator', 'typing-avatar', 'typing-name',
-            // WhatsApp-Style Voice Recording HUD
+            // Voice Recording HUD
             'voice-recording-bar', 'voice-rec-timer', 'voice-rec-status',
             'voice-discard-btn', 'voice-pause-btn', 'voice-preview-btn', 'voice-send-btn',
             // Context Menu & Custom Dialog & Cursor
@@ -125,11 +125,11 @@ const ESCTRIX = {
             'intro-user-card', 'intro-user-avatar', 'intro-user-displayname', 'intro-user-handle',
             'intro-user-accountid', 'intro-btn-label', 'intro-switch-account-btn',
             'nav-to-intro-btn',
-            // Instagram Profile Card
+            // Quantum Profile Card
             'user-profile-modal', 'user-profile-close-btn', 'up-avatar-halo', 'up-avatar', 'up-displayname',
             'up-username', 'up-account-id', 'up-bio', 'up-action-dm', 'up-action-voice', 'up-action-video',
             'up-action-add-contact', 'up-add-contact-label', 'up-action-share-qr',
-            // Instagram QR Nametag
+            // Quantum QR Nametag
             'qr-nametag-modal', 'qr-nametag-close-btn', 'nametag-card', 'nametag-avatar', 'nametag-displayname',
             'nametag-username', 'nametag-qr-img', 'nametag-account-id', 'nametag-copy-link-btn',
             // Settings Suite
@@ -441,7 +441,7 @@ const ESCTRIX = {
         e.clearMediaCacheBtn?.addEventListener('click', () => this.settings.clearMediaCache());
         e.clearChatHistoryBtn?.addEventListener('click', () => this.settings.clearChatHistory());
 
-        // Instagram User Profile Modal Actions
+        // User Profile Modal Actions
         e.userProfileCloseBtn?.addEventListener('click', () => this.profileModal.close());
         e.upActionDm?.addEventListener('click', () => this.profileModal.startDM());
         e.upActionVoice?.addEventListener('click', () => this.profileModal.startCall('audio'));
@@ -449,7 +449,7 @@ const ESCTRIX = {
         e.upActionAddContact?.addEventListener('click', () => this.profileModal.toggleContact());
         e.upActionShareQr?.addEventListener('click', () => this.profileModal.openNametag(this.profileModal.currentUser));
 
-        // Instagram QR Nametag Actions
+        // QR Nametag Actions
         e.qrNametagCloseBtn?.addEventListener('click', () => this.modal.close('qr-nametag-modal'));
         e.nametagCopyLinkBtn?.addEventListener('click', () => this.profileModal.copyNametagLink());
 
@@ -521,7 +521,7 @@ const ESCTRIX = {
             });
         });
 
-        // Voice Note Recorder Controls (WhatsApp-Style)
+        // Voice Note Recorder Controls
         e.voiceNoteBtn?.addEventListener('click', () => this.voice.start());
         e.voiceDiscardBtn?.addEventListener('click', () => this.voice.discard());
         e.voicePauseBtn?.addEventListener('click', () => this.voice.togglePause());
@@ -713,7 +713,7 @@ const ESCTRIX = {
     },
 
     // ─────────────────────────────────────────────────────────
-    // INSTAGRAM USER PROFILE & NAMETAG MODULE
+    // QUANTUM USER PROFILE & NAMETAG MODULE
     // ─────────────────────────────────────────────────────────
     profileModal: {
         currentUser: null,
@@ -1523,7 +1523,7 @@ const ESCTRIX = {
                 </div>
             `).join('');
 
-            // Bind click to open Instagram Profile Card
+            // Bind click to open Profile Card
             list.querySelectorAll('.user-search-result').forEach(row => {
                 row.addEventListener('click', () => {
                     const targetUname = row.dataset.username;
@@ -1807,7 +1807,7 @@ const ESCTRIX = {
     },
 
     // ─────────────────────────────────────────────────────────
-    // WHATSAPP-STYLE ADVANCED VOICE NOTE MODULE
+    // ADVANCED VOICE NOTE MODULE
     // ─────────────────────────────────────────────────────────
     voice: {
         stream: null,
@@ -2539,7 +2539,7 @@ const ESCTRIX = {
                 }
             }
 
-            // Generate Telegram-style 4 safety emojis
+            // Generate Quantum 4 safety emojis
             const emojiPool = ['⚡', '🚀', '🌌', '🔒', '💎', '🛡️', '🛰️', '🔥', '🔮', '🎯', '✨', '🪐', '💫', '🔑', '🧬', '🛸'];
             const absHash = Math.abs(hash);
             const e1 = emojiPool[absHash % emojiPool.length];
@@ -2831,7 +2831,7 @@ const ESCTRIX = {
     },
 
     // ─────────────────────────────────────────────────────────
-    // DYNAMIC CUSTOM CONTEXT MENU & LONG-PRESS (WhatsApp-Style)
+    // DYNAMIC CUSTOM CONTEXT MENU & LONG-PRESS
     // ─────────────────────────────────────────────────────────
     contextMenu: {
         activeTarget: null,

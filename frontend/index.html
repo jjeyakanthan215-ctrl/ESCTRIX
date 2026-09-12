@@ -3,17 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ESCTRIX Quantum — Futuristic Telegram P2P Messenger & AI Suite</title>
-    <meta name="description" content="ESCTRIX Quantum: Futuristic Telegram-style peer-to-peer messaging, Zero-Knowledge E2EE, WebRTC audio/video calls, and Aura AI Neural Companion.">
+    <title>ESCTRIX Quantum — Futuristic Decentralized P2P Messenger & AI Suite</title>
+    <meta name="description" content="ESCTRIX Quantum: Futuristic decentralized peer-to-peer messaging, Zero-Knowledge E2EE, WebRTC audio/video calls, and Aura AI Neural Copilot.">
     <meta name="theme-color" content="#070b14">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="stylesheet" href="/static/css/style.css?v=2.1.0">
+
+    <!-- Open Graph & Social Link Sharing Cards -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="ESCTRIX Quantum">
+    <meta property="og:url" content="https://esctrix.onrender.com/">
+    <meta property="og:title" content="ESCTRIX Quantum — Futuristic Decentralized P2P Messenger & AI Suite">
+    <meta property="og:description" content="Decentralized peer-to-peer messaging platform with Zero-Knowledge E2EE, WebRTC mesh media, and Aura AI Neural Copilot.">
+    <meta property="og:image" content="https://esctrix.onrender.com/static/logo.png">
+
+    <!-- Twitter / X Link Previews -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="ESCTRIX Quantum — Futuristic Decentralized P2P Messenger & AI Suite">
+    <meta name="twitter:description" content="Decentralized peer-to-peer messaging platform with Zero-Knowledge E2EE, WebRTC mesh media, and Aura AI Neural Copilot.">
+    <meta name="twitter:image" content="https://esctrix.onrender.com/static/logo.png">
+
+    <link rel="stylesheet" href="/static/css/style.css?v=2.1.4">
     <link rel="manifest" href="/manifest.json">
     <script>
         /* ── Automated Self-Healing Cache Cleaner (Purges stale PWA cache on load) ── */
         (function() {
-            var CURRENT_VER = '2.1.0-quantum';
+            var CURRENT_VER = '2.1.4-quantum';
             var lastVer = localStorage.getItem('esctrix_cache_ver');
             if (lastVer !== CURRENT_VER) {
                 localStorage.setItem('esctrix_cache_ver', CURRENT_VER);
@@ -100,7 +115,7 @@
                     <div class="intro-badge-row">
                         <span class="intro-pill-badge"><i class="ph ph-shield-check"></i> ZERO-KNOWLEDGE E2EE</span>
                         <span class="intro-pill-badge"><i class="ph ph-sparkle"></i> AURA NEURAL AI</span>
-                        <span class="intro-pill-badge"><i class="ph ph-telegram-logo"></i> TELEGRAM-STYLE 2-PANE</span>
+                        <span class="intro-pill-badge"><i class="ph ph-layout"></i> DECENTRALIZED 2-PANE</span>
                     </div>
 
                     <div class="intro-logo-halo">
@@ -143,8 +158,8 @@
 
                 <div class="intro-features-grid">
                     <div class="intro-feature-card">
-                        <div class="feature-icon-box"><i class="ph ph-telegram-logo"></i></div>
-                        <h3>Telegram 2-Pane Architecture</h3>
+                        <div class="feature-icon-box"><i class="ph ph-layout"></i></div>
+                        <h3>Fluid Dual-Pane Architecture</h3>
                         <p>Fluid, dual-pane desktop & mobile messenger with folder categories, instant contact search, voice notes with interactive SVG waveforms, and message reactions.</p>
                     </div>
                     <div class="intro-feature-card">
@@ -251,13 +266,13 @@
 
 
         <!-- ══════════════════════════════════════════ -->
-        <!-- SCREEN 2: TELEGRAM-STYLE WORKSPACE SHELL  -->
+        <!-- SCREEN 2: DUAL-PANE WORKSPACE SHELL        -->
         <!-- ══════════════════════════════════════════ -->
         <section id="dashboard-screen" class="screen">
             <div class="telegram-shell glass-panel">
 
                 <!-- ────────────────────────────────────── -->
-                <!-- LEFT PANE: TELEGRAM SIDEBAR           -->
+                <!-- LEFT PANE: WORKSPACE SIDEBAR           -->
                 <!-- ────────────────────────────────────── -->
                 <aside class="telegram-sidebar" id="telegram-sidebar">
                     <!-- Sidebar Top Header -->
@@ -280,7 +295,7 @@
                         </button>
                     </div>
 
-                    <!-- Category Tabs (Telegram Folders) -->
+                    <!-- Category Tabs (Workspace Folders) -->
                     <div class="telegram-folder-tabs">
                         <button class="folder-tab active" data-folder="all">All</button>
                         <button class="folder-tab" data-folder="direct">Direct</button>
@@ -447,7 +462,7 @@
                     <!-- AI Contextual Smart Reply Chips -->
                     <div id="smart-replies" class="smart-replies-bar hidden"></div>
 
-                    <!-- Voice Recording Overlay (WhatsApp-Style) -->
+                    <!-- Voice Recording Overlay -->
                     <div id="voice-recording-bar" class="voice-recording-bar hidden">
                         <div class="voice-rec-left">
                             <div class="voice-rec-pulse"></div>
@@ -485,7 +500,7 @@
                         <span id="progress-percent" class="progress-pct">0%</span>
                     </div>
 
-                    <!-- Bottom Input Bar (Telegram-Style) -->
+                    <!-- Bottom Input Bar -->
                     <footer class="chat-input-footer">
                         <input type="file" id="file-input" style="display:none">
 
@@ -567,7 +582,7 @@
                     </div>
                     <div style="display:flex; gap:10px; align-items:center;">
                         <button id="admin-enter-chat-btn" class="btn primary-btn">
-                            <i class="ph ph-chat-circle-dots"></i> Enter Telegram Workspace
+                            <i class="ph ph-chat-circle-dots"></i> Enter Quantum Workspace
                         </button>
                         <button id="admin-back-intro-btn" class="btn secondary-btn">
                             <i class="ph ph-house"></i> Overview
@@ -656,7 +671,7 @@
 
     <!-- ══════════════════════════════════════════ -->
     <!-- ══════════════════════════════════════════ -->
-    <!-- INSTAGRAM-STYLE USER PROFILE MODAL         -->
+    <!-- QUANTUM USER PROFILE MODAL                 -->
     <!-- ══════════════════════════════════════════ -->
     <div id="user-profile-modal" class="modal hidden">
         <div class="modal-content glass-panel profile-modal-content">
@@ -676,7 +691,7 @@
                 </div>
                 <p class="profile-bio-text" id="up-bio">Decentralized & Quantum Secured 🚀</p>
                 
-                <!-- Instagram-style Action Row -->
+                <!-- Profile Action Row -->
                 <div class="profile-action-grid">
                     <button id="up-action-dm" class="btn primary-btn btn-sm">
                         <i class="ph ph-chat-circle-dots"></i> Message
@@ -703,7 +718,7 @@
 
 
     <!-- ══════════════════════════════════════════ -->
-    <!-- INSTAGRAM-STYLE QR NAMETAG MODAL           -->
+    <!-- QUANTUM QR NAMETAG MODAL                   -->
     <!-- ══════════════════════════════════════════ -->
     <div id="qr-nametag-modal" class="modal hidden">
         <div class="modal-content glass-panel qr-nametag-content">
@@ -899,7 +914,7 @@
                             </div>
                             <div class="wallpaper-card" data-wallpaper="doodle-pattern">
                                 <div class="wp-preview wp-doodle"></div>
-                                <span>WhatsApp Doodle</span>
+                                <span>Quantum Doodle</span>
                             </div>
                             <div class="wallpaper-card" data-wallpaper="oled-black">
                                 <div class="wp-preview wp-oled"></div>
@@ -1402,12 +1417,12 @@
     <div id="e2ee-modal" class="modal-overlay hidden">
         <div class="modal-card glass-panel" style="max-width:380px; text-align:center;">
             <i class="ph ph-shield-check" style="font-size:2.6rem; color:#10b981;"></i>
-            <h3 style="margin:12px 0 4px">Telegram-Grade E2EE Verified</h3>
+            <h3 style="margin:12px 0 4px">Quantum-Grade Zero-Knowledge E2EE</h3>
             <p style="font-size:0.82rem; opacity:0.7; margin-bottom:12px">
                 Compare these 4 safety emojis with your peer. If they match, your cryptographic channel is end-to-end encrypted with zero man-in-the-middle risk.
             </p>
             
-            <!-- 4-Emoji Telegram-style Safety Fingerprint -->
+            <!-- 4-Emoji Quantum Safety Fingerprint -->
             <div class="safety-emojis-row" id="safety-emojis-row">
                 <span class="safety-emoji-badge" id="safety-emoji-1">🔒</span>
                 <span class="safety-emoji-badge" id="safety-emoji-2">🛡️</span>
@@ -1459,7 +1474,7 @@
     </div>
 
     <!-- ══════════════════════════════════════════ -->
-    <!-- DYNAMIC CUSTOM CONTEXT MENU (WhatsApp-Style)-->
+    <!-- DYNAMIC CUSTOM CONTEXT MENU                -->
     <!-- ══════════════════════════════════════════ -->
     <div id="custom-context-menu" class="custom-context-menu" style="display: none;">
         <div id="context-menu-items"></div>
@@ -1490,7 +1505,7 @@
     <div id="quantum-cursor-ring" class="quantum-cursor-ring"></div>
 
     <!-- Scripts with Cache Busters -->
-    <script src="/static/js/webrtc.js?v=2.1.0"></script>
-    <script src="/static/js/app.js?v=2.1.0"></script>
+    <script src="/static/js/webrtc.js?v=2.1.1"></script>
+    <script src="/static/js/app.js?v=2.1.1"></script>
 </body>
 </html>

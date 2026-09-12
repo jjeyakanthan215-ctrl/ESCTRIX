@@ -1,18 +1,18 @@
-# ESCTRIX Quantum — Futuristic Telegram-Style P2P Messenger & AI Suite
+# ESCTRIX Quantum — Futuristic Decentralized P2P Messenger & AI Suite
 
 [![Render Deployment](https://img.shields.io/badge/Render-Deployed-brightgreen)](https://esctrix.onrender.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Security: Zero--Knowledge](https://img.shields.io/badge/Security-Zero--Knowledge%20E2EE-blueviolet)](https://github.com/jjeyakanthan215-ctrl/ESCTRIX)
 
-**ESCTRIX Quantum** is a next-generation decentralized communication platform combining the familiar ease of **Telegram** with **futuristic Cyber-Glass aesthetics**, **Zero-Knowledge client-side end-to-end encryption (E2EE)**, and an integrated **Neural AI Suite (Aura AI)**.
+**ESCTRIX Quantum** is a next-generation decentralized communication platform combining **futuristic Cyber-Glass aesthetics**, **Zero-Knowledge client-side end-to-end encryption (E2EE)**, and an integrated **Neural AI Suite (Aura AI)**.
 
 ---
 
 ## ⚡ Key Highlights
 
-### 1. Futuristic Telegram-Style Interface (Cyber-Glass)
+### 1. Futuristic Dual-Pane Interface (Cyber-Glass)
 - **Responsive 2-Pane Architecture**: Left sidebar (Search, Category Folders, Pinned Bots, Chat List) + Right main chat stream.
-- **Telegram Message Bubbles**: Outgoing/incoming bubble tails, timestamps, and read checkmarks (`✓✓`).
+- **Quantum Message Bubbles**: Outgoing/incoming bubble tails, timestamps, and read checkmarks (`✓✓`).
 - **Interactive Voice Note Waveform**: Dynamic SVG audio visualizer with variable playback speed selector (`1.0x`, `1.5x`, `2.0x`).
 - **Web Audio Synthesizer**: Subtle sci-fi sound feedback (send chirps, receive chimes, call pulses) — toggleable in settings.
 - **Interactive Command Palette**: Press `Ctrl+K` or type `/` in the chat input for instant action shortcuts (`/ai`, `/polish`, `/translate`, `/summarize`, `/call`, `/burn`, `/vanish`, `/export`).

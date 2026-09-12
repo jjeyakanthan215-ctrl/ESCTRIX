@@ -103,7 +103,7 @@ def ai_chat(user_message: str, chat_history: Optional[List[Dict[str, str]]] = No
         return (
             "I am **Aura AI** — the built-in intelligent neural co-pilot for **ESCTRIX Quantum**. "
             "I provide real-time smart replies, vibe analysis, language translation, code assistance, "
-            "and instant privacy-first conversational insights directly inside your Telegram-style workspace."
+            "and instant privacy-first conversational insights directly inside your quantum workspace."
         )
 
     if any(w in msg for w in ["security", "e2ee", "privacy", "safe", "encrypt"]):

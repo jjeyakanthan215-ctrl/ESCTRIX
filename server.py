@@ -505,7 +505,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                 provided_pin    = message.get("data", {}).get("pin")
                 client_username = message.get("data", {}).get("username")
 
-                # Auto-instantiate direct 1-to-1 rooms (WhatsApp/Instagram DM style)
+                # Auto-instantiate direct 1-to-1 rooms (P2P direct DM style)
                 if space_name and (space_name.startswith("Direct-") or space_name.startswith("DM-")):
                     if not manager.get_room(space_name):
                         manager.create_room(space_name, client_username, "")
