@@ -68,6 +68,7 @@ class ProfileUpdate(BaseModel):
     display_name: str
     bio: str = ''
     avatar_color: str = ''
+    avatar_photo: Optional[str] = None
 
 
 class ContactAdd(BaseModel):
@@ -226,7 +227,7 @@ async def fetch_user_profile(username: str):
 
 @app.post("/api/user/profile/update")
 async def update_profile(data: ProfileUpdate):
-    success = update_user_profile(data.username, data.display_name, data.bio, data.avatar_color)
+    success = update_user_profile(data.username, data.display_name, data.bio, data.avatar_color, data.avatar_photo)
     if success:
         updated = get_user_profile(data.username)
         return {"status": "success", "profile": updated}

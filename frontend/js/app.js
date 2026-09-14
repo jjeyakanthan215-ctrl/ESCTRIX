@@ -83,11 +83,11 @@ const ESCTRIX = {
             'telegram-sidebar', 'telegram-chat-pane', 'chat-search-input', 'search-clear-btn',
             'new-space-btn', 'chat-threads-list', 'dynamic-chat-threads', 'thread-aura-ai', 'thread-saved-messages',
             'drawer-open-btn', 'footer-user-chip', 'footer-user-avatar', 'footer-user-name', 'footer-user-id',
-            'cmd-palette-btn', 'admin-panel-btn', 'admin-back-btn',
+            'footer-settings-btn', 'cmd-palette-btn', 'admin-panel-btn', 'admin-back-btn',
             'back-to-threads-btn', 'active-chat-avatar', 'active-chat-dot', 'active-chat-name', 'active-chat-status',
             'vibe-indicator-badge', 'vibe-emoji', 'vibe-text', 'video-call-btn', 'screen-share-btn',
-            'e2ee-verify-btn', 'chat-menu-btn', 'chat-dropdown-menu', 'menu-vanish-btn', 'menu-burn-btn',
-            'menu-summarize-btn', 'menu-export-btn', 'menu-clear-btn',
+            'e2ee-verify-btn', 'chat-menu-btn', 'chat-dropdown-menu', 'menu-peer-profile-btn', 'menu-settings-btn',
+            'menu-vanish-btn', 'menu-burn-btn', 'menu-summarize-btn', 'menu-export-btn', 'menu-clear-btn',
             'messages-viewport', 'messages-list', 'typing-indicator', 'typing-avatar', 'typing-name',
             // Voice Recording HUD
             'voice-recording-bar', 'voice-rec-timer', 'voice-rec-status',
@@ -127,14 +127,16 @@ const ESCTRIX = {
             'nav-to-intro-btn',
             // Quantum Profile Card
             'user-profile-modal', 'user-profile-close-btn', 'up-avatar-halo', 'up-avatar', 'up-displayname',
-            'up-username', 'up-account-id', 'up-bio', 'up-action-dm', 'up-action-voice', 'up-action-video',
-            'up-action-add-contact', 'up-add-contact-label', 'up-action-share-qr',
+            'up-username', 'up-account-id', 'up-bio', 'up-peer-actions', 'up-own-actions', 'up-own-edit-btn',
+            'up-action-dm', 'up-action-voice', 'up-action-video', 'up-action-add-contact', 'up-add-contact-label', 'up-action-share-qr',
             // Quantum QR Nametag
             'qr-nametag-modal', 'qr-nametag-close-btn', 'nametag-card', 'nametag-avatar', 'nametag-displayname',
             'nametag-username', 'nametag-qr-img', 'nametag-account-id', 'nametag-copy-link-btn',
             // Settings Suite
             'settings-suite-modal', 'settings-close-btn', 'settings-admin-tab-btn', 'settings-avatar-halo',
-            'settings-avatar-text', 'settings-avatar-cycle-btn', 'settings-meta-displayname', 'settings-meta-username',
+            'settings-avatar-text', 'settings-avatar-cycle-btn', 'settings-avatar-upload-btn', 'settings-avatar-file-input',
+            'settings-avatar-remove-btn', 'avatar-preset-picker',
+            'settings-meta-displayname', 'settings-meta-username',
             'settings-meta-account-id', 'settings-copy-id-btn', 'settings-input-displayname', 'settings-input-bio',
             'settings-save-profile-btn', 'settings-my-nametag-btn', 'pref-read-receipts', 'pref-last-seen',
             'setup-passcode-btn', 'passcode-status-label', 'pref-burn-timer', 'sessions-container',
@@ -238,6 +240,10 @@ const ESCTRIX = {
             this.state.sfxEnabled = sfx === 'true';
             if (this.elements.prefSfxToggle) this.elements.prefSfxToggle.checked = this.state.sfxEnabled;
         }
+        const theme = localStorage.getItem('esctrix_theme') || 'cyber-obsidian';
+        document.documentElement.setAttribute('data-theme', theme);
+        this.settings?.loadTheme();
+
         const wp = localStorage.getItem('esctrix_wallpaper') || 'cyber-grid';
         this.settings?.applyWallpaperClass(wp);
 
@@ -300,8 +306,13 @@ const ESCTRIX = {
         if (e.footerUserName) e.footerUserName.textContent = user.display_name || user.username;
         if (e.footerUserId) e.footerUserId.textContent = user.account_id || 'ESC-QUANTUM';
         if (e.footerUserAvatar) {
-            e.footerUserAvatar.textContent = initials;
-            if (user.avatar_color) e.footerUserAvatar.style.background = user.avatar_color;
+            if (user.avatar_photo) {
+                e.footerUserAvatar.innerHTML = `<img src="${user.avatar_photo}" class="avatar-img" alt="Avatar">`;
+                e.footerUserAvatar.style.background = 'transparent';
+            } else {
+                e.footerUserAvatar.textContent = initials;
+                if (user.avatar_color) e.footerUserAvatar.style.background = user.avatar_color;
+            }
         }
 
         // Settings Suite Profile
@@ -309,11 +320,28 @@ const ESCTRIX = {
         if (e.settingsMetaUsername) e.settingsMetaUsername.textContent = `@${user.username}`;
         if (e.settingsMetaAccountId) e.settingsMetaAccountId.textContent = user.account_id || 'ESC-QUANTUM';
         if (e.settingsAvatarText) {
-            e.settingsAvatarText.textContent = initials;
+            if (user.avatar_photo) {
+                e.settingsAvatarText.innerHTML = `<img src="${user.avatar_photo}" class="settings-avatar-img" alt="Avatar">`;
+                e.settingsAvatarText.style.background = 'transparent';
+            } else {
+                e.settingsAvatarText.textContent = initials;
+                e.settingsAvatarText.style.background = '#111827';
+            }
             if (user.avatar_color) e.settingsAvatarHalo.style.background = user.avatar_color;
         }
         if (e.settingsInputDisplayname) e.settingsInputDisplayname.value = user.display_name || user.username;
         if (e.settingsInputBio) e.settingsInputBio.value = user.bio || '';
+
+        // Intro Screen Card Avatar
+        if (e.introUserAvatar) {
+            if (user.avatar_photo) {
+                e.introUserAvatar.innerHTML = `<img src="${user.avatar_photo}" class="avatar-img" alt="Avatar">`;
+                e.introUserAvatar.style.background = 'transparent';
+            } else {
+                e.introUserAvatar.textContent = initials;
+                if (user.avatar_color) e.introUserAvatar.style.background = user.avatar_color;
+            }
+        }
 
         // Stealth Admin tab in Settings
         if (user.role === 'admin') {
@@ -396,6 +424,7 @@ const ESCTRIX = {
         // Settings Suite Triggers
         e.drawerOpenBtn?.addEventListener('click', () => this.settings.open());
         e.footerUserChip?.addEventListener('click', () => this.settings.open());
+        e.footerSettingsBtn?.addEventListener('click', () => this.settings.open());
         e.settingsCloseBtn?.addEventListener('click', () => this.settings.close());
 
         document.querySelectorAll('.settings-nav-btn').forEach(btn => {
@@ -404,6 +433,52 @@ const ESCTRIX = {
 
         e.settingsSaveProfileBtn?.addEventListener('click', () => this.settings.saveProfile());
         e.settingsAvatarCycleBtn?.addEventListener('click', () => this.settings.cycleAvatarColor());
+        e.settingsAvatarUploadBtn?.addEventListener('click', () => e.settingsAvatarFileInput?.click());
+        e.settingsAvatarFileInput?.addEventListener('change', (ev) => {
+            const file = ev.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (re) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const size = 256;
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    const minDim = Math.min(img.width, img.height);
+                    const sx = (img.width - minDim) / 2;
+                    const sy = (img.height - minDim) / 2;
+                    ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+                    const compressed = canvas.toDataURL('image/jpeg', 0.85);
+                    if (this.state.user) {
+                        this.state.user.avatar_photo = compressed;
+                        this.applyUserProfile(this.state.user);
+                        this.settings.saveProfile();
+                        this.showToast('Profile photo updated! 📸');
+                    }
+                };
+                img.src = re.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+        e.settingsAvatarRemoveBtn?.addEventListener('click', () => {
+            if (this.state.user) {
+                this.state.user.avatar_photo = '';
+                this.applyUserProfile(this.state.user);
+                this.settings.saveProfile();
+                this.showToast('Profile photo reset to initials.');
+            }
+        });
+
+        // Theme Selector Triggers
+        document.querySelectorAll('.theme-card').forEach(card => {
+            card.addEventListener('click', (ev) => {
+                const theme = ev.currentTarget.dataset.theme;
+                this.settings.setTheme(theme);
+            });
+        });
+
         e.settingsCopyIdBtn?.addEventListener('click', () => this.settings.copyAccountId());
         e.settingsMyNametagBtn?.addEventListener('click', () => this.profileModal.openNametag(this.state.user));
         e.setupPasscodeBtn?.addEventListener('click', () => this.passcode.promptSetup());
@@ -448,6 +523,11 @@ const ESCTRIX = {
         e.upActionVideo?.addEventListener('click', () => this.profileModal.startCall('video'));
         e.upActionAddContact?.addEventListener('click', () => this.profileModal.toggleContact());
         e.upActionShareQr?.addEventListener('click', () => this.profileModal.openNametag(this.profileModal.currentUser));
+        e.upOwnEditBtn?.addEventListener('click', () => {
+            this.profileModal.close();
+            this.settings.open();
+            this.settings.switchTab('profile');
+        });
 
         // QR Nametag Actions
         e.qrNametagCloseBtn?.addEventListener('click', () => this.modal.close('qr-nametag-modal'));
@@ -581,6 +661,16 @@ const ESCTRIX = {
             ev.stopPropagation();
             e.chatDropdownMenu.classList.toggle('hidden');
         });
+        e.menuPeerProfileBtn?.addEventListener('click', () => {
+            e.chatDropdownMenu?.classList.add('hidden');
+            this.openActiveChatProfile();
+        });
+        e.menuSettingsBtn?.addEventListener('click', () => {
+            e.chatDropdownMenu?.classList.add('hidden');
+            this.settings.open();
+        });
+        e.activeChatAvatar?.addEventListener('click', () => this.openActiveChatProfile());
+        e.activeChatName?.addEventListener('click', () => this.openActiveChatProfile());
         e.menuVanishBtn?.addEventListener('click', () => this.chat.toggleVanishMode());
         e.menuBurnBtn?.addEventListener('click', () => this.chat.burnSpace());
         e.menuSummarizeBtn?.addEventListener('click', () => this.ai.summarizeActiveChat());
@@ -712,6 +802,98 @@ const ESCTRIX = {
         }
     },
 
+    avatarPresets: [
+        {
+            name: 'Cyber Hacker',
+            url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g1' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%238b5cf6'/%3E%3Cstop offset='100%25' stop-color='%2306d6c7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='50' fill='%230b101d'/%3E%3Ccircle cx='50' cy='50' r='46' fill='none' stroke='url(%23g1)' stroke-width='3'/%3E%3Cpath d='M25 40 Q50 20 75 40 L75 60 Q50 85 25 60 Z' fill='%231f293d' stroke='%2306d6c7' stroke-width='2'/%3E%3Crect x='34' y='46' width='12' height='6' rx='3' fill='%2306d6c7'/%3E%3Crect x='54' y='46' width='12' height='6' rx='3' fill='%2306d6c7'/%3E%3Cpath d='M42 62 Q50 68 58 62' stroke='%238b5cf6' stroke-width='2' fill='none'/%3E%3C/svg%3E"
+        },
+        {
+            name: 'Neural AI',
+            url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g2' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%233b82f6'/%3E%3Cstop offset='100%25' stop-color='%2306d6c7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='50' fill='%23061325'/%3E%3Ccircle cx='50' cy='50' r='46' fill='none' stroke='url(%23g2)' stroke-width='3'/%3E%3Ccircle cx='50' cy='50' r='24' fill='%231e293b' stroke='%2338bdf8' stroke-width='2'/%3E%3Ccircle cx='50' cy='50' r='10' fill='%2306d6c7'/%3E%3Ccircle cx='32' cy='32' r='4' fill='%2338bdf8'/%3E%3Ccircle cx='68' cy='32' r='4' fill='%2338bdf8'/%3E%3Ccircle cx='32' cy='68' r='4' fill='%2338bdf8'/%3E%3Ccircle cx='68' cy='68' r='4' fill='%2338bdf8'/%3E%3Cpath d='M50 26 L50 40 M50 60 L50 74 M26 50 L40 50 M60 50 L74 50' stroke='%2338bdf8' stroke-width='2'/%3E%3C/svg%3E"
+        },
+        {
+            name: 'Quantum Agent',
+            url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g3' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ec4899'/%3E%3Cstop offset='100%25' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='50' fill='%23180824'/%3E%3Ccircle cx='50' cy='50' r='46' fill='none' stroke='url(%23g3)' stroke-width='3'/%3E%3Cpath d='M50 22 L76 34 L76 58 Q50 82 50 82 Q24 58 24 58 L24 34 Z' fill='%232e1047' stroke='%23ec4899' stroke-width='2'/%3E%3Cpolygon points='50,34 62,56 38,56' fill='%23f59e0b'/%3E%3Ccircle cx='50' cy='66' r='3' fill='%2306d6c7'/%3E%3C/svg%3E"
+        },
+        {
+            name: 'Aurora Ghost',
+            url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g4' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2310b981'/%3E%3Cstop offset='100%25' stop-color='%2334d399'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='50' fill='%23041914'/%3E%3Ccircle cx='50' cy='50' r='46' fill='none' stroke='url(%23g4)' stroke-width='3'/%3E%3Cpath d='M30 40 Q50 18 70 40 L70 70 Q60 62 50 70 Q40 62 30 70 Z' fill='%23064e3b' stroke='%2334d399' stroke-width='2'/%3E%3Ccircle cx='42' cy='46' r='5' fill='%2334d399'/%3E%3Ccircle cx='58' cy='46' r='5' fill='%2334d399'/%3E%3C/svg%3E"
+        },
+        {
+            name: 'Solar Pilot',
+            url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g5' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23f59e0b'/%3E%3Cstop offset='100%25' stop-color='%23ef4444'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='50' fill='%231c0d02'/%3E%3Ccircle cx='50' cy='50' r='46' fill='none' stroke='url(%23g5)' stroke-width='3'/%3E%3Ccircle cx='50' cy='50' r='24' fill='%233b1805' stroke='%23f59e0b' stroke-width='2'/%3E%3Cpath d='M32 50 L68 50' stroke='%23f59e0b' stroke-width='8' stroke-linecap='round'/%3E%3Cpath d='M36 50 Q50 64 64 50' fill='none' stroke='%23ef4444' stroke-width='3'/%3E%3C/svg%3E"
+        },
+        {
+            name: 'Astro Rover',
+            url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g6' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%236366f1'/%3E%3Cstop offset='100%25' stop-color='%2338bdf8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='50' fill='%230f1429'/%3E%3Ccircle cx='50' cy='50' r='46' fill='none' stroke='url(%23g6)' stroke-width='3'/%3E%3Ccircle cx='50' cy='48' r='22' fill='%231e293b' stroke='%236366f1' stroke-width='2'/%3E%3Cpath d='M36 46 Q50 36 64 46 Q64 58 50 58 Q36 58 36 46 Z' fill='%2338bdf8'/%3E%3Crect x='44' y='72' width='12' height='10' rx='3' fill='%236366f1'/%3E%3C/svg%3E"
+        }
+    ],
+
+    initAvatarPresets() {
+        const container = document.getElementById('avatar-preset-picker');
+        if (!container) return;
+        container.innerHTML = this.avatarPresets.map((p, idx) => `
+            <div class="avatar-preset-chip" data-preset-idx="${idx}" title="${p.name}">
+                <img src="${p.url}" alt="${p.name}">
+            </div>
+        `).join('');
+        container.querySelectorAll('.avatar-preset-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const idx = parseInt(chip.dataset.presetIdx);
+                const preset = this.avatarPresets[idx];
+                if (preset && ESCTRIX.state.user) {
+                    ESCTRIX.state.user.avatar_photo = preset.url;
+                    ESCTRIX.applyUserProfile(ESCTRIX.state.user);
+                    ESCTRIX.settings.saveProfile();
+                    container.querySelectorAll('.avatar-preset-chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    ESCTRIX.showToast(`Applied preset: ${preset.name} ✨`);
+                }
+            });
+        });
+    },
+
+    openActiveChatProfile() {
+        const s = this.state;
+        if (!s.activeChat) return;
+        if (s.activeChat.type === 'ai') {
+            this.profileModal.open({
+                username: 'AuraAI',
+                display_name: 'Aura AI Neural Companion',
+                account_id: 'AI-CORE-001',
+                bio: 'Adaptive conversational intelligence and peer security companion.',
+                avatar_color: 'linear-gradient(135deg, #8b5cf6, #06d6c7)'
+            });
+        } else if (s.activeChat.type === 'saved') {
+            if (s.user) this.profileModal.open(s.user);
+        } else if (s.activeChat.type === 'space') {
+            const title = s.activeChat.title || '';
+            const targetUser = title.replace(/^@/, '');
+            fetch(`/api/user/profile?username=${encodeURIComponent(targetUser)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.profile) {
+                        this.profileModal.open(data.profile);
+                    } else {
+                        this.profileModal.open({
+                            username: targetUser,
+                            display_name: title,
+                            account_id: 'ESC-PEER',
+                            bio: 'Decentralized P2P Mesh Room Peer'
+                        });
+                    }
+                })
+                .catch(() => {
+                    this.profileModal.open({
+                        username: targetUser,
+                        display_name: title,
+                        account_id: 'ESC-PEER',
+                        bio: 'Decentralized P2P Mesh Room Peer'
+                    });
+                });
+        }
+    },
+
     // ─────────────────────────────────────────────────────────
     // QUANTUM USER PROFILE & NAMETAG MODULE
     // ─────────────────────────────────────────────────────────
@@ -730,14 +912,28 @@ const ESCTRIX = {
             if (e.upAccountId) e.upAccountId.textContent = user.account_id || 'ESC-QUANTUM';
             if (e.upBio) e.upBio.textContent = user.bio || 'Decentralized & Quantum Secured 🚀';
             if (e.upAvatar) {
-                e.upAvatar.textContent = (user.display_name || user.username || 'U').charAt(0).toUpperCase();
-                if (user.avatar_color) e.upAvatar.style.background = user.avatar_color;
+                if (user.avatar_photo) {
+                    e.upAvatar.innerHTML = `<img src="${user.avatar_photo}" class="avatar-img" alt="Avatar">`;
+                    e.upAvatar.style.background = 'transparent';
+                } else {
+                    e.upAvatar.textContent = (user.display_name || user.username || 'U').charAt(0).toUpperCase();
+                    if (user.avatar_color) e.upAvatar.style.background = user.avatar_color;
+                }
             }
 
-            // Check if already contact
-            const isContact = (ESCTRIX.state.contacts || []).some(c => c.contact_username === user.username);
-            if (e.upAddContactLabel) {
-                e.upAddContactLabel.textContent = isContact ? 'In Your Contacts ✓' : 'Add to Contacts';
+            // Check if user is viewing their own profile
+            const isSelf = ESCTRIX.state.user && user.username === ESCTRIX.state.user.username;
+            if (isSelf) {
+                e.upPeerActions?.classList.add('hidden');
+                e.upOwnActions?.classList.remove('hidden');
+            } else {
+                e.upPeerActions?.classList.remove('hidden');
+                e.upOwnActions?.classList.add('hidden');
+                // Check if already contact
+                const isContact = (ESCTRIX.state.contacts || []).some(c => c.contact_username === user.username);
+                if (e.upAddContactLabel) {
+                    e.upAddContactLabel.textContent = isContact ? 'In Your Contacts ✓' : 'Add to Contacts';
+                }
             }
 
             e.userProfileModal.classList.remove('hidden');
@@ -780,8 +976,13 @@ const ESCTRIX = {
             if (e.nametagUsername) e.nametagUsername.textContent = `@${user.username}`;
             if (e.nametagAccountId) e.nametagAccountId.textContent = user.account_id || 'ESC-QUANTUM';
             if (e.nametagAvatar) {
-                e.nametagAvatar.textContent = (user.display_name || user.username || 'U').charAt(0).toUpperCase();
-                if (user.avatar_color) e.nametagAvatar.style.background = user.avatar_color;
+                if (user.avatar_photo) {
+                    e.nametagAvatar.innerHTML = `<img src="${user.avatar_photo}" class="avatar-img" alt="Avatar">`;
+                    e.nametagAvatar.style.background = 'transparent';
+                } else {
+                    e.nametagAvatar.textContent = (user.display_name || user.username || 'U').charAt(0).toUpperCase();
+                    if (user.avatar_color) e.nametagAvatar.style.background = user.avatar_color;
+                }
             }
 
             // Generate clean QR
@@ -816,11 +1017,31 @@ const ESCTRIX = {
             }
             this.loadPreferences();
             this.loadSessions();
+            this.loadTheme();
+            ESCTRIX.initAvatarPresets();
             ESCTRIX.elements.settingsSuiteModal?.classList.remove('hidden');
         },
 
         close() {
             ESCTRIX.elements.settingsSuiteModal?.classList.add('hidden');
+        },
+
+        setTheme(themeName) {
+            ESCTRIX.playSfx('click');
+            document.documentElement.setAttribute('data-theme', themeName);
+            localStorage.setItem('esctrix_theme', themeName);
+            document.querySelectorAll('.theme-card').forEach(c => {
+                c.classList.toggle('active', c.dataset.theme === themeName);
+            });
+            ESCTRIX.showToast(`Theme updated: ${themeName.replace('-', ' ').toUpperCase()} ✨`);
+        },
+
+        loadTheme() {
+            const saved = localStorage.getItem('esctrix_theme') || 'cyber-obsidian';
+            document.documentElement.setAttribute('data-theme', saved);
+            document.querySelectorAll('.theme-card').forEach(c => {
+                c.classList.toggle('active', c.dataset.theme === saved);
+            });
         },
 
         switchTab(tabName) {
@@ -830,7 +1051,10 @@ const ESCTRIX = {
 
             const targetBtn = document.querySelector(`.settings-nav-btn[data-tab="${tabName}"]`);
             const targetView = document.getElementById(`tab-${tabName}-view`);
-            if (targetBtn) targetBtn.classList.add('active');
+            if (targetBtn) {
+                targetBtn.classList.add('active');
+                targetBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
             if (targetView) targetView.classList.add('active');
         },
 
@@ -903,7 +1127,8 @@ const ESCTRIX = {
                         username: user.username,
                         display_name: newName,
                         bio: newBio,
-                        avatar_color: user.avatar_color || ''
+                        avatar_color: user.avatar_color || '',
+                        avatar_photo: user.avatar_photo !== undefined ? user.avatar_photo : ''
                     })
                 });
                 const data = await res.json();
@@ -1483,50 +1708,74 @@ const ESCTRIX = {
             const q = query.trim();
             const e = ESCTRIX.elements;
             if (!q) {
-                e.searchClearBtn.classList.add('hidden');
+                e.searchClearBtn?.classList.add('hidden');
+                e.threadAuraAi?.classList.remove('hidden');
+                e.threadSavedMessages?.classList.remove('hidden');
                 this.renderChatList();
                 return;
             }
-            e.searchClearBtn.classList.remove('hidden');
+            e.searchClearBtn?.classList.remove('hidden');
+            // Hide default pinned companion threads during active contact search
+            e.threadAuraAi?.classList.add('hidden');
+            e.threadSavedMessages?.classList.add('hidden');
 
             try {
                 const res = await fetch(`/api/user/search?q=${encodeURIComponent(q)}`);
                 const data = await res.json();
                 if (data.status === 'success') {
-                    this.renderSearchResults(data.users);
+                    this.renderSearchResults(data.users, q);
                 }
             } catch (err) {}
         },
 
-        renderSearchResults(users) {
+        renderSearchResults(users, query) {
             const list = ESCTRIX.elements.dynamicChatThreads;
             if (!users || users.length === 0) {
-                list.innerHTML = `<div style="padding:14px; text-align:center; font-size:0.8rem; color:var(--text-muted)">No matching users found</div>`;
+                list.innerHTML = `<div style="padding:20px; text-align:center; font-size:0.85rem; color:var(--text-muted)">
+                    <i class="ph ph-user-circle" style="font-size:2rem; opacity:0.5; display:block; margin-bottom:8px;"></i>
+                    No users found matching <strong style="color:var(--accent)">${query}</strong>
+                </div>`;
                 return;
             }
-            list.innerHTML = users.map(u => `
-                <div class="chat-thread-item user-search-result" data-username="${u.username}">
-                    <div class="thread-avatar-wrap">
-                        <div class="thread-avatar" style="background:${u.avatar_color || 'var(--primary)'}">
-                            ${(u.display_name || u.username).charAt(0).toUpperCase()}
+            list.innerHTML = users.map(u => {
+                const avatarContent = u.avatar_photo
+                    ? `<img src="${u.avatar_photo}" class="avatar-img" alt="Avatar">`
+                    : (u.display_name || u.username).charAt(0).toUpperCase();
+                const avatarBg = u.avatar_photo ? 'transparent' : (u.avatar_color || 'var(--primary)');
+                return `
+                    <div class="chat-thread-item user-search-result" data-username="${u.username}">
+                        <div class="thread-avatar-wrap">
+                            <div class="thread-avatar" style="background:${avatarBg}">
+                                ${avatarContent}
+                            </div>
+                        </div>
+                        <div class="thread-info">
+                            <div class="thread-top-line">
+                                <span class="thread-title">${u.display_name || u.username}</span>
+                                <button class="user-search-msg-btn" data-dm="${u.username}" title="Message @${u.username}">
+                                    <i class="ph ph-chat-circle-dots"></i> Message
+                                </button>
+                            </div>
+                            <div class="thread-bottom-line">
+                                <span class="thread-preview" style="color:var(--accent); font-weight:600;">@${u.username}</span>
+                                <span style="font-size:0.72rem; color:var(--text-muted); font-family:var(--font-mono);">${u.account_id || ''}</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="thread-info">
-                        <div class="thread-top-line">
-                            <span class="thread-title">${u.display_name || u.username}</span>
-                            <span class="thread-time" style="color:var(--accent); font-family:var(--font-mono)">${u.account_id}</span>
-                        </div>
-                        <div class="thread-bottom-line">
-                            <span class="thread-preview">@${u.username} • ${u.bio || 'Encrypted Peer'}</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
 
-            // Bind click to open Profile Card
+            // Bind click to open Profile Card or Message
             list.querySelectorAll('.user-search-result').forEach(row => {
-                row.addEventListener('click', () => {
+                row.addEventListener('click', (ev) => {
+                    const dmBtn = ev.target.closest('.user-search-msg-btn');
                     const targetUname = row.dataset.username;
+                    if (dmBtn) {
+                        ev.stopPropagation();
+                        ESCTRIX.space.openDirectSpace(targetUname);
+                        ESCTRIX.chat.switchChat('space', { spaceName: `@${targetUname}` });
+                        return;
+                    }
                     const foundUser = users.find(u => u.username === targetUname);
                     if (foundUser) {
                         ESCTRIX.profileModal.open(foundUser);

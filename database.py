@@ -134,6 +134,12 @@ def init_db():
         except Exception:
             pass
 
+    if "avatar_photo" not in columns:
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN avatar_photo TEXT DEFAULT ''")
+        except Exception:
+            pass
+
     if "created_at" not in columns:
         try:
             cursor.execute("ALTER TABLE users ADD COLUMN created_at TEXT")
@@ -244,7 +250,7 @@ def get_user_profile(username: str) -> Optional[Dict[str, Any]]:
     """Fetch user profile by username."""
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute('SELECT account_id, username, display_name, bio, avatar_color, role, created_at FROM users WHERE username = ?', (username,))
+    cursor.execute('SELECT account_id, username, display_name, bio, avatar_color, avatar_photo, role, created_at FROM users WHERE username = ?', (username,))
     row = cursor.fetchone()
     conn.close()
     if row:
@@ -252,15 +258,23 @@ def get_user_profile(username: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def update_user_profile(username: str, display_name: str, bio: str, avatar_color: str = '') -> bool:
-    """Update display name, bio, and avatar color."""
+def update_user_profile(username: str, display_name: str, bio: str, avatar_color: str = '', avatar_photo: Optional[str] = None) -> bool:
+    """Update display name, bio, avatar color, and avatar photo."""
     conn = get_db()
     cursor = conn.cursor()
     try:
-        if avatar_color:
-            cursor.execute('UPDATE users SET display_name = ?, bio = ?, avatar_color = ? WHERE username = ?', (display_name, bio, avatar_color, username))
+        if avatar_photo is not None and avatar_color:
+            cursor.execute('UPDATE users SET display_name = ?, bio = ?, avatar_color = ?, avatar_photo = ? WHERE username = ?',
+                           (display_name, bio, avatar_color, avatar_photo, username))
+        elif avatar_photo is not None:
+            cursor.execute('UPDATE users SET display_name = ?, bio = ?, avatar_photo = ? WHERE username = ?',
+                           (display_name, bio, avatar_photo, username))
+        elif avatar_color:
+            cursor.execute('UPDATE users SET display_name = ?, bio = ?, avatar_color = ? WHERE username = ?',
+                           (display_name, bio, avatar_color, username))
         else:
-            cursor.execute('UPDATE users SET display_name = ?, bio = ? WHERE username = ?', (display_name, bio, username))
+            cursor.execute('UPDATE users SET display_name = ?, bio = ? WHERE username = ?',
+                           (display_name, bio, username))
         conn.commit()
         return cursor.rowcount > 0
     finally:
@@ -268,19 +282,32 @@ def update_user_profile(username: str, display_name: str, bio: str, avatar_color
 
 
 def search_users(query: str) -> List[Dict[str, Any]]:
-    """Search registered users by username, account_id, or display_name (excluding admin/system accounts)."""
-    q = f"%{query.strip()}%"
+    """Search registered users by username, account_id, or display_name (prioritizing exact and prefix username match)."""
+    raw = query.strip()
+    if not raw:
+        return []
+    clean_q = raw.lstrip('@')
+    q_wildcard = f"%{clean_q}%"
+    q_prefix = f"{clean_q}%"
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        '''SELECT account_id, username, display_name, bio, avatar_color 
+        '''SELECT account_id, username, display_name, bio, avatar_color, avatar_photo 
            FROM users 
            WHERE (role IS NULL OR role != 'admin')
              AND LOWER(username) NOT LIKE '%admin%'
              AND LOWER(display_name) NOT LIKE '%admin%'
-             AND (username LIKE ? OR account_id LIKE ? OR display_name LIKE ?)
-           LIMIT 15''',
-        (q, q, q)
+             AND (LOWER(username) LIKE LOWER(?) OR LOWER(account_id) LIKE LOWER(?) OR LOWER(display_name) LIKE LOWER(?))
+           ORDER BY 
+             CASE 
+               WHEN LOWER(username) = LOWER(?) THEN 1
+               WHEN LOWER(username) LIKE LOWER(?) THEN 2
+               WHEN LOWER(display_name) LIKE LOWER(?) THEN 3
+               ELSE 4
+             END,
+             username ASC
+           LIMIT 20''',
+        (q_wildcard, q_wildcard, q_wildcard, clean_q, q_prefix, q_prefix)
     )
     rows = cursor.fetchall()
     conn.close()

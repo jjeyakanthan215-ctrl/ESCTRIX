@@ -359,6 +359,9 @@
                             </div>
                         </div>
                         <div class="footer-actions">
+                            <button id="footer-settings-btn" class="footer-icon-btn" title="Settings & Profile">
+                                <i class="ph ph-gear-six"></i>
+                            </button>
                             <button id="cmd-palette-btn" class="footer-icon-btn" title="Command Palette (Ctrl+K)">
                                 <i class="ph ph-command"></i>
                             </button>
@@ -419,6 +422,13 @@
                                     <i class="ph ph-dots-three-vertical"></i>
                                 </button>
                                 <div id="chat-dropdown-menu" class="chat-dropdown hidden">
+                                    <button id="menu-peer-profile-btn" class="dropdown-item">
+                                        <i class="ph ph-user-circle"></i> <span>View Contact Profile</span>
+                                    </button>
+                                    <button id="menu-settings-btn" class="dropdown-item">
+                                        <i class="ph ph-gear-six"></i> <span>Settings & Profile</span>
+                                    </button>
+                                    <div class="dropdown-divider" style="height:1px; background:var(--panel-border); margin:4px 0;"></div>
                                     <button id="menu-vanish-btn" class="dropdown-item">
                                         <i class="ph ph-ghost"></i> <span>Vanish Mode (10s)</span>
                                     </button>
@@ -691,23 +701,35 @@
                 </div>
                 <p class="profile-bio-text" id="up-bio">Decentralized & Quantum Secured 🚀</p>
                 
-                <!-- Profile Action Row -->
-                <div class="profile-action-grid">
-                    <button id="up-action-dm" class="btn primary-btn btn-sm">
-                        <i class="ph ph-chat-circle-dots"></i> Message
-                    </button>
-                    <button id="up-action-voice" class="btn success-btn btn-sm">
-                        <i class="ph ph-phone"></i> Audio Call
-                    </button>
-                    <button id="up-action-video" class="btn secondary-btn btn-sm">
-                        <i class="ph ph-video-camera"></i> Video Call
+                <!-- Peer Profile Action Rows -->
+                <div id="up-peer-actions" class="up-actions-wrapper full-width">
+                    <div class="profile-action-grid">
+                        <button id="up-action-dm" class="btn primary-btn btn-sm">
+                            <i class="ph ph-chat-circle-dots"></i> <span>Message</span>
+                        </button>
+                        <button id="up-action-voice" class="btn success-btn btn-sm">
+                            <i class="ph ph-phone"></i> <span>Audio</span>
+                        </button>
+                        <button id="up-action-video" class="btn secondary-btn btn-sm">
+                            <i class="ph ph-video-camera"></i> <span>Video</span>
+                        </button>
+                    </div>
+
+                    <div class="profile-secondary-actions" style="margin-top:8px;">
+                        <button id="up-action-add-contact" class="btn ghost-btn btn-sm full-width">
+                            <i class="ph ph-user-plus"></i> <span id="up-add-contact-label">Add to Contacts</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Own Profile Action Row (When user views their own profile) -->
+                <div id="up-own-actions" class="profile-secondary-actions full-width hidden">
+                    <button id="up-own-edit-btn" class="btn primary-btn btn-sm full-width">
+                        <i class="ph ph-gear-six"></i> Edit Profile & Settings
                     </button>
                 </div>
 
-                <div class="profile-secondary-actions">
-                    <button id="up-action-add-contact" class="btn ghost-btn btn-sm full-width">
-                        <i class="ph ph-user-plus"></i> <span id="up-add-contact-label">Add to Contacts</span>
-                    </button>
+                <div class="profile-secondary-actions full-width" style="margin-top:8px;">
                     <button id="up-action-share-qr" class="btn ghost-btn btn-sm full-width">
                         <i class="ph ph-qr-code"></i> View QR Nametag
                     </button>
@@ -795,9 +817,13 @@
                         <div class="settings-profile-preview">
                             <div class="settings-avatar-wrap" id="settings-avatar-halo">
                                 <div class="settings-avatar" id="settings-avatar-text">U</div>
+                                <button class="avatar-upload-btn" id="settings-avatar-upload-btn" title="Upload Profile Picture">
+                                    <i class="ph ph-camera"></i>
+                                </button>
                                 <button class="avatar-cycle-btn" id="settings-avatar-cycle-btn" title="Cycle Color Theme">
                                     <i class="ph ph-palette"></i>
                                 </button>
+                                <input type="file" id="settings-avatar-file-input" accept="image/*" style="display:none;">
                             </div>
                             <div class="settings-profile-meta">
                                 <h3 id="settings-meta-displayname">User Name</h3>
@@ -808,6 +834,19 @@
                                         <i class="ph ph-copy"></i>
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Avatar Photo Preset Row -->
+                        <div class="avatar-preset-section" style="margin-bottom:16px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                <span style="font-size:0.8rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Futuristic Avatar Presets:</span>
+                                <button id="settings-avatar-remove-btn" class="text-danger" style="background:none; border:none; font-size:0.75rem; cursor:pointer;" title="Reset to Initial Letter">
+                                    <i class="ph ph-trash"></i> Reset to Initial
+                                </button>
+                            </div>
+                            <div class="avatar-preset-picker" id="avatar-preset-picker">
+                                <!-- Populated dynamically by JS -->
                             </div>
                         </div>
 
@@ -904,7 +943,63 @@
 
                     <!-- TAB 3: Chats & Wallpapers -->
                     <div class="settings-tab-view" id="tab-chats-view">
-                        <h4><i class="ph ph-paint-brush"></i> Chat Wallpapers & Themes</h4>
+                        <h4><i class="ph ph-palette"></i> App Aesthetic & Theme Suite</h4>
+                        <p class="muted">Select a handcrafted cyber theme engineered for Mobile & Desktop PC.</p>
+
+                        <div class="theme-grid" id="theme-suite-grid">
+                            <div class="theme-card active" data-theme="cyber-obsidian">
+                                <div class="theme-swatch-preview">
+                                    <div class="theme-dot" style="background:#060a12;"></div>
+                                    <div class="theme-dot" style="background:#8b5cf6;"></div>
+                                    <div class="theme-dot" style="background:#06d6c7;"></div>
+                                </div>
+                                <span>Cyber Obsidian</span>
+                            </div>
+                            <div class="theme-card" data-theme="midnight-titanium">
+                                <div class="theme-swatch-preview">
+                                    <div class="theme-dot" style="background:#090e17;"></div>
+                                    <div class="theme-dot" style="background:#3b82f6;"></div>
+                                    <div class="theme-dot" style="background:#38bdf8;"></div>
+                                </div>
+                                <span>Midnight Titanium</span>
+                            </div>
+                            <div class="theme-card" data-theme="aurora-emerald">
+                                <div class="theme-swatch-preview">
+                                    <div class="theme-dot" style="background:#03140f;"></div>
+                                    <div class="theme-dot" style="background:#10b981;"></div>
+                                    <div class="theme-dot" style="background:#34d399;"></div>
+                                </div>
+                                <span>Aurora Emerald</span>
+                            </div>
+                            <div class="theme-card" data-theme="solar-cyberpunk">
+                                <div class="theme-swatch-preview">
+                                    <div class="theme-dot" style="background:#0f0a14;"></div>
+                                    <div class="theme-dot" style="background:#ec4899;"></div>
+                                    <div class="theme-dot" style="background:#f59e0b;"></div>
+                                </div>
+                                <span>Solar Cyberpunk</span>
+                            </div>
+                            <div class="theme-card" data-theme="oled-pitch">
+                                <div class="theme-swatch-preview">
+                                    <div class="theme-dot" style="background:#000000;"></div>
+                                    <div class="theme-dot" style="background:#a855f7;"></div>
+                                    <div class="theme-dot" style="background:#06d6c7;"></div>
+                                </div>
+                                <span>OLED Pitch</span>
+                            </div>
+                            <div class="theme-card" data-theme="nebula-frost">
+                                <div class="theme-swatch-preview">
+                                    <div class="theme-dot" style="background:#0e1626;"></div>
+                                    <div class="theme-dot" style="background:#6366f1;"></div>
+                                    <div class="theme-dot" style="background:#38bdf8;"></div>
+                                </div>
+                                <span>Nebula Frost</span>
+                            </div>
+                        </div>
+
+                        <div class="settings-divider"></div>
+
+                        <h4><i class="ph ph-paint-brush"></i> Chat Wallpapers</h4>
                         <p class="muted">Select a background aesthetic for your message window.</p>
 
                         <div class="wallpaper-grid">
