@@ -1,0 +1,142 @@
+================================================================================
+ESCTRIX QUANTUM — PROJECT STATUS & SYSTEM HANDOFF SPECIFICATION
+================================================================================
+Date: 2026-09-15
+Project: ESCTRIX Quantum (Futuristic P2P Encrypted Messenger & Neural AI Suite)
+Repository Root: d:\Projects\P2P SMS
+Primary Remote: https://github.com/jjeyakanthan215-ctrl/ESCTRIX.git (origin/main)
+Secondary Remote: https://github.com/jjeyakanthan215-ctrl/habib.git (habib/main)
+Live Cloud Deployment: https://esctrix.onrender.com/
+Health Check Endpoint: https://esctrix.onrender.com/health (HTTP 200 OK)
+================================================================================
+
+--------------------------------------------------------------------------------
+1. EXECUTIVE SUMMARY & ARCHITECTURE
+--------------------------------------------------------------------------------
+ESCTRIX Quantum combines the best UX and security paradigms of major communication platforms:
+- Instagram Style: Search and connect by @username / Account ID, rich Profile Verification Cards, social bios, and photo avatars.
+- WhatsApp Style: 1-to-1 WebRTC HD audio/video calls, WhatsApp voice note HUD with live waveform, pause/resume, audio preview before sending, read receipts (blue double ticks), and dynamic context menus.
+- Telegram Style: Dual-pane desktop and mobile layout, collapsible sidebar, folder categorizations (All, Direct, Mesh, Saved Vault), group space hosting with PIN protection.
+- Zero-Knowledge Security: Client-side AES-GCM 256-bit encryption in browser memory, DTLS/SRTP WebRTC peer-to-peer transport, ephemeral WebSocket signaling, zero plaintext storage on servers.
+- Aura Neural AI: Integrated conversational AI companion, real-time vibe sentiment analysis, contextual smart replies, tone polisher, and chat summarization.
+
+--------------------------------------------------------------------------------
+2. COMPLETED FEATURES & RECENT IMPLEMENTATIONS
+--------------------------------------------------------------------------------
+
+A. Stealth Admin Portal & Role-Based Isolation:
+   - Zero public admin indicators anywhere on UI or public endpoints.
+   - Admin account is `ESCTRIX_Admin` (Role: `admin`).
+   - `search_users()` strictly filters out all accounts with `role == 'admin'` or usernames containing `admin`, making admin identities 100% invisible to regular user search.
+   - `add_contact()` rejects adding admin accounts to public contacts lists.
+   - Admin access routes:
+     * Stealth URL: `/admin`
+     * Settings Suite: "Admin Portal" button (only visible if logged-in user role is `admin`).
+     * Keyboard Shortcut: `Ctrl + Shift + A` directly triggers the stealth admin portal.
+     * Stealth Command Palette in chat: Typing `/admin` directly opens the console.
+
+B. WhatsApp-Style Voice Note Suite:
+   - Live recording HUD bar with pulsing recording dot and elapsed timer (`0:00`).
+   - Real-time animated audio waveform visualization.
+   - Discard / Trash button (`#voice-discard-btn`) to discard unwanted recordings.
+   - Pause / Resume recording toggle (`#voice-pause-btn`).
+   - Listen / Playback Preview button (`#voice-preview-btn`) to review audio before sending.
+   - 1-Click Send button (`#voice-send-btn`).
+
+C. Dynamic Glassmorphic Context Menu & Right-Click Lock:
+   - Suppressed browser native right-click inspection menu (`e.preventDefault()`).
+   - Added touch 500ms long-press trigger for mobile/tablet devices.
+   - Dynamic contextual options:
+     * On Message: Copy Text, Reply, Forward, Star to Vault, Delete for Me.
+     * On Contact / Chat Item: View Profile Card, Pin Chat to Top, Mute Alerts, Clear History.
+     * On General Canvas / Sidebar: Host Space, E2EE Key Verification, Settings Suite, Clear Chat.
+
+D. In-App Custom Glass Dialogs (Zero Browser Popups):
+   - Replaced all native `alert()`, `confirm()`, and `prompt()` with glassmorphic modal dialogs (`ESCTRIX.dialog.confirm`, `ESCTRIX.dialog.prompt`, `ESCTRIX.dialog.alert`).
+   - Guarded with `style="display: none;"` to prevent flash of unstyled content (FOUC).
+
+E. Zero-Scrollbar Global Aesthetic:
+   - Universal CSS rule `* { scrollbar-width: none !important; -ms-overflow-style: none !important; }` and `::-webkit-scrollbar { display: none !important; }` applied across the entire app.
+
+F. Responsive Design Alignment (Desktop & Mobile):
+   - Desktop (>= 769px):
+     * Sticky full-width glass header (`backdrop-filter: blur(24px)`).
+     * Centered hero logo halo (`88px x 88px`), balanced typography, and 4-column capability grid.
+     * Centered user identity card with inline action buttons.
+   - Mobile (<= 768px):
+     * Compact header automatically hides the bulky "MESH ACTIVE" badge to prevent colliding with "Get Started".
+     * Full-width stacking action buttons (`Launch Workspace` & `Switch Identity`) for touch ergonomics.
+     * Feature cards automatically reflow into a clean 1-column vertical feed.
+     * Zero horizontal scrolling / overflow (`overflow-x: hidden; box-sizing: border-box`).
+
+G. Automated Self-Healing PWA Cache Cleaner:
+   - Injected critical inline guard CSS in `<head>` to enforce dimensions before external CSS loads.
+   - Self-healing version comparator script (`CURRENT_VER = '2.1.1-quantum'`) detects stale versions in `localStorage` and automatically deletes outdated Service Worker caches (`caches.delete()`) and unregisters old service workers on client visit.
+   - Cache-busting query strings (`?v=2.1.1`) appended to all stylesheets and scripts.
+
+--------------------------------------------------------------------------------
+3. FILE SITEMAP & PROJECT STRUCTURE
+--------------------------------------------------------------------------------
+d:\Projects\P2P SMS\
+│
+├── server.py                   # FastAPI backend server, WebSockets signaling relay, REST APIs
+├── database.py                 # SQLite database engine (users, contacts, offline_messages, saved_messages)
+├── security.py                 # QR Code generator & crypto helpers
+├── ai_engine.py                # Aura Neural AI (Gemini Flash & local neural heuristics)
+├── connection_manager.py       # WebSocket room broadcasting & admin event relays
+├── discovery.py                # Local network Zeroconf/mDNS service advertising
+├── main.py                     # Entry point orchestrator
+├── users.db                    # SQLite persistent database (Render DB_PATH: users.db / /data/users.db)
+│
+├── frontend/
+│   ├── index.html              # Single Page Application HTML (Hero, Login, 2-Pane Chat, Admin, Dialogs)
+│   ├── offline.html            # PWA offline fallback screen
+│   ├── manifest.json           # PWA Web App Manifest (standalone, theme colors, icons)
+│   ├── sw.js                   # Progressive Web App Service Worker (v15-quantum cache management)
+│   ├── css/
+│   │   └── style.css           # Vanilla CSS design system (Glassmorphism, animations, responsive media queries)
+│   ├── js/
+│   │   ├── app.js              # Core client application logic, state manager, UI controllers, Aura AI
+│   │   └── webrtc.js           # WebRTC mesh engine, DTLS/SRTP audio/video streams, data channels
+│   └── (icons & logos)         # logo.png, icon-192.png, icon-512.png, screenshot_wide.png
+│
+├── render.yaml                 # Render cloud deployment blueprint
+├── Procfile                    # Web service process configuration (uvicorn server:app)
+├── requirements.txt            # Python dependencies (fastapi, uvicorn, websockets, bcrypt, google-genai)
+└── PROJECT_STATUS_UPDATE.txt   # This status & handoff document
+
+--------------------------------------------------------------------------------
+4. LOCAL RUNNING & TESTING COMMANDS
+--------------------------------------------------------------------------------
+To run the project locally on Windows PowerShell:
+1. Start server:
+   python server.py
+   (Default port: http://127.0.0.1:8006)
+
+2. Test API endpoints:
+   python -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8006/health').read())"
+
+3. Test stealth search:
+   python -c "import database; print('Admin search (should be empty):', database.search_users('admin'))"
+
+--------------------------------------------------------------------------------
+5. CLOUD DEPLOYMENT & GITHUB REPOSITORIES
+--------------------------------------------------------------------------------
+- Primary GitHub Repository: https://github.com/jjeyakanthan215-ctrl/ESCTRIX.git
+- Secondary GitHub Repository: https://github.com/jjeyakanthan215-ctrl/habib.git
+- Live Render Deployment: https://esctrix.onrender.com/
+- Deploy command:
+  git add -A
+  git commit -m "feat: your commit message"
+  git push origin main
+  git push habib main
+  (Render builds automatically via webhook within 1-2 minutes)
+
+--------------------------------------------------------------------------------
+6. ROADMAP & NEXT TASKS FOR TOMORROW
+--------------------------------------------------------------------------------
+- [ ] End-to-end multi-device WebRTC call stress test on mobile networks via Render.
+- [ ] Implement end-to-end encrypted file sharing chunking for large video files.
+- [ ] Optional: Add ephemeral vanishing media timer (5s / 10s / 30s view-once photos).
+- [ ] Optional: Add biometric WebAuthn / Passkey support for frictionless instant login.
+================================================================================

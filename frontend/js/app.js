@@ -4212,3 +4212,4 @@ const ESCTRIX = {
 
 // Start application when DOM is loaded
 window.addEventListener('DOMContentLoaded', () => ESCTRIX.init());
+ 
