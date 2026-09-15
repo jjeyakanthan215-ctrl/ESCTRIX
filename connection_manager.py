@@ -21,6 +21,44 @@ class ConnectionManager:
         self.admin_connections: Dict[str, WebSocket] = {}
         # user_sessions maps username -> list of session dicts
         self.user_sessions: Dict[str, List[Dict[str, Any]]] = {}
+        # user_sockets maps username -> list of WebSocket instances for global direct signaling
+        self.user_sockets: Dict[str, List[WebSocket]] = {}
+
+    def register_user(self, username: str, ws: WebSocket):
+        if not username:
+            return
+        if username not in self.user_sockets:
+            self.user_sockets[username] = []
+        if ws not in self.user_sockets[username]:
+            self.user_sockets[username].append(ws)
+
+    def unregister_user(self, username: str, ws: WebSocket):
+        if username in self.user_sockets:
+            if ws in self.user_sockets[username]:
+                self.user_sockets[username].remove(ws)
+            if not self.user_sockets[username]:
+                del self.user_sockets[username]
+
+    def is_user_online(self, username: str) -> bool:
+        return bool(self.user_sockets.get(username))
+
+    async def send_to_user(self, username: str, message: dict) -> bool:
+        """Send a message to all active global WebSocket connections for a user."""
+        sockets = self.user_sockets.get(username, [])
+        if not sockets:
+            return False
+        dead = []
+        sent = False
+        text_payload = json.dumps(message)
+        for ws in list(sockets):
+            try:
+                await ws.send_text(text_payload)
+                sent = True
+            except Exception as e:
+                dead.append(ws)
+        for ws in dead:
+            self.unregister_user(username, ws)
+        return sent
 
     def record_session(self, username: str, client_id: str, ip: str = "127.0.0.1", device: str = "Desktop Web / Quantum Engine"):
         if not username:

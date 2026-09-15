@@ -96,10 +96,19 @@ def init_db():
             contact_account_id TEXT NOT NULL,
             contact_username TEXT NOT NULL,
             contact_name TEXT DEFAULT '',
+            status TEXT DEFAULT 'added',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(owner_username, contact_username)
         )
     ''')
+
+    # Run migrations for contacts table
+    contact_cols = [c[1] for c in cursor.execute("PRAGMA table_info(contacts)").fetchall()]
+    if "status" not in contact_cols:
+        try:
+            cursor.execute("ALTER TABLE contacts ADD COLUMN status TEXT DEFAULT 'added'")
+        except Exception:
+            pass
 
     # Run migrations for existing users table columns if needed
     columns = [c[1] for c in cursor.execute("PRAGMA table_info(users)").fetchall()]
@@ -416,42 +425,64 @@ def delete_saved_message(username: str, message_id: int) -> bool:
         return cursor.rowcount > 0
     finally:
         conn.close()
-
-
-# ─────────────────────────────────────────────────────────────
-# Contacts & Saved Chats
-# ─────────────────────────────────────────────────────────────
-
-def add_contact(owner_username: str, contact_username: str) -> bool:
-    """Add a contact to the user's permanent contact list (admins cannot be added as contacts)."""
+def add_contact(owner_username: str, contact_username: str) -> Dict[str, Any]:
+    """Add a contact to the user's permanent contact list with mutual friendship detection."""
     if 'admin' in contact_username.lower() or contact_username == 'ESCTRIX_Admin':
-        return False
+        return {"status": "error", "message": "Cannot add admin accounts."}
+    if owner_username == contact_username:
+        return {"status": "error", "message": "Cannot add yourself as a contact."}
+
     profile = get_user_profile(contact_username)
     if not profile or profile.get('role') == 'admin':
-        return False
+        return {"status": "error", "message": "User not found."}
+
     conn = get_db()
     cursor = conn.cursor()
     try:
+        # Check if other user already added this user
         cursor.execute(
-            '''INSERT OR REPLACE INTO contacts (owner_username, contact_account_id, contact_username, contact_name)
-               VALUES (?, ?, ?, ?)''',
-            (owner_username, profile['account_id'], contact_username, profile['display_name'])
+            'SELECT id FROM contacts WHERE owner_username = ? AND contact_username = ?',
+            (contact_username, owner_username)
+        )
+        other_row = cursor.fetchone()
+        is_mutual = bool(other_row)
+        new_status = 'mutual' if is_mutual else 'added'
+
+        if is_mutual:
+            # Upgrade other user's record to mutual
+            cursor.execute(
+                'UPDATE contacts SET status = ? WHERE owner_username = ? AND contact_username = ?',
+                ('mutual', contact_username, owner_username)
+            )
+
+        cursor.execute(
+            '''INSERT OR REPLACE INTO contacts (owner_username, contact_account_id, contact_username, contact_name, status)
+               VALUES (?, ?, ?, ?, ?)''',
+            (owner_username, profile['account_id'], contact_username, profile['display_name'], new_status)
         )
         conn.commit()
-        return True
+        return {
+            "status": "success",
+            "relation": new_status,
+            "is_mutual": is_mutual,
+            "contact": profile
+        }
     finally:
         conn.close()
 
 
 def get_contacts(owner_username: str) -> List[Dict[str, Any]]:
-    """Retrieve all saved contacts for a user with their latest profile info (excluding admin accounts)."""
+    """Retrieve all saved contacts for a user with full profile info, status, and avatar photo."""
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
         '''SELECT c.id, c.contact_account_id, c.contact_username, 
                   COALESCE(u.display_name, c.contact_name) as display_name,
                   COALESCE(u.avatar_color, '') as avatar_color,
-                  COALESCE(u.bio, '') as bio
+                  COALESCE(u.avatar_photo, '') as avatar_photo,
+                  COALESCE(u.bio, '') as bio,
+                  COALESCE(c.status, 'added') as status,
+                  c.created_at
            FROM contacts c
            LEFT JOIN users u ON c.contact_username = u.username
            WHERE c.owner_username = ?
@@ -463,6 +494,60 @@ def get_contacts(owner_username: str) -> List[Dict[str, Any]]:
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def get_incoming_friend_adds(username: str) -> List[Dict[str, Any]]:
+    """Retrieve all users who added this user as a friend, but whom this user hasn't added back yet."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        '''SELECT c.owner_username as sender_username,
+                  c.contact_account_id,
+                  COALESCE(u.display_name, c.owner_username) as display_name,
+                  COALESCE(u.avatar_color, '') as avatar_color,
+                  COALESCE(u.avatar_photo, '') as avatar_photo,
+                  COALESCE(u.bio, '') as bio,
+                  u.account_id,
+                  c.created_at
+           FROM contacts c
+           LEFT JOIN users u ON c.owner_username = u.username
+           WHERE c.contact_username = ?
+             AND c.owner_username NOT IN (
+                 SELECT contact_username FROM contacts WHERE owner_username = ?
+             )
+           ORDER BY c.created_at DESC''',
+        (username, username)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def is_friend(user_a: str, user_b: str) -> bool:
+    """Check if two users have a friend connection (either added or mutual)."""
+    if not user_a or not user_b or user_a == user_b:
+        return False
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        '''SELECT 1 FROM contacts 
+           WHERE (owner_username = ? AND contact_username = ?)
+              OR (owner_username = ? AND contact_username = ?) LIMIT 1''',
+        (user_a, user_b, user_b, user_a)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return bool(row)
+
+
+def get_friends_count(owner_username: str) -> int:
+    """Return the total number of contacts added by a user."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT COUNT(*) FROM contacts WHERE owner_username = ?', (owner_username,))
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count
 
 
 # ─────────────────────────────────────────────────────────────

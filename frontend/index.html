@@ -23,7 +23,7 @@
     <meta name="twitter:description" content="Decentralized peer-to-peer messaging platform with Zero-Knowledge E2EE, WebRTC mesh media, and Aura AI Neural Copilot.">
     <meta name="twitter:image" content="https://esctrix.onrender.com/static/logo.png">
 
-    <link rel="stylesheet" href="/static/css/style.css?v=2.1.4">
+    <link rel="stylesheet" href="/static/css/style.css?v=2.1.5">
     <link rel="manifest" href="/manifest.json">
     <script>
         /* ── Automated Self-Healing Cache Cleaner (Purges stale PWA cache on load) ── */
@@ -64,9 +64,7 @@
 <body class="quantum-body">
     <!-- Animated Cyber Background Mesh -->
     <div class="background-mesh">
-        <video autoplay loop muted playsinline id="bg-video">
-            <source src="https://cdn.pixabay.com/video/2021/08/04/83897-584704049_tiny.mp4" type="video/mp4">
-        </video>
+        <div class="cyber-grid-canvas"></div>
         <div class="video-overlay-gradient"></div>
         <div class="blob blob-1"></div>
         <div class="blob blob-2"></div>
@@ -269,12 +267,12 @@
         <!-- SCREEN 2: DUAL-PANE WORKSPACE SHELL        -->
         <!-- ══════════════════════════════════════════ -->
         <section id="dashboard-screen" class="screen">
-            <div class="telegram-shell glass-panel">
+            <div class="quantum-shell telegram-shell glass-panel">
 
                 <!-- ────────────────────────────────────── -->
                 <!-- LEFT PANE: WORKSPACE SIDEBAR           -->
                 <!-- ────────────────────────────────────── -->
-                <aside class="telegram-sidebar" id="telegram-sidebar">
+                <aside class="quantum-sidebar telegram-sidebar" id="telegram-sidebar">
                     <!-- Sidebar Top Header -->
                     <div class="sidebar-header">
                         <button id="drawer-open-btn" class="icon-btn-round" title="Profile & Settings">
@@ -290,14 +288,18 @@
                             <button id="search-clear-btn" class="search-clear-btn hidden"><i class="ph ph-x"></i></button>
                         </div>
 
+                        <button id="sidebar-add-friend-btn" class="icon-btn-round accent-pulse" title="Find & Add Friends by Username">
+                            <i class="ph ph-user-plus"></i>
+                        </button>
                         <button id="new-space-btn" class="icon-btn-round accent" title="Host or Join Space">
                             <i class="ph ph-plus"></i>
                         </button>
                     </div>
 
                     <!-- Category Tabs (Workspace Folders) -->
-                    <div class="telegram-folder-tabs">
+                    <div class="quantum-folder-tabs telegram-folder-tabs">
                         <button class="folder-tab active" data-folder="all">All</button>
+                        <button class="folder-tab" data-folder="contacts">Contacts <span id="contacts-count-badge" class="tab-count-badge">0</span></button>
                         <button class="folder-tab" data-folder="direct">Direct</button>
                         <button class="folder-tab" data-folder="spaces">Spaces</button>
                         <button class="folder-tab" data-folder="ai">Aura AI</button>
@@ -359,8 +361,9 @@
                             </div>
                         </div>
                         <div class="footer-actions">
-                            <button id="footer-settings-btn" class="footer-icon-btn" title="Settings & Profile">
-                                <i class="ph ph-gear-six"></i>
+                            <button id="footer-settings-btn" class="footer-icon-btn advanced-settings-btn" title="Settings & Advanced Preferences">
+                                <i class="ph ph-gear-six settings-gear-icon"></i>
+                                <span class="settings-active-dot"></span>
                             </button>
                             <button id="cmd-palette-btn" class="footer-icon-btn" title="Command Palette (Ctrl+K)">
                                 <i class="ph ph-command"></i>
@@ -376,7 +379,7 @@
                 <!-- ────────────────────────────────────── -->
                 <!-- RIGHT PANE: MAIN CHAT INTERFACE       -->
                 <!-- ────────────────────────────────────── -->
-                <main class="telegram-chat-pane" id="telegram-chat-pane">
+                <main class="quantum-chat-pane telegram-chat-pane" id="telegram-chat-pane">
                     
                     <!-- Chat View Top Header -->
                     <header class="chat-pane-header">
@@ -456,6 +459,25 @@
                             <div class="message system-bubble">
                                 <i class="ph ph-lock-key"></i>
                                 <span>Quantum Zero-Knowledge E2EE Active. Server and cloud hosts cannot read messages.</span>
+                            </div>
+                        </div>
+
+                        <!-- Chat Gating Shield Card (Gated until user is added as friend) -->
+                        <div id="chat-gate-card" class="chat-gate-card hidden">
+                            <div class="chat-gate-badge"><i class="ph ph-lock-key"></i> Direct Chat Protected</div>
+                            <div class="chat-gate-avatar" id="chat-gate-avatar">?</div>
+                            <h3 id="chat-gate-name">Peer</h3>
+                            <span class="chat-gate-handle" id="chat-gate-handle">@username</span>
+                            <p id="chat-gate-desc" class="chat-gate-desc">
+                                To protect your privacy and prevent unsolicited messages, you must add this contact to your friends list before direct messaging and calling are unlocked.
+                            </p>
+                            <div class="chat-gate-actions">
+                                <button id="chat-gate-add-btn" class="btn primary-btn pulse-glow">
+                                    <i class="ph ph-user-plus"></i> Add Friend to Unlock
+                                </button>
+                                <button id="chat-gate-profile-btn" class="btn secondary-btn">
+                                    <i class="ph ph-identification-card"></i> View Profile
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -690,7 +712,7 @@
                 <button id="user-profile-close-btn" class="icon-btn-round"><i class="ph ph-x"></i></button>
             </div>
             
-            <div class="instagram-profile-card">
+            <div class="quantum-profile-card instagram-profile-card">
                 <div class="profile-avatar-halo" id="up-avatar-halo">
                     <div class="profile-avatar-main" id="up-avatar">U</div>
                 </div>
@@ -740,6 +762,95 @@
 
 
     <!-- ══════════════════════════════════════════ -->
+    <!-- QUANTUM FIND & ADD FRIENDS MODAL           -->
+    <!-- ══════════════════════════════════════════ -->
+    <div id="add-friend-modal" class="modal hidden">
+        <div class="modal-content glass-panel add-friend-modal-content">
+            <div class="modal-top">
+                <div class="modal-header-title">
+                    <i class="ph ph-user-plus" style="color:var(--accent); font-size:1.4rem;"></i>
+                    <h3>Find & Add Friends</h3>
+                </div>
+                <button id="add-friend-close-btn" class="icon-btn-round"><i class="ph ph-x"></i></button>
+            </div>
+            
+            <p class="muted" style="margin-bottom:14px; font-size:0.85rem; line-height:1.4;">
+                Search registered users across the network by username or Quantum ID to add them to your contacts and chat instantly.
+            </p>
+
+            <div class="friend-search-bar">
+                <i class="ph ph-magnifying-glass search-bar-icon"></i>
+                <input type="text" id="add-friend-input" placeholder="Search by @username, name, or ESC ID..." autocomplete="off">
+                <button id="add-friend-clear-btn" class="search-clear-btn hidden"><i class="ph ph-x"></i></button>
+            </div>
+
+            <!-- Live Search Results Container -->
+            <div id="add-friend-results" class="friend-results-container">
+                <div class="friend-search-placeholder">
+                    <i class="ph ph-users-three" style="font-size:2.4rem; opacity:0.35; margin-bottom:8px; display:block;"></i>
+                    <p>Enter a username above to find users</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- FRIEND PROFILE PREVIEW & VERIFICATION CARD  -->
+    <!-- ══════════════════════════════════════════ -->
+    <div id="friend-profile-preview-modal" class="modal hidden">
+        <div class="modal-content glass-panel friend-preview-content">
+            <div class="friend-preview-banner">
+                <div class="preview-badge"><i class="ph ph-shield-check"></i> Identity Verified</div>
+                <button id="friend-preview-close-btn" class="icon-btn-round preview-close-btn"><i class="ph ph-x"></i></button>
+            </div>
+            
+            <div class="friend-preview-body">
+                <div class="friend-preview-avatar-halo" id="friend-preview-avatar-halo">
+                    <div class="friend-preview-avatar" id="friend-preview-avatar">U</div>
+                    <span class="preview-presence-dot online" id="friend-preview-presence"></span>
+                </div>
+
+                <div class="friend-preview-meta">
+                    <h2 class="friend-preview-name" id="friend-preview-name">Display Name</h2>
+                    <div class="friend-preview-sub">
+                        <span class="friend-preview-handle" id="friend-preview-handle">@username</span>
+                        <span class="friend-preview-id-chip" id="friend-preview-id">ESC-000000</span>
+                    </div>
+                </div>
+
+                <div class="friend-preview-bio-box">
+                    <p class="friend-preview-bio" id="friend-preview-bio">Quantum decentralized peer. Zero-knowledge encrypted.</p>
+                </div>
+
+                <!-- Network Capability Badges -->
+                <div class="friend-preview-badges">
+                    <span class="preview-cap-pill"><i class="ph ph-shield-check"></i> Zero-Knowledge E2EE</span>
+                    <span class="preview-cap-pill"><i class="ph ph-phone-call"></i> P2P Audio/Video</span>
+                    <span class="preview-cap-pill"><i class="ph ph-lightning"></i> Fast Mesh Relay</span>
+                </div>
+
+                <!-- Mutual / Added You Notice (Shown if this peer already added user) -->
+                <div id="friend-preview-added-you-notice" class="friend-preview-alert hidden">
+                    <i class="ph ph-sparkle"></i>
+                    <span>This user has already added you! Tap <strong>Add Back</strong> to become mutual friends.</span>
+                </div>
+
+                <!-- Profile Action Buttons -->
+                <div class="friend-preview-actions">
+                    <button id="friend-preview-add-btn" class="btn primary-btn full-width pulse-glow">
+                        <i class="ph ph-user-plus"></i> <span id="friend-preview-add-label">Add Friend</span>
+                    </button>
+                    <button id="friend-preview-chat-btn" class="btn secondary-btn full-width hidden">
+                        <i class="ph ph-chat-circle-dots"></i> Message Friend
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════ -->
     <!-- QUANTUM QR NAMETAG MODAL                   -->
     <!-- ══════════════════════════════════════════ -->
     <div id="qr-nametag-modal" class="modal hidden">
@@ -779,17 +890,25 @@
     <div id="settings-suite-modal" class="modal hidden">
         <div class="modal-content settings-suite-content glass-panel">
             <div class="settings-modal-header">
-                <div class="settings-header-title">
-                    <i class="ph ph-gear-six" style="color:var(--primary); font-size:1.4rem;"></i>
-                    <h3>Quantum Control & Settings</h3>
+                <div class="settings-header-left">
+                    <button id="settings-back-btn" class="settings-back-btn hidden" title="Back to Settings Overview">
+                        <i class="ph ph-caret-left"></i> <span>Settings</span>
+                    </button>
+                    <div class="settings-header-title">
+                        <i class="ph ph-gear-six" id="settings-header-icon" style="color:var(--primary); font-size:1.4rem;"></i>
+                        <h3 id="settings-header-text">Settings & Preferences</h3>
+                    </div>
                 </div>
                 <button id="settings-close-btn" class="icon-btn-round"><i class="ph ph-x"></i></button>
             </div>
 
             <div class="settings-body-layout">
-                <!-- Settings Left Nav Tabs -->
+                <!-- Settings Left Nav Tabs (Quick navigation for wide screens) -->
                 <nav class="settings-nav-pane">
-                    <button class="settings-nav-btn active" data-tab="profile">
+                    <button class="settings-nav-btn active" data-tab="hub">
+                        <i class="ph ph-squares-four"></i> Overview
+                    </button>
+                    <button class="settings-nav-btn" data-tab="profile">
                         <i class="ph ph-user-circle"></i> Profile & Identity
                     </button>
                     <button class="settings-nav-btn" data-tab="privacy">
@@ -809,11 +928,96 @@
                     </button>
                 </nav>
 
-                <!-- Settings Right Content Area -->
+                <!-- Settings Content Area -->
                 <div class="settings-content-pane">
                     
-                    <!-- TAB 1: Profile & Identity -->
-                    <div class="settings-tab-view active" id="tab-profile-view">
+                    <!-- ── ROOT HUB VIEW: Drill-down Category Menu ── -->
+                    <div class="settings-tab-view active" id="tab-hub-view">
+                        <div class="settings-hub-profile-card" id="hub-profile-card" data-tab="profile">
+                            <div class="hub-avatar-wrap" id="hub-avatar-wrap">
+                                <div class="hub-avatar" id="hub-avatar-display">U</div>
+                            </div>
+                            <div class="hub-profile-info">
+                                <h3 id="hub-profile-name">User Name</h3>
+                                <span class="hub-profile-handle" id="hub-profile-handle">@username</span>
+                                <span class="hub-profile-id" id="hub-profile-id">ESC-000000</span>
+                            </div>
+                            <button class="hub-edit-btn" title="Edit Profile">
+                                <span>Edit</span> <i class="ph ph-caret-right"></i>
+                            </button>
+                        </div>
+
+                        <div class="settings-hub-options-list">
+                            <button class="settings-hub-card" data-tab="profile">
+                                <div class="hub-card-icon" style="background:linear-gradient(135deg, rgba(6,214,199,0.2), rgba(59,130,246,0.2)); color:var(--accent);">
+                                    <i class="ph ph-user-circle"></i>
+                                </div>
+                                <div class="hub-card-details">
+                                    <span class="hub-card-title">Profile & Identity</span>
+                                    <span class="hub-card-desc">Display name, bio, futuristic avatar presets & QR nametag</span>
+                                </div>
+                                <i class="ph ph-caret-right hub-card-arrow"></i>
+                            </button>
+
+                            <button class="settings-hub-card" data-tab="privacy">
+                                <div class="hub-card-icon" style="background:linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.2)); color:#a855f7;">
+                                    <i class="ph ph-shield-check"></i>
+                                </div>
+                                <div class="hub-card-details">
+                                    <span class="hub-card-title">Privacy & Security</span>
+                                    <span class="hub-card-desc">4-Digit PIN screen lock, read receipts, stealth status, burn timer</span>
+                                </div>
+                                <i class="ph ph-caret-right hub-card-arrow"></i>
+                            </button>
+
+                            <button class="settings-hub-card" data-tab="chats">
+                                <div class="hub-card-icon" style="background:linear-gradient(135deg, rgba(16,185,129,0.2), rgba(6,214,199,0.2)); color:#10b981;">
+                                    <i class="ph ph-paint-brush"></i>
+                                </div>
+                                <div class="hub-card-details">
+                                    <span class="hub-card-title">Chats & Aesthetics</span>
+                                    <span class="hub-card-desc">Theme suite (6 cyber themes), wallpapers, bubble font size, send mode</span>
+                                </div>
+                                <i class="ph ph-caret-right hub-card-arrow"></i>
+                            </button>
+
+                            <button class="settings-hub-card" data-tab="notifications">
+                                <div class="hub-card-icon" style="background:linear-gradient(135deg, rgba(245,158,11,0.2), rgba(239,68,68,0.2)); color:#f59e0b;">
+                                    <i class="ph ph-bell-ringing"></i>
+                                </div>
+                                <div class="hub-card-details">
+                                    <span class="hub-card-title">Sounds & Alerts</span>
+                                    <span class="hub-card-desc">Synthesizer SFX, incoming call ringtones, system toasts</span>
+                                </div>
+                                <i class="ph ph-caret-right hub-card-arrow"></i>
+                            </button>
+
+                            <button class="settings-hub-card" data-tab="storage">
+                                <div class="hub-card-icon" style="background:linear-gradient(135deg, rgba(59,130,246,0.2), rgba(99,102,241,0.2)); color:#3b82f6;">
+                                    <i class="ph ph-hard-drives"></i>
+                                </div>
+                                <div class="hub-card-details">
+                                    <span class="hub-card-title">Data & Storage</span>
+                                    <span class="hub-card-desc">Encrypted local storage meter, cache clear, history reset</span>
+                                </div>
+                                <i class="ph ph-caret-right hub-card-arrow"></i>
+                            </button>
+
+                            <button class="settings-hub-card stealth-admin-tab hidden" data-tab="admin" id="settings-hub-admin-card">
+                                <div class="hub-card-icon" style="background:linear-gradient(135deg, rgba(245,158,11,0.25), rgba(251,191,36,0.25)); color:#fbbf24;">
+                                    <i class="ph ph-shield-star"></i>
+                                </div>
+                                <div class="hub-card-details">
+                                    <span class="hub-card-title">Admin Command Console</span>
+                                    <span class="hub-card-desc">Server telemetry, active mesh spaces, user management</span>
+                                </div>
+                                <i class="ph ph-caret-right hub-card-arrow"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ── TAB 1: Profile & Identity ── -->
+                    <div class="settings-tab-view" id="tab-profile-view">
                         <div class="settings-profile-preview">
                             <div class="settings-avatar-wrap" id="settings-avatar-halo">
                                 <div class="settings-avatar" id="settings-avatar-text">U</div>
@@ -837,288 +1041,495 @@
                             </div>
                         </div>
 
-                        <!-- Avatar Photo Preset Row -->
-                        <div class="avatar-preset-section" style="margin-bottom:16px;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                                <span style="font-size:0.8rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Futuristic Avatar Presets:</span>
-                                <button id="settings-avatar-remove-btn" class="text-danger" style="background:none; border:none; font-size:0.75rem; cursor:pointer;" title="Reset to Initial Letter">
-                                    <i class="ph ph-trash"></i> Reset to Initial
+                        <!-- Accordion Option 1: Profile Identity Details -->
+                        <div class="settings-accordion-item open">
+                            <button class="settings-accordion-header" type="button">
+                                <div class="acc-header-left">
+                                    <i class="ph ph-identification-card acc-icon"></i>
+                                    <div class="acc-titles">
+                                        <strong>Profile Information</strong>
+                                        <span class="acc-desc">Customize your public screen name and bio</span>
+                                    </div>
+                                </div>
+                                <div class="acc-header-right">
+                                    <i class="ph ph-caret-down acc-caret"></i>
+                                </div>
+                            </button>
+                            <div class="settings-accordion-body">
+                                <div class="settings-form-group">
+                                    <label>Display Name</label>
+                                    <input type="text" id="settings-input-displayname" class="text-input" placeholder="Enter your display name">
+                                </div>
+
+                                <div class="settings-form-group">
+                                    <label>Bio / Status Line</label>
+                                    <input type="text" id="settings-input-bio" class="text-input" placeholder="Your status or bio line">
+                                </div>
+
+                                <div class="settings-action-row" style="margin-top:12px;">
+                                    <button id="settings-save-profile-btn" class="btn primary-btn">
+                                        <i class="ph ph-floppy-disk"></i> Save Changes
+                                    </button>
+                                    <button id="settings-my-nametag-btn" class="btn secondary-btn">
+                                        <i class="ph ph-qr-code"></i> My QR Nametag
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Option 2: Futuristic Avatar Presets -->
+                        <div class="settings-accordion-item">
+                            <button class="settings-accordion-header" type="button">
+                                <div class="acc-header-left">
+                                    <i class="ph ph-sparkle acc-icon"></i>
+                                    <div class="acc-titles">
+                                        <strong>Futuristic Avatar Presets</strong>
+                                        <span class="acc-desc">Choose from high-tech cyber personas</span>
+                                    </div>
+                                </div>
+                                <div class="acc-header-right">
+                                    <i class="ph ph-caret-down acc-caret"></i>
+                                </div>
+                            </button>
+                            <div class="settings-accordion-body">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                    <span style="font-size:0.8rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Pick a Cyber Preset:</span>
+                                    <button id="settings-avatar-remove-btn" class="text-danger" style="background:none; border:none; font-size:0.75rem; cursor:pointer;" title="Reset to Initial Letter">
+                                        <i class="ph ph-trash"></i> Reset to Initial
+                                    </button>
+                                </div>
+                                <div class="avatar-preset-picker" id="avatar-preset-picker">
+                                    <!-- Populated dynamically by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── TAB 2: Privacy & Security ── -->
+                    <div class="settings-tab-view" id="tab-privacy-view">
+                        <!-- Accordion Option 1: Read Receipts & Last Seen -->
+                        <div class="settings-accordion-item open">
+                            <button class="settings-accordion-header" type="button">
+                                <div class="acc-header-left">
+                                    <i class="ph ph-eye acc-icon"></i>
+                                    <div class="acc-titles">
+                                        <strong>Presence & Read Receipts</strong>
+                                        <span class="acc-desc">Control blue checkmarks and online visibility</span>
+                                    </div>
+                                </div>
+                                <div class="acc-header-right">
+                                    <i class="ph ph-caret-down acc-caret"></i>
+                                </div>
+                            </button>
+                            <div class="settings-accordion-body">
+                                <div class="settings-row">
+                                    <div class="settings-row-info">
+                                        <strong>Read Receipts (Blue Ticks ✓✓)</strong>
+                                        <p class="muted">Show when messages have been opened and read.</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="pref-read-receipts" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+
+                                <div class="settings-row" style="margin-top:10px;">
+                                    <div class="settings-row-info">
+                                        <strong>Last Seen / Online Status</strong>
+                                        <p class="muted">Who can see your online status.</p>
+                                    </div>
+                                    <select id="pref-last-seen" class="settings-select">
+                                        <option value="everyone">Everyone</option>
+                                        <option value="contacts" selected>My Contacts Only</option>
+                                        <option value="nobody">Nobody (Stealth)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Option 2: 4-Digit Passcode Screen Lock -->
+                        <div class="settings-accordion-item">
+                            <button class="settings-accordion-header" type="button">
+                                <div class="acc-header-left">
+                                    <i class="ph ph-lock-key acc-icon"></i>
+                                    <div class="acc-titles">
+                                        <strong>4-Digit Passcode Screen Lock</strong>
+                                        <span class="acc-desc">Require PIN to open and blur workspace</span>
+                                    </div>
+                                </div>
+                                <div class="acc-header-right">
+                                    <i class="ph ph-caret-down acc-caret"></i>
+                                </div>
+                            </button>
+                            <div class="settings-accordion-body">
+                                <div class="settings-row">
+                                    <div class="settings-row-info">
+                                        <strong>Screen Lock Protection</strong>
+                                        <p class="muted">Protect chats with instant blur when tab loses focus.</p>
+                                    </div>
+                                    <button id="setup-passcode-btn" class="btn secondary-btn btn-sm">
+                                        <i class="ph ph-key"></i> <span id="passcode-status-label">Setup PIN</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Option 3: Secret Chat Burn Timer -->
+                        <div class="settings-accordion-item">
+                            <button class="settings-accordion-header" type="button">
+                                <div class="acc-header-left">
+                                    <i class="ph ph-fire acc-icon"></i>
+                                    <div class="acc-titles">
+                                        <strong>Secret Chat Burn Timers</strong>
+                                        <span class="acc-desc">Auto-expire and self-destruct messages after read</span>
+                                    </div>
+                                </div>
+                                <div class="acc-header-right">
+                                    <i class="ph ph-caret-down acc-caret"></i>
+                                </div>
+                            </button>
+                            <div class="settings-accordion-body">
+                                <div class="settings-row">
+                                    <div class="settings-row-info">
+                                        <strong>Default Vanish Duration</strong>
+                                        <p class="muted">Self-destruct timer applied to private conversations.</p>
+                                    </div>
+                                    <select id="pref-burn-timer" class="settings-select">
+                                        <option value="0">Off (Keep history)</option>
+                                        <option value="10">10 Seconds (Fast)</option>
+                                        <option value="60">1 Minute</option>
+                                        <option value="3600">1 Hour</option>
+                                        <option value="86400">24 Hours</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Option 4: Active Device Sessions -->
+                        <div class="settings-accordion-item">
+                            <button class="settings-accordion-header" type="button">
+                                <div class="acc-header-left">
+                                    <i class="ph ph-devices acc-icon"></i>
+                                    <div class="acc-titles">
+                                        <strong>Active Web Sessions</strong>
+                                        <span class="acc-desc">View and manage connected devices</span>
+                                    </div>
+                                </div>
+                                <div class="acc-header-right">
+                                    <i class="ph ph-caret-down acc-caret"></i>
+                                </div>
+                            </button>
+                            <div class="settings-accordion-body">
+                                <div id="sessions-container" class="sessions-list">
+                                    <div class="session-item current">
+                                        <div class="session-icon"><i class="ph ph-desktop"></i></div>
+                                        <div class="session-meta">
+                                            <strong>Current Web Session (Active)</strong>
+                                            <span class="muted" id="current-session-info">Quantum Web Engine • 127.0.0.1</span>
+                                        </div>
+                                        <span class="badge-pill active-badge">This Device</span>
+                                    </div>
+                                </div>
+                                <button id="terminate-other-sessions-btn" class="btn danger-outline-btn btn-sm" style="margin-top:10px;">
+                                    <i class="ph ph-power"></i> Terminate All Other Sessions
                                 </button>
                             </div>
-                            <div class="avatar-preset-picker" id="avatar-preset-picker">
-                                <!-- Populated dynamically by JS -->
-                            </div>
-                        </div>
-
-                        <div class="settings-form-group">
-                            <label>Display Name</label>
-                            <input type="text" id="settings-input-displayname" class="text-input" placeholder="Enter your display name">
-                        </div>
-
-                        <div class="settings-form-group">
-                            <label>Bio / About</label>
-                            <input type="text" id="settings-input-bio" class="text-input" placeholder="Your status or bio line">
-                        </div>
-
-                        <div class="settings-action-row">
-                            <button id="settings-save-profile-btn" class="btn primary-btn">
-                                <i class="ph ph-floppy-disk"></i> Save Changes
-                            </button>
-                            <button id="settings-my-nametag-btn" class="btn secondary-btn">
-                                <i class="ph ph-qr-code"></i> My QR Nametag
-                            </button>
                         </div>
                     </div>
 
-                    <!-- TAB 2: Privacy & Security -->
-                    <div class="settings-tab-view" id="tab-privacy-view">
-                        <h4><i class="ph ph-lock-key"></i> Privacy Controls</h4>
-                        
-                        <div class="settings-row">
-                            <div class="settings-row-info">
-                                <strong>Read Receipts (Blue Ticks ✓✓)</strong>
-                                <p class="muted">Show when messages have been opened and read.</p>
-                            </div>
-                            <label class="switch">
-                                <input type="checkbox" id="pref-read-receipts" checked>
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-
-                        <div class="settings-row">
-                            <div class="settings-row-info">
-                                <strong>Last Seen / Online Status</strong>
-                                <p class="muted">Who can see your online status.</p>
-                            </div>
-                            <select id="pref-last-seen" class="settings-select">
-                                <option value="everyone">Everyone</option>
-                                <option value="contacts" selected>My Contacts Only</option>
-                                <option value="nobody">Nobody (Stealth)</option>
-                            </select>
-                        </div>
-
-                        <div class="settings-divider"></div>
-                        <h4><i class="ph ph-shield-check"></i> Security & App Lock</h4>
-
-                        <div class="settings-row">
-                            <div class="settings-row-info">
-                                <strong>4-Digit Passcode Screen Lock</strong>
-                                <p class="muted">Require PIN to open and blur screen when switching tabs.</p>
-                            </div>
-                            <button id="setup-passcode-btn" class="btn secondary-btn btn-sm">
-                                <i class="ph ph-key"></i> <span id="passcode-status-label">Setup PIN</span>
-                            </button>
-                        </div>
-
-                        <div class="settings-row">
-                            <div class="settings-row-info">
-                                <strong>Default Secret Chat Burn Timer</strong>
-                                <p class="muted">Auto-expire messages after read in Secret Chats.</p>
-                            </div>
-                            <select id="pref-burn-timer" class="settings-select">
-                                <option value="0">Off (Keep history)</option>
-                                <option value="10">10 Seconds (Fast)</option>
-                                <option value="60">1 Minute</option>
-                                <option value="3600">1 Hour</option>
-                                <option value="86400">24 Hours</option>
-                            </select>
-                        </div>
-
-                        <div class="settings-divider"></div>
-                        <h4><i class="ph ph-devices"></i> Active Sessions</h4>
-                        <div id="sessions-container" class="sessions-list">
-                            <div class="session-item current">
-                                <div class="session-icon"><i class="ph ph-desktop"></i></div>
-                                <div class="session-meta">
-                                    <strong>Current Web Session (Active)</strong>
-                                    <span class="muted" id="current-session-info">Quantum Web Engine • 127.0.0.1</span>
-                                </div>
-                                <span class="badge-pill active-badge">This Device</span>
-                            </div>
-                        </div>
-                        <button id="terminate-other-sessions-btn" class="btn danger-outline-btn btn-sm" style="margin-top:10px;">
-                            <i class="ph ph-power"></i> Terminate All Other Sessions
-                        </button>
-                    </div>
-
-                    <!-- TAB 3: Chats & Wallpapers -->
+                    <!-- ── TAB 3: Chats & Wallpapers ── -->
                     <div class="settings-tab-view" id="tab-chats-view">
-                        <h4><i class="ph ph-palette"></i> App Aesthetic & Theme Suite</h4>
-                        <p class="muted">Select a handcrafted cyber theme engineered for Mobile & Desktop PC.</p>
-
-                        <div class="theme-grid" id="theme-suite-grid">
-                            <div class="theme-card active" data-theme="cyber-obsidian">
-                                <div class="theme-swatch-preview">
-                                    <div class="theme-dot" style="background:#060a12;"></div>
-                                    <div class="theme-dot" style="background:#8b5cf6;"></div>
-                                    <div class="theme-dot" style="background:#06d6c7;"></div>
+                        <!-- Accordion Option 1: App Theme Suite -->
+                        <div class="settings-accordion-item open">
+                            <button class="settings-accordion-header" type="button">
+                                <div class="acc-header-left">
+                                    <i class="ph ph-palette acc-icon"></i>
+                                    <div class="acc-titles">
+                                        <strong>App Aesthetic & Themes</strong>
+                                        <span class="acc-desc">6 handcrafted cyberpunk color systems</span>
+                                    </div>
                                 </div>
-                                <span>Cyber Obsidian</span>
-                            </div>
-                            <div class="theme-card" data-theme="midnight-titanium">
-                                <div class="theme-swatch-preview">
-                                    <div class="theme-dot" style="background:#090e17;"></div>
-                                    <div class="theme-dot" style="background:#3b82f6;"></div>
-                                    <div class="theme-dot" style="background:#38bdf8;"></div>
+                                <div class="acc-header-right">
+                                    <i class="ph ph-caret-down acc-caret"></i>
                                 </div>
-                                <span>Midnight Titanium</span>
-                            </div>
-                            <div class="theme-card" data-theme="aurora-emerald">
-                                <div class="theme-swatch-preview">
-                                    <div class="theme-dot" style="background:#03140f;"></div>
-                                    <div class="theme-dot" style="background:#10b981;"></div>
-                                    <div class="theme-dot" style="background:#34d399;"></div>
+                            </button>
+                            <div class="settings-accordion-body">
+                                <div class="theme-grid" id="theme-suite-grid">
+                                    <div class="theme-card active" data-theme="cyber-obsidian">
+                                        <div class="theme-swatch-preview">
+                                            <div class="theme-dot" style="background:#060a12;"></div>
+                                            <div class="theme-dot" style="background:#8b5cf6;"></div>
+                                            <div class="theme-dot" style="background:#06d6c7;"></div>
+                                        </div>
+                                        <span>Cyber Obsidian</span>
+                                    </div>
+                                    <div class="theme-card" data-theme="midnight-titanium">
+                                        <div class="theme-swatch-preview">
+                                            <div class="theme-dot" style="background:#090e17;"></div>
+                                            <div class="theme-dot" style="background:#3b82f6;"></div>
+                                            <div class="theme-dot" style="background:#38bdf8;"></div>
+                                        </div>
+                                        <span>Midnight Titanium</span>
+                                    </div>
+                                    <div class="theme-card" data-theme="aurora-emerald">
+                                        <div class="theme-swatch-preview">
+                                            <div class="theme-dot" style="background:#03140f;"></div>
+                                            <div class="theme-dot" style="background:#10b981;"></div>
+                                            <div class="theme-dot" style="background:#34d399;"></div>
+                                        </div>
+                                        <span>Aurora Emerald</span>
+                                    </div>
+                                    <div class="theme-card" data-theme="solar-cyberpunk">
+                                        <div class="theme-swatch-preview">
+                                            <div class="theme-dot" style="background:#0f0a14;"></div>
+                                            <div class="theme-dot" style="background:#ec4899;"></div>
+                                            <div class="theme-dot" style="background:#f59e0b;"></div>
+                                        </div>
+                                        <span>Solar Cyberpunk</span>
+                                    </div>
+                                    <div class="theme-card" data-theme="oled-pitch">
+                                        <div class="theme-swatch-preview">
+                                            <div class="theme-dot" style="background:#000000;"></div>
+                                            <div class="theme-dot" style="background:#a855f7;"></div>
+                                            <div class="theme-dot" style="background:#06d6c7;"></div>
+                                        </div>
+                                        <span>OLED Pitch</span>
+                                    </div>
+                                    <div class="theme-card" data-theme="nebula-frost">
+                                        <div class="theme-swatch-preview">
+                                            <div class="theme-dot" style="background:#0e1626;"></div>
+                                            <div class="theme-dot" style="background:#6366f1;"></div>
+                                            <div class="theme-dot" style="background:#38bdf8;"></div>
+                                        </div>
+                                        <span>Nebula Frost</span>
+                                    </div>
                                 </div>
-                                <span>Aurora Emerald</span>
-                            </div>
-                            <div class="theme-card" data-theme="solar-cyberpunk">
-                                <div class="theme-swatch-preview">
-                                    <div class="theme-dot" style="background:#0f0a14;"></div>
-                                    <div class="theme-dot" style="background:#ec4899;"></div>
-                                    <div class="theme-dot" style="background:#f59e0b;"></div>
-                                </div>
-                                <span>Solar Cyberpunk</span>
-                            </div>
-                            <div class="theme-card" data-theme="oled-pitch">
-                                <div class="theme-swatch-preview">
-                                    <div class="theme-dot" style="background:#000000;"></div>
-                                    <div class="theme-dot" style="background:#a855f7;"></div>
-                                    <div class="theme-dot" style="background:#06d6c7;"></div>
-                                </div>
-                                <span>OLED Pitch</span>
-                            </div>
-                            <div class="theme-card" data-theme="nebula-frost">
-                                <div class="theme-swatch-preview">
-                                    <div class="theme-dot" style="background:#0e1626;"></div>
-                                    <div class="theme-dot" style="background:#6366f1;"></div>
-                                    <div class="theme-dot" style="background:#38bdf8;"></div>
-                                </div>
-                                <span>Nebula Frost</span>
                             </div>
                         </div>
 
-                        <div class="settings-divider"></div>
-
-                        <h4><i class="ph ph-paint-brush"></i> Chat Wallpapers</h4>
-                        <p class="muted">Select a background aesthetic for your message window.</p>
-
-                        <div class="wallpaper-grid">
-                            <div class="wallpaper-card active" data-wallpaper="cyber-grid">
-                                <div class="wp-preview wp-cyber"></div>
-                                <span>Cyber Grid</span>
-                            </div>
-                            <div class="wallpaper-card" data-wallpaper="doodle-pattern">
-                                <div class="wp-preview wp-doodle"></div>
-                                <span>Quantum Doodle</span>
-                            </div>
-                            <div class="wallpaper-card" data-wallpaper="oled-black">
-                                <div class="wp-preview wp-oled"></div>
-                                <span>OLED Pitch Black</span>
-                            </div>
-                            <div class="wallpaper-card" data-wallpaper="emerald-matrix">
-                                <div class="wp-preview wp-emerald"></div>
-                                <span>Emerald Matrix</span>
+                        <!-- Accordion Option 2: Chat Wallpapers -->
+                        <div class="settings-accordion-item">
+                            <button class="settings-accordion-header" type="button">
+                                <div class="acc-header-left">
+                                    <i class="ph ph-image acc-icon"></i>
+                                    <div class="acc-titles">
+                                        <strong>Chat Wallpapers</strong>
+                                        <span class="acc-desc">Atmospheric backdrop for active conversations</span>
+                                    </div>
+                                </div>
+                                <div class="acc-header-right">
+                                    <i class="ph ph-caret-down acc-caret"></i>
+                                </div>
+                            </button>
+                            <div class="settings-accordion-body">
+                                <div class="wallpaper-grid">
+                                    <div class="wallpaper-card active" data-wallpaper="cyber-grid">
+                                        <div class="wp-preview wp-cyber"></div>
+                                        <span>Cyber Grid</span>
+                                    </div>
+                                    <div class="wallpaper-card" data-wallpaper="doodle-pattern">
+                                        <div class="wp-preview wp-doodle"></div>
+                                        <span>Quantum Doodle</span>
+                                    </div>
+                                    <div class="wallpaper-card" data-wallpaper="oled-black">
+                                        <div class="wp-preview wp-oled"></div>
+                                        <span>OLED Pitch Black</span>
+                                    </div>
+                                    <div class="wallpaper-card" data-wallpaper="emerald-matrix">
+                                        <div class="wp-preview wp-emerald"></div>
+                                        <span>Emerald Matrix</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="settings-divider"></div>
+                        <!-- Accordion Option 3: Typing & Reading Behavior -->
+                        <div class="settings-accordion-item">
+                            <button class="settings-accordion-header" type="button">
+                                <div class="acc-header-left">
+                                    <i class="ph ph-text-aa acc-icon"></i>
+                                    <div class="acc-titles">
+                                        <strong>Input & Typography</strong>
+                                        <span class="acc-desc">Enter-to-send key behavior and bubble font size</span>
+                                    </div>
+                                </div>
+                                <div class="acc-header-right">
+                                    <i class="ph ph-caret-down acc-caret"></i>
+                                </div>
+                            </button>
+                            <div class="settings-accordion-body">
+                                <div class="settings-row">
+                                    <div class="settings-row-info">
+                                        <strong>Press Enter to Send</strong>
+                                        <p class="muted">Enter key sends message; Shift+Enter creates a new line.</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="pref-enter-send" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
 
-                        <div class="settings-row">
-                            <div class="settings-row-info">
-                                <strong>Press Enter to Send</strong>
-                                <p class="muted">Enter key sends message; Shift+Enter creates a new line.</p>
+                                <div class="settings-row" style="margin-top:10px;">
+                                    <div class="settings-row-info">
+                                        <strong>Message Font Size</strong>
+                                        <p class="muted">Adjust reading size of chat bubbles.</p>
+                                    </div>
+                                    <select id="pref-font-size" class="settings-select">
+                                        <option value="small">Compact</option>
+                                        <option value="medium" selected>Standard (15px)</option>
+                                        <option value="large">Large (17px)</option>
+                                    </select>
+                                </div>
                             </div>
-                            <label class="switch">
-                                <input type="checkbox" id="pref-enter-send" checked>
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-
-                        <div class="settings-row">
-                            <div class="settings-row-info">
-                                <strong>Message Font Size</strong>
-                                <p class="muted">Adjust reading size of chat bubbles.</p>
-                            </div>
-                            <select id="pref-font-size" class="settings-select">
-                                <option value="small">Compact</option>
-                                <option value="medium" selected>Standard (15px)</option>
-                                <option value="large">Large (17px)</option>
-                            </select>
                         </div>
                     </div>
 
-                    <!-- TAB 4: Sounds & Alerts -->
+                    <!-- ── TAB 4: Sounds & Alerts ── -->
                     <div class="settings-tab-view" id="tab-notifications-view">
-                        <h4><i class="ph ph-bell-ringing"></i> Sound Effects & Alerts</h4>
+                        <div class="settings-accordion-item open">
+                            <button class="settings-accordion-header" type="button">
+                                <div class="acc-header-left">
+                                    <i class="ph ph-speaker-high acc-icon"></i>
+                                    <div class="acc-titles">
+                                        <strong>Sound Effects & Ringtone</strong>
+                                        <span class="acc-desc">Futuristic synthesized audio and call chimes</span>
+                                    </div>
+                                </div>
+                                <div class="acc-header-right">
+                                    <i class="ph ph-caret-down acc-caret"></i>
+                                </div>
+                            </button>
+                            <div class="settings-accordion-body">
+                                <div class="settings-row">
+                                    <div class="settings-row-info">
+                                        <strong>Synthesizer SFX Feedback</strong>
+                                        <p class="muted">Sci-Fi audio tones for message send and receive.</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="pref-sfx-toggle" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
 
-                        <div class="settings-row">
-                            <div class="settings-row-info">
-                                <strong>Futuristic Synthesizer SFX</strong>
-                                <p class="muted">Sci-Fi audio feedback for incoming and outgoing messages.</p>
+                                <div class="settings-row" style="margin-top:10px;">
+                                    <div class="settings-row-info">
+                                        <strong>Incoming Call Ringtone</strong>
+                                        <p class="muted">Melodic chime when receiving voice or video calls.</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="pref-ringtone-toggle" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
                             </div>
-                            <label class="switch">
-                                <input type="checkbox" id="pref-sfx-toggle" checked>
-                                <span class="slider round"></span>
-                            </label>
                         </div>
 
-                        <div class="settings-row">
-                            <div class="settings-row-info">
-                                <strong>Incoming Call Ringtone</strong>
-                                <p class="muted">Audio chime when receiving voice or video calls.</p>
+                        <div class="settings-accordion-item">
+                            <button class="settings-accordion-header" type="button">
+                                <div class="acc-header-left">
+                                    <i class="ph ph-bell-simple-ringing acc-icon"></i>
+                                    <div class="acc-titles">
+                                        <strong>Notification Banners</strong>
+                                        <span class="acc-desc">System toast snippets & privacy mode</span>
+                                    </div>
+                                </div>
+                                <div class="acc-header-right">
+                                    <i class="ph ph-caret-down acc-caret"></i>
+                                </div>
+                            </button>
+                            <div class="settings-accordion-body">
+                                <div class="settings-row">
+                                    <div class="settings-row-info">
+                                        <strong>Show Message Previews</strong>
+                                        <p class="muted">Display text snippets in notification toasts.</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="pref-preview-toggle" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
                             </div>
-                            <label class="switch">
-                                <input type="checkbox" id="pref-ringtone-toggle" checked>
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-
-                        <div class="settings-row">
-                            <div class="settings-row-info">
-                                <strong>Show Message Previews in System Toasts</strong>
-                                <p class="muted">Display text snippets in notification banners.</p>
-                            </div>
-                            <label class="switch">
-                                <input type="checkbox" id="pref-preview-toggle" checked>
-                                <span class="slider round"></span>
-                            </label>
                         </div>
                     </div>
 
-                    <!-- TAB 5: Data & Storage -->
+                    <!-- ── TAB 5: Data & Storage ── -->
                     <div class="settings-tab-view" id="tab-storage-view">
-                        <h4><i class="ph ph-hard-drives"></i> Storage & Media Cache</h4>
-
-                        <div class="storage-meter-card">
-                            <div class="storage-meta">
-                                <span>Local Encrypted Storage</span>
-                                <strong id="storage-usage-val">0.4 MB</strong>
+                        <div class="settings-accordion-item open">
+                            <button class="settings-accordion-header" type="button">
+                                <div class="acc-header-left">
+                                    <i class="ph ph-chart-pie acc-icon"></i>
+                                    <div class="acc-titles">
+                                        <strong>Encrypted Storage Breakdown</strong>
+                                        <span class="acc-desc">Local client storage allocated for mesh data</span>
+                                    </div>
+                                </div>
+                                <div class="acc-header-right">
+                                    <i class="ph ph-caret-down acc-caret"></i>
+                                </div>
+                            </button>
+                            <div class="settings-accordion-body">
+                                <div class="storage-meter-card">
+                                    <div class="storage-meta">
+                                        <span>Local Encrypted Storage</span>
+                                        <strong id="storage-usage-val">0.4 MB</strong>
+                                    </div>
+                                    <div class="progress-bar-track" style="margin:10px 0;">
+                                        <div class="progress-bar-fill" id="storage-bar-fill" style="width:12%;"></div>
+                                    </div>
+                                    <span class="muted" style="font-size:0.8rem;">Stores encrypted contact keys, wallpapers, and cached audio notes locally.</span>
+                                </div>
                             </div>
-                            <div class="progress-bar-track" style="margin:10px 0;">
-                                <div class="progress-bar-fill" id="storage-bar-fill" style="width:12%;"></div>
-                            </div>
-                            <span class="muted" style="font-size:0.8rem;">Stores encrypted contact keys, wallpapers, and cached voice notes locally in browser.</span>
                         </div>
 
-                        <div class="settings-action-stack" style="margin-top:20px; gap:12px; display:flex; flex-direction:column;">
-                            <button id="clear-media-cache-btn" class="btn secondary-btn full-width">
-                                <i class="ph ph-broom"></i> Clear Cached Media & Voice Notes
+                        <div class="settings-accordion-item">
+                            <button class="settings-accordion-header" type="button">
+                                <div class="acc-header-left">
+                                    <i class="ph ph-broom acc-icon"></i>
+                                    <div class="acc-titles">
+                                        <strong>Storage Maintenance</strong>
+                                        <span class="acc-desc">Clear local cache or purge thread logs</span>
+                                    </div>
+                                </div>
+                                <div class="acc-header-right">
+                                    <i class="ph ph-caret-down acc-caret"></i>
+                                </div>
                             </button>
-                            <button id="clear-chat-history-btn" class="btn danger-outline-btn full-width">
-                                <i class="ph ph-trash"></i> Clear Local Conversation History
-                            </button>
+                            <div class="settings-accordion-body">
+                                <div class="settings-action-stack" style="gap:10px; display:flex; flex-direction:column;">
+                                    <button id="clear-media-cache-btn" class="btn secondary-btn full-width">
+                                        <i class="ph ph-broom"></i> Clear Cached Media & Voice Notes
+                                    </button>
+                                    <button id="clear-chat-history-btn" class="btn danger-outline-btn full-width">
+                                        <i class="ph ph-trash"></i> Clear Local Conversation History
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- TAB 6: Stealth Admin Console (Only visible to verified admins) -->
+                    <!-- ── TAB 6: Stealth Admin Console ── -->
                     <div class="settings-tab-view" id="tab-admin-view">
-                        <h4><i class="ph ph-shield-star" style="color:var(--primary)"></i> Administrator Command Center</h4>
-                        <p class="muted">Restricted portal for system telemetry, active rooms, and user management.</p>
-                        
-                        <div class="admin-quick-links" style="margin-top:16px;">
-                            <button id="settings-open-admin-screen-btn" class="btn primary-btn full-width">
-                                <i class="ph ph-shield-star"></i> Open Full Admin Command Portal
+                        <div class="settings-accordion-item open">
+                            <button class="settings-accordion-header" type="button">
+                                <div class="acc-header-left">
+                                    <i class="ph ph-shield-star acc-icon" style="color:var(--primary)"></i>
+                                    <div class="acc-titles">
+                                        <strong>Administrator Command Center</strong>
+                                        <span class="acc-desc">Restricted portal for system telemetry and management</span>
+                                    </div>
+                                </div>
+                                <div class="acc-header-right">
+                                    <i class="ph ph-caret-down acc-caret"></i>
+                                </div>
                             </button>
+                            <div class="settings-accordion-body">
+                                <p class="muted" style="font-size:0.85rem; margin-bottom:14px;">
+                                    Full telemetry instrumentation, active peer spaces, and user administration are available in the master console.
+                                </p>
+                                <button id="settings-open-admin-screen-btn" class="btn primary-btn full-width">
+                                    <i class="ph ph-shield-star"></i> Open Full Admin Command Portal
+                                </button>
+                            </div>
                         </div>
                     </div>
 

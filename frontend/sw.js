@@ -1,25 +1,30 @@
-const CACHE_NAME = 'esctrix-v15-quantum';
+const CACHE_NAME = 'esctrix-v16-quantum';
 const OFFLINE_URL = '/offline.html';
 const ASSETS = [
     '/',
     '/index.html',
     '/offline.html',
     '/manifest.json',
-    '/static/css/style.css?v=2.1.0',
-    '/static/js/app.js?v=2.1.0',
-    '/static/js/webrtc.js?v=2.1.0',
+    '/static/css/style.css',
+    '/static/js/app.js',
+    '/static/js/webrtc.js',
     '/static/logo.png',
     '/static/icon-192.png',
-    '/static/icon-512.png',
-    '/static/icon-192-maskable.png',
-    '/static/icon-512-maskable.png',
-    '/static/screenshot_wide.png'
+    '/static/icon-512.png'
 ];
 
-// ── Install: pre-cache all core assets ──
+// ── Install: resilient pre-cache of core assets ──
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+        caches.open(CACHE_NAME).then(async (cache) => {
+            for (const asset of ASSETS) {
+                try {
+                    await cache.add(asset);
+                } catch (e) {
+                    console.warn('[SW] Optional asset pre-cache skipped:', asset);
+                }
+            }
+        })
     );
     self.skipWaiting();
 });

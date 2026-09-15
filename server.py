@@ -16,7 +16,8 @@ from database import (
     store_offline_message, get_offline_messages, delete_offline_messages,
     get_user_profile, update_user_profile, search_users,
     add_saved_message, get_saved_messages, delete_saved_message,
-    add_contact, get_contacts, update_user_role, reset_user_password
+    add_contact, get_contacts, update_user_role, reset_user_password,
+    get_incoming_friend_adds, is_friend, get_friends_count
 )
 from ai_engine import (
     ai_chat, ai_vibe_analysis, ai_smart_reply,
@@ -251,8 +252,35 @@ async def fetch_contacts(username: str):
 @app.post("/api/user/contacts/add")
 async def add_new_contact(data: ContactAdd):
     if add_contact(data.owner_username, data.contact_username):
+        # Notify the target user if they have an active persistent socket connection
+        await manager.send_to_user(data.contact_username, {
+            "type": "friend_added",
+            "sender_username": data.owner_username,
+            "message": f"@{data.owner_username} added you as a friend!"
+        })
         return {"status": "success"}
     return {"status": "error", "message": "User not found or already in contacts"}
+
+
+@app.get("/api/user/contacts/incoming")
+async def fetch_incoming_friend_adds(username: str):
+    """Retrieve users who have added this user as a friend, but aren't yet added back."""
+    incoming = get_incoming_friend_adds(username)
+    return {"status": "success", "incoming": incoming}
+
+
+@app.get("/api/user/friends/check")
+async def check_friend_status(user_a: str, user_b: str):
+    """Verify if user_a has added user_b as a friend."""
+    friends = is_friend(user_a, user_b)
+    return {"status": "success", "is_friend": friends}
+
+
+@app.get("/api/user/friends/count")
+async def fetch_friends_count(username: str):
+    """Return total number of added contacts/friends for the user."""
+    count = get_friends_count(username)
+    return {"status": "success", "count": count}
 
 
 class SessionTerminateRequest(BaseModel):
@@ -489,6 +517,49 @@ async def stop_hosting(data: HostStop):
 # ─────────────────────────────────────────────────────────────
 # WebSockets Signaling & Routing
 # ─────────────────────────────────────────────────────────────
+
+@app.websocket("/ws/user/{username}")
+async def user_websocket_endpoint(websocket: WebSocket, username: str):
+    """Persistent global signaling connection per user for direct call alerts, friend notifications, and keepalive."""
+    await websocket.accept()
+    manager.register_user(username, websocket)
+    logger.info(f"User global signaling socket established: @{username}")
+    try:
+        while True:
+            data = await websocket.receive_text()
+            try:
+                message = json.loads(data)
+            except Exception:
+                continue
+
+            msg_type = message.get("type")
+            if msg_type == "ping":
+                await websocket.send_text(json.dumps({"type": "pong"}))
+            elif msg_type in [
+                "direct_call_offer", "direct_call_answer", "direct_ice_candidate",
+                "direct_call_declined", "direct_call_end"
+            ]:
+                target = message.get("target_username")
+                if target:
+                    await manager.send_to_user(target, {
+                        **message,
+                        "sender_username": username
+                    })
+            elif msg_type == "friend_added_notify":
+                target = message.get("target_username")
+                if target:
+                    await manager.send_to_user(target, {
+                        "type": "friend_added",
+                        "sender_username": username,
+                        "message": f"@{username} added you as a friend!"
+                    })
+    except WebSocketDisconnect:
+        manager.unregister_user(username, websocket)
+        logger.info(f"User global signaling socket closed: @{username}")
+    except Exception as e:
+        manager.unregister_user(username, websocket)
+        logger.warning(f"User socket error for @{username}: {e}")
+
 
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):

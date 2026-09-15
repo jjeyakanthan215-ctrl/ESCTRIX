@@ -68,7 +68,46 @@ def _call_gemini(prompt: str, system_instruction: str = "") -> Optional[str]:
                 if parts:
                     return parts[0].get("text", "").strip()
     except Exception as e:
-        logger.warning(f"Gemini API call failed, falling back to built-in NLP engine: {e}")
+        logger.warning(f"Gemini API call failed: {e}")
+    return None
+
+
+def _call_free_ai(prompt: str, system_instruction: str = "") -> Optional[str]:
+    """Call free text endpoint for real generative AI when no Gemini key is provided."""
+    try:
+        url = "https://text.pollinations.ai/"
+        payload = {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": system_instruction or (
+                        "You are Aura AI, the advanced quantum neural companion inside ESCTRIX. "
+                        "You are concise, knowledgeable, helpful, and speak with a futuristic, friendly tone."
+                    )
+                },
+                {"role": "user", "content": prompt}
+            ],
+            "model": "mistral",
+            "seed": 42
+        }
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "ESCTRIX-Quantum/2.0"
+            },
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=5) as response:
+            text = response.read().decode("utf-8").strip()
+            # If the remote service returned a budget limit, key error, or HTML page, discard it
+            if not text or "budget" in text.lower() or "api key" in text.lower() or text.startswith("<!DOCTYPE"):
+                return None
+            if len(text) > 3:
+                return text
+    except Exception as e:
+        logger.debug(f"Free AI endpoint unavailable ({e}), using local knowledge engine.")
     return None
 
 
@@ -84,19 +123,72 @@ def ai_chat(user_message: str, chat_history: Optional[List[Dict[str, str]]] = No
         "You help users with programming, decentralized technology, security, privacy, writing, and everyday questions."
     )
 
-    # Try Gemini if configured
-    gemini_res = _call_gemini(user_message, system_instruction=system_prompt)
-    if gemini_res:
-        return gemini_res
-
-    # Built-in High-Level Intelligent NLP Engine
     msg = user_message.strip().lower()
+
+    # 1. Instant ESCTRIX-specific high accuracy Knowledge Base
+    if ("friend" in msg and ("add" in msg or "find" in msg or "search" in msg or "how" in msg)) or "contact" in msg:
+        if "count" in msg or "how many" in msg:
+            return (
+                "📇 **Contacts & Friend Count**:\n"
+                "- Look at the folder tabs at the top of your chat list: click the **Contacts** tab.\n"
+                "- It displays your live total friend count badge (e.g. `Contacts (3)`).\n"
+                "- You can view all confirmed friends, see who added you recently, and add back mutual friends instantly."
+            )
+        return (
+            "👥 **How to Find and Add Friends in ESCTRIX**:\n"
+            "1. Click the **Search Icon (🔍)** in the top navigation bar or go to the **Contacts** tab.\n"
+            "2. Type the user's `@username` into the search bar.\n"
+            "3. Click on their card to view their full **Profile Verification Card** (display picture, bio, and account ID).\n"
+            "4. Tap **Add Friend**. They will receive a real-time notification in their **Contacts** tab and can add you back with one tap!\n"
+            "5. Once added, direct messaging and P2P calling are automatically unlocked."
+        )
+
+    if any(w in msg for w in ["call", "calling", "voice call", "video call", "webrtc"]):
+        return (
+            "📞 **HD Audio/Video Calling in ESCTRIX**:\n"
+            "- Add the user as a friend first.\n"
+            "- In your direct chat, click the **Audio Call (📞)** or **Video Call (📹)** icon in the top header.\n"
+            "- The recipient receives an instant incoming call modal with ringtone and accept/decline buttons.\n"
+            "- Calls run over direct encrypted WebRTC with low latency and zero server-side recording."
+        )
+
+    if any(w in msg for w in ["contact list", "how many friends", "my contacts", "contacts tab"]):
+        return (
+            "📇 **Contacts & Friend Count**:\n"
+            "- Look at the folder tabs at the top of your chat list: click the **Contacts** tab.\n"
+            "- It displays your live total friend count badge (e.g. `Contacts (3)`).\n"
+            "- You can view all confirmed friends, see who added you recently, and add back mutual friends instantly."
+        )
+
+    if any(w in msg for w in ["qr", "nametag", "qr code", "scan"]):
+        return (
+            "📱 **QR Nametag & Fast Connect**:\n"
+            "- Tap the **QR icon** in the top bar to open your holographic Nametag.\n"
+            "- Other users can scan your QR code with their camera to instantly open your profile and add you.\n"
+            "- You can also download or copy your shareable Quantum Link."
+        )
+
+    if any(w in msg for w in ["lock", "pin", "screen lock", "app lock"]):
+        return (
+            "🔐 **Screen Lock & Privacy Shield**:\n"
+            "- Open **Settings** (⚙️) from the top bar.\n"
+            "- Click on **Privacy & App Lock** to set a custom 4-digit PIN.\n"
+            "- You can lock the screen instantly using the lock button or enable auto-lock on inactivity."
+        )
+
+    if any(w in msg for w in ["supabase", "database", "postgres", "sql"]):
+        return (
+            "🗄️ **Supabase Cloud Database Support**:\n"
+            "- ESCTRIX includes dual-engine database support (SQLite + Supabase PostgreSQL).\n"
+            "- To connect Supabase, set the `SUPABASE_DB_URL` environment variable in your `.env` or Render environment settings.\n"
+            "- Execute `supabase_schema.sql` in your Supabase SQL editor to create all required tables."
+        )
 
     if any(w in msg for w in ["hello", "hi", "hey", "greetings", "aura"]):
         return (
             "Greetings! I am **Aura AI**, your quantum neural companion in ESCTRIX. "
-            "I'm operating in end-to-end encrypted synchronization. "
-            "How can I assist you with your communications, technical analysis, or ideas today?"
+            "I'm operating in real-time neural synchronization. "
+            "How can I assist you with your communications, technical analysis, code, or ideas today?"
         )
 
     if any(w in msg for w in ["who are you", "what are you", "your name"]):
@@ -111,40 +203,28 @@ def ai_chat(user_message: str, chat_history: Optional[List[Dict[str, str]]] = No
             "🔒 **ESCTRIX Quantum Security Architecture**:\n"
             "- **Zero-Knowledge Encryption**: AES-GCM 256-bit + ECDH key exchange directly inside your browser.\n"
             "- **WebRTC Mesh**: Direct peer-to-peer data channels & media streams with DTLS/SRTP.\n"
-            "- **Cloud Blindness**: Even if deployed on public clouds like Render, the server and databases only see undecryptable ciphertext.\n"
+            "- **Cloud Blindness**: The server and databases only see undecryptable ciphertext.\n"
             "- **Vanish & Burn**: Instant cryptographic wiping of sessions."
         )
 
-    if any(w in msg for w in ["features", "what can you do", "help", "commands"]):
-        return (
-            "⚡ **Available Quantum Capabilities**:\n"
-            "- 💬 **Aura AI Chat**: Ask me anything from complex algorithms to creative drafting.\n"
-            "- 🎭 **Vibe & Sentiment Analysis**: Real-time emotional resonance detection for chats.\n"
-            "- ✍️ **Tone Polisher**: One-click rewrite into *Cyberpunk*, *Executive*, *Friendly*, or *Concise*.\n"
-            "- 🌐 **Polyglot Translator**: Translate between 12+ world languages.\n"
-            "- 📝 **Neural Summarizer**: Condense lengthy chat transcripts into key takeaways.\n"
-            "- 📞 **HD Audio/Video Calling**: Low-latency P2P calling and screen sharing.\n"
-            "- ⭐ **Saved Messages Cloud**: Your private encrypted digital vault."
-        )
+    # 2. Try Gemini if configured
+    gemini_res = _call_gemini(user_message, system_instruction=system_prompt)
+    if gemini_res:
+        return gemini_res
 
+    # 3. Call Free AI generation (Pollinations / OpenAI backend)
+    free_ai_res = _call_free_ai(user_message, system_instruction=system_prompt)
+    if free_ai_res:
+        return free_ai_res
+
+    # 4. Intelligent Local Fallback
     if any(w in msg for w in ["code", "python", "javascript", "program", "function", "bug", "api"]):
         return (
             "💻 **Code & Architecture Advisor**:\n"
-            "I can assist in optimizing asynchronous WebSockets, WebRTC renegotiations, SQLite/Firebase syncing, "
-            "or client-side cryptography. Paste your snippet or describe the problem and I'll generate the solution!"
+            "I can assist in optimizing asynchronous WebSockets, WebRTC renegotiations, SQLite/Supabase syncing, "
+            "or client-side cryptography. Paste your snippet or question and I'll generate the solution!"
         )
 
-    if any(w in msg for w in ["render", "deploy", "hosting", "cloud"]):
-        return (
-            "🚀 **Render Cloud Deployment**:\n"
-            "ESCTRIX is optimized for Render with:\n"
-            "- Dynamic port detection (`$PORT`)\n"
-            "- Asynchronous WebSocket connection pooling\n"
-            "- Firebase Cloud DB sync or persistent disk database\n"
-            "- Health check verification at `/health`."
-        )
-
-    # General conversational fallback with intelligent reflection
     return (
         f"Synthesizing analysis on: *\"{user_message}\"*\n\n"
         "Here is my perspective: Focusing on modularity, security, and real-time responsiveness yields the best results. "

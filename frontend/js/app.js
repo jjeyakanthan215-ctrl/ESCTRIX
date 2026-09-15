@@ -51,6 +51,13 @@ const ESCTRIX = {
         isSpeakerMode: true,
         fileReceives: {},
 
+        // Persistent User Signaling Socket & Friends
+        userWs: null,
+        userWsPingInterval: null,
+        incomingFriendAdds: [],
+        friendsCount: 0,
+        activeDirectTarget: null,
+
         // Admin Telemetry
         adminWs: null,
         adminStatsInterval: null
@@ -81,7 +88,7 @@ const ESCTRIX = {
             'auth-title', 'auth-subtitle', 'auth-username', 'auth-password', 'auth-displayname',
             'display-name-group', 'auth-submit-btn', 'auth-toggle', 'auth-toggle-msg', 'login-error',
             'telegram-sidebar', 'telegram-chat-pane', 'chat-search-input', 'search-clear-btn',
-            'new-space-btn', 'chat-threads-list', 'dynamic-chat-threads', 'thread-aura-ai', 'thread-saved-messages',
+            'sidebar-add-friend-btn', 'new-space-btn', 'chat-threads-list', 'dynamic-chat-threads', 'thread-aura-ai', 'thread-saved-messages',
             'drawer-open-btn', 'footer-user-chip', 'footer-user-avatar', 'footer-user-name', 'footer-user-id',
             'footer-settings-btn', 'cmd-palette-btn', 'admin-panel-btn', 'admin-back-btn',
             'back-to-threads-btn', 'active-chat-avatar', 'active-chat-dot', 'active-chat-name', 'active-chat-status',
@@ -114,7 +121,7 @@ const ESCTRIX = {
             'call-screen-share-btn', 'incall-chat-btn', 'incall-chat-panel', 'incall-chat-close', 'incall-messages',
             'incall-message-input', 'incall-send-btn', 'end-video-call-btn',
             'call-type-modal', 'call-type-peer-name', 'start-audio-call-btn', 'start-video-call-btn', 'cancel-call-type-btn',
-            'call-modal', 'caller-name', 'accept-call-btn', 'decline-call-btn',
+            'call-modal', 'caller-name', 'incoming-call-title', 'accept-call-btn', 'decline-call-btn',
             'e2ee-modal', 'e2ee-canvas', 'e2ee-hash-label', 'e2ee-close-btn', 'safety-emojis-row',
             'stat-total-users', 'stat-active-hosts', 'stat-total-connections', 'stat-ai-status', 'admin-users-tbody',
             'admin-hosts-ul', 'admin-chat-log', 'admin-broadcast-msg', 'admin-broadcast-btn',
@@ -133,7 +140,8 @@ const ESCTRIX = {
             'qr-nametag-modal', 'qr-nametag-close-btn', 'nametag-card', 'nametag-avatar', 'nametag-displayname',
             'nametag-username', 'nametag-qr-img', 'nametag-account-id', 'nametag-copy-link-btn',
             // Settings Suite
-            'settings-suite-modal', 'settings-close-btn', 'settings-admin-tab-btn', 'settings-avatar-halo',
+            'settings-suite-modal', 'settings-close-btn', 'settings-back-btn', 'settings-header-icon', 'settings-header-text',
+            'settings-admin-tab-btn', 'settings-avatar-halo',
             'settings-avatar-text', 'settings-avatar-cycle-btn', 'settings-avatar-upload-btn', 'settings-avatar-file-input',
             'settings-avatar-remove-btn', 'avatar-preset-picker',
             'settings-meta-displayname', 'settings-meta-username',
@@ -143,6 +151,17 @@ const ESCTRIX = {
             'terminate-other-sessions-btn', 'pref-enter-send', 'pref-font-size', 'pref-sfx-toggle',
             'pref-ringtone-toggle', 'pref-preview-toggle', 'storage-usage-val', 'storage-bar-fill',
             'clear-media-cache-btn', 'clear-chat-history-btn', 'settings-open-admin-screen-btn', 'settings-logout-btn',
+            'hub-profile-card', 'hub-avatar-display', 'hub-profile-name', 'hub-profile-handle', 'hub-profile-id', 'settings-hub-admin-card',
+            // Find & Add Friends Modal
+            'add-friend-modal', 'add-friend-close-btn', 'add-friend-input', 'add-friend-clear-btn', 'add-friend-results',
+            // Contacts tab & count badge
+            'contacts-count-badge',
+            // Friend Profile Preview Card Modal
+            'friend-profile-preview-modal', 'friend-preview-close-btn', 'friend-preview-avatar-halo', 'friend-preview-avatar',
+            'friend-preview-presence', 'friend-preview-name', 'friend-preview-handle', 'friend-preview-id', 'friend-preview-bio',
+            'friend-preview-added-you-notice', 'friend-preview-add-btn', 'friend-preview-add-label', 'friend-preview-chat-btn',
+            // Chat Gating Shield Card
+            'chat-gate-card', 'chat-gate-avatar', 'chat-gate-name', 'chat-gate-handle', 'chat-gate-desc', 'chat-gate-add-btn', 'chat-gate-profile-btn',
             // Passcode Screen Lock
             'passcode-lock-overlay', 'pin-dots-row', 'pin-clear-btn', 'pin-enter-btn', 'pin-error-msg'
         ];
@@ -265,6 +284,8 @@ const ESCTRIX = {
                     this.applyUserProfile(user);
                     this.loadSavedMessages();
                     this.loadContacts();
+                    this.connectUserSocket(user.username);
+                    this.updateContactsCount();
                     this.renderIntroUserState(user);
                 }
             } catch (e) {
@@ -276,6 +297,132 @@ const ESCTRIX = {
         }
         // Introduction page is always the starting gateway of the project
         this.showScreen('intro-screen');
+    },
+
+    // ─────────────────────────────────────────────────────────
+    // PERSISTENT USER SIGNALING WEBSOCKET (GLOBAL PRESENCE & CALLING)
+    // ─────────────────────────────────────────────────────────
+    connectUserSocket(username) {
+        if (!username) return;
+        if (this.state.userWs && (this.state.userWs.readyState === WebSocket.OPEN || this.state.userWs.readyState === WebSocket.CONNECTING)) {
+            return;
+        }
+        clearInterval(this.state.userWsPingInterval);
+
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/user/${encodeURIComponent(username)}`;
+
+        try {
+            const ws = new WebSocket(wsUrl);
+            this.state.userWs = ws;
+
+            ws.onopen = () => {
+                console.log(`⚡ Persistent global user socket connected: @${username}`);
+                // 25-second keepalive ping to prevent Render 55s reverse-proxy timeout
+                this.state.userWsPingInterval = setInterval(() => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'ping' }));
+                    }
+                }, 25000);
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    this.handleUserSocketMessage(msg);
+                } catch (e) {}
+            };
+
+            ws.onclose = () => {
+                clearInterval(this.state.userWsPingInterval);
+                console.log('User socket disconnected, attempting reconnect in 3s...');
+                if (this.state.user && this.state.user.username === username) {
+                    setTimeout(() => this.connectUserSocket(username), 3000);
+                }
+            };
+
+            ws.onerror = () => {
+                ws.close();
+            };
+        } catch (e) {
+            console.error('Failed to create user socket:', e);
+        }
+    },
+
+    handleUserSocketMessage(msg) {
+        const type = msg.type;
+        if (type === 'pong') {
+            return;
+        }
+
+        if (type === 'friend_added') {
+            this.playSfx('receive');
+            this.showToast(msg.message || `@${msg.sender_username} added you as a friend! 👥`);
+            this.loadContacts();
+            this.updateContactsCount();
+            return;
+        }
+
+        if (type === 'direct_call_offer') {
+            this.playSfx('call');
+            const e = this.elements;
+            if (e.callerName) e.callerName.textContent = msg.sender_username;
+            if (e.incomingCallTitle) {
+                e.incomingCallTitle.textContent = msg.call_type === 'video' ? 'Incoming Video Call' : 'Incoming Audio Call';
+            }
+            this.state.incomingDirectCall = msg;
+            this.modal.open('call-modal');
+            return;
+        }
+
+        if (type === 'direct_call_answer') {
+            if (this.state.p2p && this.state.p2p.peerConnection) {
+                this.state.p2p.peerConnection.setRemoteDescription(new RTCSessionDescription(msg.answer));
+            }
+            return;
+        }
+
+        if (type === 'direct_ice_candidate') {
+            if (this.state.p2p && this.state.p2p.peerConnection && msg.candidate) {
+                this.state.p2p.peerConnection.addIceCandidate(new RTCIceCandidate(msg.candidate)).catch(() => {});
+            }
+            return;
+        }
+
+        if (type === 'direct_call_declined') {
+            this.showToast(`@${msg.sender_username} declined the call.`);
+            this.call.end();
+            return;
+        }
+
+        if (type === 'direct_call_end') {
+            this.showToast(`@${msg.sender_username} ended the call.`);
+            this.call.end();
+            return;
+        }
+    },
+
+    async updateContactsCount() {
+        const username = this.state.user?.username;
+        if (!username) return;
+        try {
+            const [cRes, iRes] = await Promise.all([
+                fetch(`/api/user/friends/count?username=${encodeURIComponent(username)}`),
+                fetch(`/api/user/contacts/incoming?username=${encodeURIComponent(username)}`)
+            ]);
+            const cData = await cRes.json();
+            const iData = await iRes.json();
+
+            if (cData.status === 'success') {
+                this.state.friendsCount = cData.count || 0;
+                if (this.elements.contactsCountBadge) {
+                    this.elements.contactsCountBadge.textContent = String(this.state.friendsCount);
+                }
+            }
+            if (iData.status === 'success') {
+                this.state.incomingFriendAdds = iData.incoming || [];
+            }
+        } catch (e) {}
     },
 
     renderIntroUserState(user) {
@@ -331,6 +478,7 @@ const ESCTRIX = {
         }
         if (e.settingsInputDisplayname) e.settingsInputDisplayname.value = user.display_name || user.username;
         if (e.settingsInputBio) e.settingsInputBio.value = user.bio || '';
+        this.settings?.updateHubProfile(user);
 
         // Intro Screen Card Avatar
         if (e.introUserAvatar) {
@@ -426,6 +574,36 @@ const ESCTRIX = {
         e.footerUserChip?.addEventListener('click', () => this.settings.open());
         e.footerSettingsBtn?.addEventListener('click', () => this.settings.open());
         e.settingsCloseBtn?.addEventListener('click', () => this.settings.close());
+        e.settingsBackBtn?.addEventListener('click', () => this.settings.showHub());
+
+        // Find & Add Friends Modal Triggers
+        e.sidebarAddFriendBtn?.addEventListener('click', () => this.friendSearch.openModal());
+        e.addFriendCloseBtn?.addEventListener('click', () => this.friendSearch.closeModal());
+        e.addFriendClearBtn?.addEventListener('click', () => {
+            if (e.addFriendInput) {
+                e.addFriendInput.value = '';
+                this.friendSearch.search('');
+                e.addFriendInput.focus();
+            }
+        });
+        e.addFriendInput?.addEventListener('input', (ev) => this.friendSearch.search(ev.target.value));
+
+        // Settings Hub Categories & Profile Card navigation
+        document.querySelectorAll('.settings-hub-card, #hub-profile-card').forEach(card => {
+            card.addEventListener('click', (ev) => this.settings.switchTab(ev.currentTarget.dataset.tab));
+        });
+
+        // Expandable Settings Accordion Items (Options reveal right below button)
+        document.addEventListener('click', (ev) => {
+            const header = ev.target.closest('.settings-accordion-header');
+            if (header) {
+                const item = header.closest('.settings-accordion-item');
+                if (item) {
+                    item.classList.toggle('open');
+                    ESCTRIX.playSfx('click');
+                }
+            }
+        });
 
         document.querySelectorAll('.settings-nav-btn').forEach(btn => {
             btn.addEventListener('click', (ev) => this.settings.switchTab(ev.currentTarget.dataset.tab));
@@ -533,6 +711,31 @@ const ESCTRIX = {
         e.qrNametagCloseBtn?.addEventListener('click', () => this.modal.close('qr-nametag-modal'));
         e.nametagCopyLinkBtn?.addEventListener('click', () => this.profileModal.copyNametagLink());
 
+        // Friend Profile Preview Modal Actions
+        e.friendPreviewCloseBtn?.addEventListener('click', () => this.friendPreview.close());
+        e.friendPreviewAddBtn?.addEventListener('click', () => this.friendPreview.handleAddClick());
+        e.friendPreviewChatBtn?.addEventListener('click', () => this.friendPreview.handleChatClick());
+
+        // Chat Gate Card Actions
+        e.chatGateAddBtn?.addEventListener('click', async () => {
+            const target = ESCTRIX.state.activeDirectTarget;
+            if (target) {
+                await ESCTRIX.addContact(target);
+                ESCTRIX.chat.hideChatGate();
+                ESCTRIX.showToast(`Chat with @${target} unlocked! 🔓`);
+            }
+        });
+        e.chatGateProfileBtn?.addEventListener('click', () => {
+            const target = ESCTRIX.state.activeDirectTarget;
+            if (target) {
+                fetch(`/api/user/profile?username=${encodeURIComponent(target)}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.profile) ESCTRIX.friendPreview.open(data.profile);
+                    });
+            }
+        });
+
         // Passcode Screen Lock Keypad
         document.querySelectorAll('.pin-key[data-digit]').forEach(k => {
             k.addEventListener('click', (ev) => this.passcode.pressDigit(ev.currentTarget.dataset.digit));
@@ -542,7 +745,10 @@ const ESCTRIX = {
 
         // Chat Tabs & Folders
         document.querySelectorAll('.folder-tab').forEach(tab => {
-            tab.addEventListener('click', (ev) => this.chat.filterFolder(ev.target.dataset.folder));
+            tab.addEventListener('click', (ev) => {
+                const folder = ev.currentTarget.dataset.folder || ev.target.closest('.folder-tab')?.dataset.folder;
+                if (folder) this.chat.filterFolder(folder);
+            });
         });
 
         // Pinned Thread Selection
@@ -775,6 +981,8 @@ const ESCTRIX = {
                     ESCTRIX.showScreen('dashboard-screen');
                     ESCTRIX.loadSavedMessages();
                     ESCTRIX.loadContacts();
+                    ESCTRIX.connectUserSocket(user.username);
+                    ESCTRIX.updateContactsCount();
                     ESCTRIX.showToast(`Identity verified: ${user.display_name || user.username} 🚀`);
                 } else {
                     e.loginError.textContent = data.message || 'Authentication failed. Please check credentials.';
@@ -789,6 +997,11 @@ const ESCTRIX = {
         logout() {
             localStorage.removeItem('esctrix_quantum_session');
             ESCTRIX.state.user = null;
+            if (ESCTRIX.state.userWs) {
+                try { ESCTRIX.state.userWs.close(); } catch (e) {}
+                ESCTRIX.state.userWs = null;
+            }
+            clearInterval(ESCTRIX.state.userWsPingInterval);
             if (ESCTRIX.state.p2p) {
                 ESCTRIX.state.p2p.disconnect();
                 ESCTRIX.state.p2p = null;
@@ -1009,21 +1222,106 @@ const ESCTRIX = {
     // ADVANCED MULTI-TAB SETTINGS SUITE MODULE
     // ─────────────────────────────────────────────────────────
     settings: {
-        open() {
+        open(targetTab = 'hub') {
             ESCTRIX.playSfx('click');
             const user = ESCTRIX.state.user;
             if (user) {
                 ESCTRIX.applyUserProfile(user);
+                this.updateHubProfile(user);
             }
             this.loadPreferences();
             this.loadSessions();
             this.loadTheme();
             ESCTRIX.initAvatarPresets();
+
+            // Toggle admin tab if admin
+            const isAdmin = user && (user.role === 'admin' || user.username === 'ESCTRIX_Admin');
+            if (ESCTRIX.elements.settingsAdminTabBtn) {
+                ESCTRIX.elements.settingsAdminTabBtn.classList.toggle('hidden', !isAdmin);
+            }
+            if (ESCTRIX.elements.settingsHubAdminCard) {
+                ESCTRIX.elements.settingsHubAdminCard.classList.toggle('hidden', !isAdmin);
+            }
+
             ESCTRIX.elements.settingsSuiteModal?.classList.remove('hidden');
+            if (targetTab && targetTab !== 'hub') {
+                this.switchTab(targetTab);
+            } else {
+                this.showHub();
+            }
         },
 
         close() {
             ESCTRIX.elements.settingsSuiteModal?.classList.add('hidden');
+        },
+
+        updateHubProfile(user) {
+            const e = ESCTRIX.elements;
+            if (!user) return;
+            if (e.hubProfileName) e.hubProfileName.textContent = user.display_name || user.username;
+            if (e.hubProfileHandle) e.hubProfileHandle.textContent = `@${user.username}`;
+            if (e.hubProfileId) e.hubProfileId.textContent = user.account_id || 'ESC-QUANTUM';
+            if (e.hubAvatarDisplay) {
+                if (user.avatar_photo) {
+                    e.hubAvatarDisplay.innerHTML = `<img src="${user.avatar_photo}" alt="Avatar">`;
+                    e.hubAvatarDisplay.style.background = 'transparent';
+                } else {
+                    e.hubAvatarDisplay.textContent = (user.display_name || user.username || 'U').charAt(0).toUpperCase();
+                    if (user.avatar_color) e.hubAvatarDisplay.style.background = user.avatar_color;
+                }
+            }
+        },
+
+        showHub() {
+            ESCTRIX.playSfx('click');
+            const e = ESCTRIX.elements;
+            e.settingsBackBtn?.classList.add('hidden');
+            if (e.settingsHeaderText) e.settingsHeaderText.textContent = 'Settings & Preferences';
+            if (e.settingsHeaderIcon) e.settingsHeaderIcon.className = 'ph ph-gear-six';
+
+            document.querySelectorAll('.settings-nav-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.settings-tab-view').forEach(v => v.classList.remove('active'));
+
+            const hubBtn = document.querySelector(`.settings-nav-btn[data-tab="hub"]`);
+            if (hubBtn) hubBtn.classList.add('active');
+            const hubView = document.getElementById('tab-hub-view');
+            if (hubView) hubView.classList.add('active');
+        },
+
+        switchTab(tabName) {
+            if (tabName === 'hub') {
+                this.showHub();
+                return;
+            }
+            ESCTRIX.playSfx('click');
+            const e = ESCTRIX.elements;
+            e.settingsBackBtn?.classList.remove('hidden');
+
+            const tabTitles = {
+                profile: { text: 'Profile & Identity', icon: 'ph-user-circle' },
+                privacy: { text: 'Privacy & Security', icon: 'ph-shield-check' },
+                chats: { text: 'Chats & Aesthetics', icon: 'ph-paint-brush' },
+                notifications: { text: 'Sounds & Alerts', icon: 'ph-bell-ringing' },
+                storage: { text: 'Data & Storage', icon: 'ph-hard-drives' },
+                admin: { text: 'Admin Command Console', icon: 'ph-shield-star' }
+            };
+
+            const info = tabTitles[tabName];
+            if (info) {
+                if (e.settingsHeaderText) e.settingsHeaderText.textContent = info.text;
+                if (e.settingsHeaderIcon) e.settingsHeaderIcon.className = `ph ${info.icon}`;
+            }
+
+            document.querySelectorAll('.settings-nav-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.settings-tab-view').forEach(v => v.classList.remove('active'));
+
+            const targetBtn = document.querySelector(`.settings-nav-btn[data-tab="${tabName}"]`);
+            const targetView = document.getElementById(`tab-${tabName}-view`);
+            if (targetBtn) {
+                targetBtn.classList.add('active');
+                targetBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+            if (targetView) targetView.classList.add('active');
         },
 
         setTheme(themeName) {
@@ -1042,20 +1340,6 @@ const ESCTRIX = {
             document.querySelectorAll('.theme-card').forEach(c => {
                 c.classList.toggle('active', c.dataset.theme === saved);
             });
-        },
-
-        switchTab(tabName) {
-            ESCTRIX.playSfx('click');
-            document.querySelectorAll('.settings-nav-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.settings-tab-view').forEach(v => v.classList.remove('active'));
-
-            const targetBtn = document.querySelector(`.settings-nav-btn[data-tab="${tabName}"]`);
-            const targetView = document.getElementById(`tab-${tabName}-view`);
-            if (targetBtn) {
-                targetBtn.classList.add('active');
-                targetBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-            }
-            if (targetView) targetView.classList.add('active');
         },
 
         loadPreferences() {
@@ -1261,6 +1545,248 @@ const ESCTRIX = {
     },
 
     // ─────────────────────────────────────────────────────────
+    // FIND & ADD FRIENDS MODULE (SEARCH BY USERNAME)
+    // ─────────────────────────────────────────────────────────
+    friendSearch: {
+        debounceTimer: null,
+
+        openModal() {
+            ESCTRIX.playSfx('click');
+            const e = ESCTRIX.elements;
+            e.addFriendModal?.classList.remove('hidden');
+            if (e.addFriendInput) {
+                e.addFriendInput.value = '';
+                e.addFriendInput.focus();
+            }
+            if (e.addFriendClearBtn) e.addFriendClearBtn.classList.add('hidden');
+            this.renderPlaceholder();
+        },
+
+        closeModal() {
+            ESCTRIX.elements.addFriendModal?.classList.add('hidden');
+        },
+
+        renderPlaceholder() {
+            const container = ESCTRIX.elements.addFriendResults;
+            if (!container) return;
+            container.innerHTML = `
+                <div class="friend-search-placeholder">
+                    <i class="ph ph-users-three" style="font-size:2.4rem; opacity:0.35; margin-bottom:8px; display:block;"></i>
+                    <p>Enter a username above to find users across the network</p>
+                </div>
+            `;
+        },
+
+        search(query) {
+            clearTimeout(this.debounceTimer);
+            const clean = (query || '').trim();
+            const e = ESCTRIX.elements;
+            if (!clean) {
+                e.addFriendClearBtn?.classList.add('hidden');
+                this.renderPlaceholder();
+                return;
+            }
+            e.addFriendClearBtn?.classList.remove('hidden');
+            this.debounceTimer = setTimeout(async () => {
+                try {
+                    const res = await fetch(`/api/user/search?q=${encodeURIComponent(clean)}`);
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        this.renderResults(data.users || [], clean);
+                    }
+                } catch (err) {
+                    console.error('Friend search error:', err);
+                }
+            }, 220);
+        },
+
+        renderResults(users, query) {
+            const container = ESCTRIX.elements.addFriendResults;
+            if (!container) return;
+            const currentUsername = ESCTRIX.state.user?.username;
+            const contacts = ESCTRIX.state.contacts || [];
+            const contactUsernames = new Set(contacts.map(c => c.contact_username));
+
+            const filtered = users.filter(u => u.username !== currentUsername);
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="friend-search-placeholder">
+                        <i class="ph ph-user-circle" style="font-size:2rem; opacity:0.4; margin-bottom:8px; display:block;"></i>
+                        <p>No users found matching <strong style="color:var(--accent)">${query}</strong></p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(u => {
+                const isFriend = contactUsernames.has(u.username);
+                const avatarContent = u.avatar_photo
+                    ? `<img src="${u.avatar_photo}" alt="Avatar">`
+                    : (u.display_name || u.username).charAt(0).toUpperCase();
+                const avatarBg = u.avatar_photo ? 'transparent' : (u.avatar_color || 'var(--primary)');
+                return `
+                    <div class="friend-user-card" data-username="${u.username}">
+                        <div class="friend-card-avatar" style="background:${avatarBg}">
+                            ${avatarContent}
+                        </div>
+                        <div class="friend-card-info">
+                            <span class="friend-card-name">${u.display_name || u.username}</span>
+                            <span class="friend-card-handle">@${u.username}</span>
+                            <span class="friend-card-id">${u.account_id || ''}</span>
+                        </div>
+                        <div class="friend-card-actions">
+                            <button class="friend-action-btn friend-action-preview" data-username="${u.username}" title="View Identity Card">
+                                <i class="ph ph-identification-card"></i>
+                                <span>Profile</span>
+                            </button>
+                            <button class="friend-action-btn friend-action-add ${isFriend ? 'added' : ''}" data-username="${u.username}">
+                                <i class="ph ${isFriend ? 'ph-check' : 'ph-user-plus'}"></i>
+                                <span>${isFriend ? 'Friend' : 'Add Friend'}</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Bind card click to open rich friend preview verification modal
+            container.querySelectorAll('.friend-user-card').forEach(card => {
+                card.addEventListener('click', (ev) => {
+                    if (ev.target.closest('.friend-action-add')) return;
+                    const uname = card.dataset.username;
+                    const foundUser = filtered.find(u => u.username === uname);
+                    if (foundUser) {
+                        ESCTRIX.friendPreview.open(foundUser);
+                    }
+                });
+            });
+
+            // Bind click to add friend
+            container.querySelectorAll('.friend-action-add').forEach(btn => {
+                btn.addEventListener('click', async (ev) => {
+                    ev.stopPropagation();
+                    const targetUsername = btn.dataset.username;
+                    if (!targetUsername || btn.classList.contains('added')) return;
+                    btn.innerHTML = `<i class="ph ph-circle-notch animate-spin"></i> Adding...`;
+                    await ESCTRIX.addContact(targetUsername);
+                    btn.classList.add('added');
+                    btn.innerHTML = `<i class="ph ph-check"></i> Added!`;
+                    ESCTRIX.playSfx('connect');
+                });
+            });
+        }
+    },
+
+    // ─────────────────────────────────────────────────────────
+    // FRIEND PROFILE PREVIEW CARD (IDENTIFICATION CARD)
+    // ─────────────────────────────────────────────────────────
+    friendPreview: {
+        currentUser: null,
+
+        open(user) {
+            if (!user) return;
+            this.currentUser = user;
+            ESCTRIX.playSfx('click');
+
+            const e = ESCTRIX.elements;
+            const contacts = ESCTRIX.state.contacts || [];
+            const isFriend = contacts.some(c => c.contact_username === user.username);
+            const isIncoming = (ESCTRIX.state.incomingFriendAdds || []).some(u => u.username === user.username);
+
+            if (e.friendPreviewName) e.friendPreviewName.textContent = user.display_name || user.username;
+            if (e.friendPreviewHandle) e.friendPreviewHandle.textContent = `@${user.username}`;
+            if (e.friendPreviewId) e.friendPreviewId.textContent = user.account_id || 'ESC-QUANTUM';
+            if (e.friendPreviewBio) e.friendPreviewBio.textContent = user.bio || 'Quantum decentralized peer. Zero-knowledge encrypted.';
+
+            // Avatar rendering
+            if (e.friendPreviewAvatar) {
+                if (user.avatar_photo) {
+                    e.friendPreviewAvatar.innerHTML = `<img src="${user.avatar_photo}" alt="Avatar">`;
+                    e.friendPreviewAvatar.style.background = 'transparent';
+                } else {
+                    e.friendPreviewAvatar.innerHTML = (user.display_name || user.username || 'U').charAt(0).toUpperCase();
+                    e.friendPreviewAvatar.style.background = user.avatar_color || 'var(--primary)';
+                }
+            }
+
+            // Mutual / Added You Notice
+            if (e.friendPreviewAddedYouNotice) {
+                if (isIncoming && !isFriend) {
+                    e.friendPreviewAddedYouNotice.classList.remove('hidden');
+                } else {
+                    e.friendPreviewAddedYouNotice.classList.add('hidden');
+                }
+            }
+
+            // Buttons state
+            if (e.friendPreviewAddBtn && e.friendPreviewAddLabel) {
+                if (isFriend) {
+                    e.friendPreviewAddBtn.classList.add('added');
+                    e.friendPreviewAddBtn.style.opacity = '0.7';
+                    e.friendPreviewAddBtn.disabled = true;
+                    e.friendPreviewAddLabel.textContent = 'Friends ✓';
+                } else if (isIncoming) {
+                    e.friendPreviewAddBtn.classList.remove('added');
+                    e.friendPreviewAddBtn.style.opacity = '1';
+                    e.friendPreviewAddBtn.disabled = false;
+                    e.friendPreviewAddLabel.textContent = 'Add Back 🤝';
+                } else {
+                    e.friendPreviewAddBtn.classList.remove('added');
+                    e.friendPreviewAddBtn.style.opacity = '1';
+                    e.friendPreviewAddBtn.disabled = false;
+                    e.friendPreviewAddLabel.textContent = 'Add Friend';
+                }
+            }
+
+            if (e.friendPreviewChatBtn) {
+                if (isFriend) {
+                    e.friendPreviewChatBtn.classList.remove('hidden');
+                } else {
+                    e.friendPreviewChatBtn.classList.add('hidden');
+                }
+            }
+
+            e.friendProfilePreviewModal?.classList.remove('hidden');
+        },
+
+        close() {
+            ESCTRIX.elements.friendProfilePreviewModal?.classList.add('hidden');
+        },
+
+        async handleAddClick() {
+            if (!this.currentUser) return;
+            const targetUsername = this.currentUser.username;
+            const e = ESCTRIX.elements;
+            if (e.friendPreviewAddBtn) {
+                e.friendPreviewAddBtn.disabled = true;
+                e.friendPreviewAddLabel.textContent = 'Connecting...';
+            }
+            await ESCTRIX.addContact(targetUsername);
+            if (e.friendPreviewAddBtn) {
+                e.friendPreviewAddBtn.classList.add('added');
+                e.friendPreviewAddLabel.textContent = 'Friends ✓';
+                e.friendPreviewAddBtn.style.opacity = '0.7';
+            }
+            if (e.friendPreviewAddedYouNotice) {
+                e.friendPreviewAddedYouNotice.classList.add('hidden');
+            }
+            if (e.friendPreviewChatBtn) {
+                e.friendPreviewChatBtn.classList.remove('hidden');
+            }
+            ESCTRIX.playSfx('connect');
+        },
+
+        handleChatClick() {
+            if (!this.currentUser) return;
+            const targetUsername = this.currentUser.username;
+            this.close();
+            ESCTRIX.elements.addFriendModal?.classList.add('hidden');
+            ESCTRIX.space.openDirectSpace(targetUsername);
+            ESCTRIX.chat.switchChat('space', { spaceName: `@${targetUsername}` });
+        }
+    },
+
+    // ─────────────────────────────────────────────────────────
     // PASSCODE SCREEN LOCK MODULE
     // ─────────────────────────────────────────────────────────
     passcode: {
@@ -1390,9 +1916,12 @@ const ESCTRIX = {
                     avatar: 'sparkle',
                     online: true
                 };
-                e.threadAuraAi.classList.add('active');
-                e.activeChatAvatar.innerHTML = '<i class="ph ph-sparkle"></i>';
-                e.activeChatAvatar.style.background = 'linear-gradient(135deg, #8b5cf6, #06d6c7)';
+                e.threadAuraAi?.classList.add('active');
+                if (e.activeChatAvatar) {
+                    e.activeChatAvatar.innerHTML = '<i class="ph ph-sparkle"></i>';
+                    e.activeChatAvatar.style.background = 'linear-gradient(135deg, #8b5cf6, #06d6c7)';
+                }
+                this.hideChatGate();
             } else if (type === 'saved') {
                 s.activeChat = {
                     id: 'saved',
@@ -1402,21 +1931,34 @@ const ESCTRIX = {
                     avatar: 'bookmark',
                     online: true
                 };
-                e.threadSavedMessages.classList.add('active');
-                e.activeChatAvatar.innerHTML = '<i class="ph ph-bookmark-simple"></i>';
-                e.activeChatAvatar.style.background = 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
+                e.threadSavedMessages?.classList.add('active');
+                if (e.activeChatAvatar) {
+                    e.activeChatAvatar.innerHTML = '<i class="ph ph-bookmark-simple"></i>';
+                    e.activeChatAvatar.style.background = 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
+                }
+                this.hideChatGate();
             } else if (type === 'space') {
                 const spaceName = spaceData?.spaceName || s.activeSpaceName || 'P2P Space';
+                const isDirect = spaceName.startsWith('@');
+                const targetUname = isDirect ? spaceName.slice(1) : null;
                 s.activeChat = {
                     id: 'space',
                     type: 'space',
                     title: spaceName,
-                    subtitle: 'Mesh Room • WebRTC DTLS/SRTP',
-                    avatar: 'broadcast',
+                    subtitle: isDirect ? 'Direct Peer Channel • E2EE' : 'Mesh Room • WebRTC DTLS/SRTP',
+                    avatar: isDirect ? 'user' : 'broadcast',
                     online: true
                 };
-                e.activeChatAvatar.innerHTML = '<i class="ph ph-broadcast"></i>';
-                e.activeChatAvatar.style.background = 'linear-gradient(135deg, #10b981, #06d6c7)';
+                if (e.activeChatAvatar) {
+                    e.activeChatAvatar.innerHTML = isDirect ? '<i class="ph ph-user-circle"></i>' : '<i class="ph ph-broadcast"></i>';
+                    e.activeChatAvatar.style.background = isDirect ? 'linear-gradient(135deg, #06d6c7, #3b82f6)' : 'linear-gradient(135deg, #10b981, #06d6c7)';
+                }
+
+                if (isDirect && targetUname) {
+                    this.checkChatGate(targetUname);
+                } else {
+                    this.hideChatGate();
+                }
             }
 
             e.activeChatName.textContent = s.activeChat.title;
@@ -1685,6 +2227,7 @@ const ESCTRIX = {
                 aiThread.style.display = 'flex';
                 savedThread.style.display = 'flex';
                 dynamicList.style.display = 'block';
+                this.renderChatList();
             } else if (folder === 'ai') {
                 aiThread.style.display = 'flex';
                 savedThread.style.display = 'none';
@@ -1697,10 +2240,17 @@ const ESCTRIX = {
                 aiThread.style.display = 'none';
                 savedThread.style.display = 'none';
                 dynamicList.style.display = 'block';
+                this.renderChatList();
+            } else if (folder === 'contacts') {
+                aiThread.style.display = 'none';
+                savedThread.style.display = 'none';
+                dynamicList.style.display = 'block';
+                this.renderContactsFolder();
             } else {
                 aiThread.style.display = 'flex';
                 savedThread.style.display = 'flex';
                 dynamicList.style.display = 'block';
+                this.renderChatList();
             }
         },
 
@@ -1737,7 +2287,12 @@ const ESCTRIX = {
                 </div>`;
                 return;
             }
+
+            const contacts = ESCTRIX.state.contacts || [];
+            const contactUsernames = new Set(contacts.map(c => c.contact_username));
+
             list.innerHTML = users.map(u => {
+                const isContact = contactUsernames.has(u.username);
                 const avatarContent = u.avatar_photo
                     ? `<img src="${u.avatar_photo}" class="avatar-img" alt="Avatar">`
                     : (u.display_name || u.username).charAt(0).toUpperCase();
@@ -1752,9 +2307,14 @@ const ESCTRIX = {
                         <div class="thread-info">
                             <div class="thread-top-line">
                                 <span class="thread-title">${u.display_name || u.username}</span>
-                                <button class="user-search-msg-btn" data-dm="${u.username}" title="Message @${u.username}">
-                                    <i class="ph ph-chat-circle-dots"></i> Message
-                                </button>
+                                <div style="display:flex; align-items:center; gap:4px;">
+                                    <button class="user-search-add-btn ${isContact ? 'added' : ''}" data-add="${u.username}" title="${isContact ? 'In Contacts' : 'Add Friend'}">
+                                        <i class="ph ${isContact ? 'ph-check' : 'ph-user-plus'}"></i> ${isContact ? 'Friend' : 'Add'}
+                                    </button>
+                                    <button class="user-search-msg-btn" data-dm="${u.username}" title="Message @${u.username}">
+                                        <i class="ph ph-chat-circle-dots"></i> Message
+                                    </button>
+                                </div>
                             </div>
                             <div class="thread-bottom-line">
                                 <span class="thread-preview" style="color:var(--accent); font-weight:600;">@${u.username}</span>
@@ -1765,11 +2325,24 @@ const ESCTRIX = {
                 `;
             }).join('');
 
-            // Bind click to open Profile Card or Message
+            // Bind click to open Profile Card, Add Friend, or Message
             list.querySelectorAll('.user-search-result').forEach(row => {
-                row.addEventListener('click', (ev) => {
+                row.addEventListener('click', async (ev) => {
+                    const addBtn = ev.target.closest('.user-search-add-btn');
                     const dmBtn = ev.target.closest('.user-search-msg-btn');
                     const targetUname = row.dataset.username;
+
+                    if (addBtn) {
+                        ev.stopPropagation();
+                        if (!targetUname || addBtn.classList.contains('added')) return;
+                        addBtn.innerHTML = `<i class="ph ph-circle-notch animate-spin"></i>`;
+                        await ESCTRIX.addContact(targetUname);
+                        addBtn.classList.add('added');
+                        addBtn.innerHTML = `<i class="ph ph-check"></i> Friend`;
+                        ESCTRIX.playSfx('connect');
+                        return;
+                    }
+
                     if (dmBtn) {
                         ev.stopPropagation();
                         ESCTRIX.space.openDirectSpace(targetUname);
@@ -1778,10 +2351,255 @@ const ESCTRIX = {
                     }
                     const foundUser = users.find(u => u.username === targetUname);
                     if (foundUser) {
-                        ESCTRIX.profileModal.open(foundUser);
+                        ESCTRIX.friendPreview.open(foundUser);
                     }
                 });
             });
+        },
+
+        renderContactsFolder() {
+            const list = ESCTRIX.elements.dynamicChatThreads;
+            const contacts = ESCTRIX.state.contacts || [];
+            const incoming = ESCTRIX.state.incomingFriendAdds || [];
+
+            let html = '';
+
+            // Folder Header with Action
+            html += `
+                <div class="contacts-section-header">
+                    <span style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em; font-weight:700; color:var(--accent);">
+                        Friends (${contacts.length})
+                    </span>
+                    <button id="contacts-find-btn" style="background:rgba(6, 214, 199, 0.12); border:1px solid var(--accent); color:var(--accent); font-size:0.7rem; font-weight:600; padding:4px 9px; border-radius:6px; cursor:pointer; display:flex; align-items:center; gap:5px; transition:all 0.2s ease;">
+                        <i class="ph ph-user-plus"></i> Add Friend
+                    </button>
+                </div>
+            `;
+
+            // Incoming requests / "Added You" section
+            if (incoming.length > 0) {
+                html += `
+                    <div style="padding:8px 14px 4px; font-size:0.72rem; color:var(--primary); font-weight:700; text-transform:uppercase; letter-spacing:0.06em; display:flex; align-items:center; gap:6px;">
+                        <i class="ph ph-bell-ringing"></i> Added You (${incoming.length})
+                    </div>
+                `;
+                incoming.forEach(u => {
+                    const avatarContent = u.avatar_photo
+                        ? `<img src="${u.avatar_photo}" class="avatar-img" alt="Avatar">`
+                        : (u.display_name || u.username).charAt(0).toUpperCase();
+                    const avatarBg = u.avatar_photo ? 'transparent' : (u.avatar_color || 'var(--primary)');
+                    html += `
+                        <div class="chat-thread-item incoming-friend-item" data-username="${u.username}">
+                            <div class="thread-avatar-wrap">
+                                <div class="thread-avatar" style="background:${avatarBg}">
+                                    ${avatarContent}
+                                </div>
+                            </div>
+                            <div class="thread-info">
+                                <div class="thread-top-line">
+                                    <span class="thread-title">${u.display_name || u.username}</span>
+                                    <button class="user-search-add-btn add-back-btn" data-add="${u.username}" title="Add back to friends">
+                                        <i class="ph ph-user-plus"></i> Add Back
+                                    </button>
+                                </div>
+                                <div class="thread-bottom-line">
+                                    <span class="thread-preview" style="color:var(--accent); font-weight:600;">@${u.username}</span>
+                                    <span style="font-size:0.7rem; color:var(--text-muted); font-family:var(--font-mono);">${u.account_id || ''}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // Existing contacts / friends list
+            if (contacts.length === 0) {
+                html += `
+                    <div style="padding:32px 18px; text-align:center; color:var(--text-muted);">
+                        <i class="ph ph-users" style="font-size:2.5rem; opacity:0.35; display:block; margin-bottom:10px; color:var(--accent);"></i>
+                        <div style="font-size:0.9rem; font-weight:600; color:var(--text-main); margin-bottom:4px;">No Friends Added Yet</div>
+                        <div style="font-size:0.75rem; line-height:1.4; margin-bottom:14px;">Search and add friends by their @username to unlock direct messaging and WebRTC calls.</div>
+                        <button class="btn primary-btn btn-sm" id="contacts-empty-find-btn" style="margin:0 auto; padding:6px 14px; font-size:0.75rem;">
+                            <i class="ph ph-magnifying-glass"></i> Find Friends
+                        </button>
+                    </div>
+                `;
+            } else {
+                contacts.forEach(c => {
+                    const avatarContent = c.avatar_photo
+                        ? `<img src="${c.avatar_photo}" class="avatar-img" alt="Avatar">`
+                        : (c.display_name || c.contact_username).charAt(0).toUpperCase();
+                    const avatarBg = c.avatar_photo ? 'transparent' : (c.avatar_color || 'var(--primary)');
+                    html += `
+                        <div class="chat-thread-item contact-folder-item" data-username="${c.contact_username}">
+                            <div class="thread-avatar-wrap">
+                                <div class="thread-avatar" style="background:${avatarBg}">
+                                    ${avatarContent}
+                                </div>
+                            </div>
+                            <div class="thread-info">
+                                <div class="thread-top-line">
+                                    <span class="thread-title">${c.display_name || c.contact_username}</span>
+                                    <div style="display:flex; align-items:center; gap:4px;">
+                                        <button class="user-search-msg-btn contact-dm-btn" data-dm="${c.contact_username}" title="Direct Message">
+                                            <i class="ph ph-chat-circle-dots"></i> Chat
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="thread-bottom-line">
+                                    <span class="thread-preview" style="color:var(--accent); font-weight:600;">@${c.contact_username}</span>
+                                    <span style="font-size:0.7rem; color:var(--text-muted); font-family:var(--font-mono);">${c.contact_account_id || ''}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            list.innerHTML = html;
+
+            // Wire up actions
+            list.querySelector('#contacts-find-btn')?.addEventListener('click', () => {
+                ESCTRIX.friendSearch.open();
+            });
+            list.querySelector('#contacts-empty-find-btn')?.addEventListener('click', () => {
+                ESCTRIX.friendSearch.open();
+            });
+
+            list.querySelectorAll('.add-back-btn').forEach(btn => {
+                btn.addEventListener('click', async (ev) => {
+                    ev.stopPropagation();
+                    const uname = btn.dataset.add;
+                    if (!uname) return;
+                    btn.innerHTML = `<i class="ph ph-circle-notch animate-spin"></i>`;
+                    await ESCTRIX.addContact(uname);
+                    btn.innerHTML = `<i class="ph ph-check"></i> Friends`;
+                    btn.classList.add('added');
+                    ESCTRIX.playSfx('connect');
+                    ESCTRIX.chat.renderContactsFolder();
+                });
+            });
+
+            list.querySelectorAll('.incoming-friend-item').forEach(row => {
+                row.addEventListener('click', (ev) => {
+                    if (ev.target.closest('.add-back-btn')) return;
+                    const uname = row.dataset.username;
+                    const incomingUser = (ESCTRIX.state.incomingFriendAdds || []).find(u => u.username === uname);
+                    if (incomingUser) ESCTRIX.friendPreview.open(incomingUser);
+                });
+            });
+
+            list.querySelectorAll('.contact-dm-btn').forEach(btn => {
+                btn.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    const uname = btn.dataset.dm;
+                    if (!uname) return;
+                    ESCTRIX.space.openDirectSpace(uname);
+                    ESCTRIX.chat.switchChat('space', { spaceName: `@${uname}` });
+                });
+            });
+
+            list.querySelectorAll('.contact-folder-item').forEach(row => {
+                row.addEventListener('click', (ev) => {
+                    if (ev.target.closest('.contact-dm-btn')) return;
+                    const uname = row.dataset.username;
+                    const c = (ESCTRIX.state.contacts || []).find(x => x.contact_username === uname);
+                    if (c) {
+                        ESCTRIX.friendPreview.open({
+                            username: c.contact_username,
+                            display_name: c.display_name,
+                            account_id: c.contact_account_id,
+                            avatar_color: c.avatar_color,
+                            avatar_photo: c.avatar_photo,
+                            bio: c.bio
+                        });
+                    }
+                });
+            });
+        },
+
+        async checkChatGate(targetUsername) {
+            const e = ESCTRIX.elements;
+            const s = ESCTRIX.state;
+            const myUname = s.user?.username;
+
+            // Aura AI, Saved Messages, and group spaces are ungated
+            if (!targetUsername || targetUsername === myUname || s.activeChat?.type === 'ai' || s.activeChat?.type === 'saved') {
+                this.hideChatGate();
+                return;
+            }
+
+            if (s.activeChat?.title && !s.activeChat.title.startsWith('@')) {
+                this.hideChatGate();
+                return;
+            }
+
+            // Check if user is in local contacts
+            const isLocalFriend = (s.contacts || []).some(c => c.contact_username === targetUsername);
+            if (isLocalFriend) {
+                this.hideChatGate();
+                return;
+            }
+
+            // Check backend friends status
+            try {
+                const res = await fetch(`/api/user/friends/check?user_a=${encodeURIComponent(myUname)}&user_b=${encodeURIComponent(targetUsername)}`);
+                const data = await res.json();
+                if (data.status === 'success' && data.is_friend) {
+                    this.hideChatGate();
+                    return;
+                }
+            } catch (err) {}
+
+            // Target is not a friend -> Display Gating Shield Card
+            s.activeDirectTarget = targetUsername;
+            if (e.chatGateCard) {
+                e.chatGateCard.classList.remove('hidden');
+                if (e.chatGateName) e.chatGateName.textContent = targetUsername;
+                if (e.chatGateHandle) e.chatGateHandle.textContent = `@${targetUsername}`;
+                if (e.chatGateAvatar) {
+                    e.chatGateAvatar.textContent = targetUsername.charAt(0).toUpperCase();
+                }
+
+                // Fetch rich profile to enrich gate display
+                fetch(`/api/user/profile?username=${encodeURIComponent(targetUsername)}`)
+                    .then(r => r.json())
+                    .then(p => {
+                        if (p.status === 'success' && p.user) {
+                            if (e.chatGateName) e.chatGateName.textContent = p.user.display_name || p.user.username;
+                            if (e.chatGateAvatar) {
+                                if (p.user.avatar_photo) {
+                                    e.chatGateAvatar.innerHTML = `<img src="${p.user.avatar_photo}" alt="Avatar">`;
+                                    e.chatGateAvatar.style.background = 'transparent';
+                                } else {
+                                    e.chatGateAvatar.textContent = (p.user.display_name || p.user.username).charAt(0).toUpperCase();
+                                    e.chatGateAvatar.style.background = p.user.avatar_color || 'var(--primary)';
+                                }
+                            }
+                        }
+                    }).catch(() => {});
+            }
+
+            // Disable composer
+            if (e.messageInput) {
+                e.messageInput.disabled = true;
+                e.messageInput.placeholder = `Add @${targetUsername} as a friend to unlock direct messaging`;
+            }
+            if (e.sendBtn) e.sendBtn.disabled = true;
+            if (e.voiceNoteBtn) e.voiceNoteBtn.disabled = true;
+            if (e.fileBtn) e.fileBtn.disabled = true;
+        },
+
+        hideChatGate() {
+            const e = ESCTRIX.elements;
+            if (e.chatGateCard) e.chatGateCard.classList.add('hidden');
+            if (e.messageInput) {
+                e.messageInput.disabled = false;
+                e.messageInput.placeholder = "Message... (Type '/' for commands)";
+            }
+            if (e.sendBtn) e.sendBtn.disabled = false;
+            if (e.voiceNoteBtn) e.voiceNoteBtn.disabled = false;
+            if (e.fileBtn) e.fileBtn.disabled = false;
         },
 
         renderChatList() {
@@ -1847,6 +2665,7 @@ const ESCTRIX = {
                 el.addEventListener('click', () => {
                     const uname = el.dataset.contact;
                     ESCTRIX.space.openDirectSpace(uname);
+                    ESCTRIX.chat.switchChat('space', { spaceName: `@${uname}` });
                 });
             });
         }
@@ -2579,9 +3398,22 @@ const ESCTRIX = {
 
         async initiate(type) {
             ESCTRIX.modal.close('call-type-modal');
-            ESCTRIX.playSfx('call');
-            const e = ESCTRIX.elements;
             const s = ESCTRIX.state;
+            const e = ESCTRIX.elements;
+
+            // Direct Call Friend-Gating Check
+            const isDirect = s.activeChat?.title?.startsWith('@');
+            const targetUname = isDirect ? s.activeChat.title.slice(1) : null;
+            if (isDirect && targetUname) {
+                const isFriend = (s.contacts || []).some(c => c.contact_username === targetUname);
+                if (!isFriend) {
+                    ESCTRIX.showToast(`Calling locked. Please add @${targetUname} to your friends list first.`, true);
+                    ESCTRIX.chat.checkChatGate(targetUname);
+                    return;
+                }
+            }
+
+            ESCTRIX.playSfx('call');
 
             try {
                 const constraints = {
@@ -2598,7 +3430,19 @@ const ESCTRIX = {
                     s.p2p?.addTrack(track, s.localVideoStream);
                 });
 
-                s.p2p?.sendCallSignal('call_request', { callType: type, caller: s.user?.username });
+                // Route through persistent User WebSocket if direct call, otherwise through room signaling
+                if (isDirect && targetUname && s.userWs && s.userWs.readyState === WebSocket.OPEN) {
+                    s.activeDirectCallTarget = targetUname;
+                    s.userWs.send(JSON.stringify({
+                        type: 'direct_call_offer',
+                        target_username: targetUname,
+                        caller_username: s.user?.username,
+                        caller_display_name: s.user?.display_name || s.user?.username,
+                        call_type: type
+                    }));
+                } else {
+                    s.p2p?.sendCallSignal('call_request', { callType: type, caller: s.user?.username });
+                }
 
                 e.videoOverlay.classList.remove('hidden');
                 e.videoPeerName.textContent = s.activeChat.title;
@@ -2634,7 +3478,18 @@ const ESCTRIX = {
                 s.localVideoStream.getTracks().forEach(track => {
                     s.p2p?.addTrack(track, s.localVideoStream);
                 });
-                s.p2p?.sendCallSignal('call_accepted', {});
+
+                if (s.incomingDirectCall && s.userWs && s.userWs.readyState === WebSocket.OPEN) {
+                    s.activeDirectCallTarget = s.incomingDirectCall.sender_username;
+                    s.userWs.send(JSON.stringify({
+                        type: 'direct_call_answer',
+                        target_username: s.incomingDirectCall.sender_username,
+                        accepted: true
+                    }));
+                    s.incomingDirectCall = null;
+                } else {
+                    s.p2p?.sendCallSignal('call_accepted', {});
+                }
 
                 e.videoOverlay.classList.remove('hidden');
                 s.isVideoCalling = true;
@@ -2646,7 +3501,16 @@ const ESCTRIX = {
 
         decline() {
             ESCTRIX.modal.close('call-modal');
-            ESCTRIX.state.p2p?.sendCallSignal('call_declined', {});
+            const s = ESCTRIX.state;
+            if (s.incomingDirectCall && s.userWs && s.userWs.readyState === WebSocket.OPEN) {
+                s.userWs.send(JSON.stringify({
+                    type: 'direct_call_declined',
+                    target_username: s.incomingDirectCall.sender_username
+                }));
+                s.incomingDirectCall = null;
+            } else {
+                s.p2p?.sendCallSignal('call_declined', {});
+            }
         },
 
         handleRemoteStream(stream) {
@@ -2682,6 +3546,13 @@ const ESCTRIX = {
         end() {
             const s = ESCTRIX.state;
             const e = ESCTRIX.elements;
+            if (s.activeDirectCallTarget && s.userWs && s.userWs.readyState === WebSocket.OPEN) {
+                s.userWs.send(JSON.stringify({
+                    type: 'direct_call_end',
+                    target_username: s.activeDirectCallTarget
+                }));
+                s.activeDirectCallTarget = null;
+            }
             if (s.localVideoStream) {
                 s.localVideoStream.getTracks().forEach(t => t.stop());
                 s.localVideoStream = null;
