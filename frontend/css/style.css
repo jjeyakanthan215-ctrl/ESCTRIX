@@ -3006,6 +3006,44 @@ input:checked + .slider:before {
         font-size: 1.05rem;
     }
 
+    /* ── WEBRTC CALL OVERLAY ON MOBILE ── */
+    .video-controls {
+        padding: 14px 10px;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding-bottom: max(18px, calc(env(safe-area-inset-bottom, 0px) + 12px));
+    }
+
+    .vc-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 1.15rem;
+    }
+
+    .local-video {
+        width: 100px;
+        height: 75px;
+        top: 14px;
+        right: 14px;
+        border-radius: 10px;
+    }
+
+    .video-info-bar {
+        top: 14px;
+        left: 14px;
+        padding: 6px 12px;
+        font-size: 0.82rem;
+        gap: 8px;
+    }
+
+    .incall-chat-panel {
+        width: 100%;
+        max-width: 100%;
+        bottom: 74px;
+        right: 0;
+        border-radius: 16px 16px 0 0;
+    }
+
     /* ── ADVANCED MULTI-TAB SETTINGS SUITE ON MOBILE ── */
     .settings-suite-content {
         width: 95%;
