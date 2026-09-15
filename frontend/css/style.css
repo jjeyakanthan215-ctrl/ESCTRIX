@@ -1538,10 +1538,19 @@ img {
     box-shadow: 0 0 16px var(--accent-glow);
 }
 
+.chat-header-meta {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
 .chat-header-meta h3 {
     font-size: 1.05rem;
     font-weight: 600;
     line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .chat-header-sub {
@@ -1677,6 +1686,7 @@ img {
     line-height: 1.45;
     position: relative;
     word-break: break-word;
+    overflow-wrap: anywhere;
     user-select: text;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
 }
@@ -1709,6 +1719,8 @@ img {
     align-items: center;
     gap: 6px;
     box-shadow: none;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .message-meta {
@@ -1735,8 +1747,9 @@ img {
 .voice-bubble {
     display: flex;
     align-items: center;
-    gap: 12px;
-    min-width: 240px;
+    gap: 10px;
+    min-width: 200px;
+    max-width: 100%;
 }
 
 .voice-play-btn {
