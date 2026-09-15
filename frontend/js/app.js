@@ -72,6 +72,7 @@ const ESCTRIX = {
         this.initAudioContext();
         this.cursor?.init();
         this.contextMenu?.init();
+        this.lightbox?.init();
         this.bindEvents();
         this.initPWA();
         this.initSavedPreferences();
@@ -1995,12 +1996,40 @@ const ESCTRIX = {
         appendMessageDOM(msg) {
             const e = ESCTRIX.elements;
             const div = document.createElement('div');
-            div.className = `message ${msg.sender === 'me' ? 'sent' : 'received'}`;
+            const isMe = msg.sender === 'me';
+            div.className = `message ${isMe ? 'sent' : 'received'} ${msg.vanish ? 'vanish-msg' : ''}`;
             const timeStr = msg.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const statusTick = msg.sender === 'me' ? '<span class="msg-status-tick tick-read"><i class="ph ph-checks"></i></span>' : '';
+            const statusTick = isMe ? '<span class="msg-status-tick tick-read"><i class="ph ph-checks"></i></span>' : '';
+
+            // Vanish header badge if active
+            const vanishHeader = msg.vanish ? `
+                <div class="vanish-badge">
+                    <i class="ph ph-ghost"></i> <span class="vanish-countdown-txt">10s</span>
+                </div>
+            ` : '';
+
+            const vanishFooter = msg.vanish ? `
+                <div class="vanish-bar-track">
+                    <div class="vanish-bar-fill"></div>
+                </div>
+            ` : '';
+
+            // Emoji Reaction Bar on Hover
+            const reactionBar = `
+                <div class="msg-reaction-bar">
+                    <button class="msg-reaction-btn" data-emoji="❤️">❤️</button>
+                    <button class="msg-reaction-btn" data-emoji="🔥">🔥</button>
+                    <button class="msg-reaction-btn" data-emoji="👍">👍</button>
+                    <button class="msg-reaction-btn" data-emoji="😂">😂</button>
+                    <button class="msg-reaction-btn" data-emoji="😮">😮</button>
+                    <button class="msg-reaction-btn" data-emoji="🙏">🙏</button>
+                </div>
+            `;
 
             if (msg.type === 'voice') {
                 div.innerHTML = `
+                    ${reactionBar}
+                    ${vanishHeader}
                     <div class="voice-bubble">
                         <button class="voice-play-btn" data-audio="${encodeURIComponent(msg.data)}">
                             <i class="ph ph-play"></i>
@@ -2033,10 +2062,12 @@ const ESCTRIX = {
                             </div>
                         </div>
                     </div>
+                    <div class="msg-reactions-container"></div>
                     <div class="message-meta">
                         <span>${timeStr}</span>
                         ${statusTick}
                     </div>
+                    ${vanishFooter}
                 `;
                 // Bind voice play & speed cycling
                 const pBtn = div.querySelector('.voice-play-btn');
@@ -2052,8 +2083,31 @@ const ESCTRIX = {
                         ESCTRIX.state.currentAudioPlayer.playbackRate = next;
                     }
                 });
+            } else if (msg.type === 'image') {
+                div.innerHTML = `
+                    ${reactionBar}
+                    ${vanishHeader}
+                    <div class="image-bubble" data-url="${msg.fileUrl}">
+                        <img src="${msg.fileUrl}" class="chat-media-thumb" alt="${msg.fileName || 'Shared Photo'}">
+                        <div class="image-bubble-overlay">
+                            <span><i class="ph ph-image"></i> ${msg.fileName || 'Photo'}</span>
+                            <span>${msg.fileSize || ''}</span>
+                        </div>
+                    </div>
+                    <div class="msg-reactions-container"></div>
+                    <div class="message-meta">
+                        <span>${timeStr}</span>
+                        ${statusTick}
+                    </div>
+                    ${vanishFooter}
+                `;
+                div.querySelector('.image-bubble')?.addEventListener('click', () => {
+                    ESCTRIX.lightbox.open(msg.fileUrl, msg.fileName || 'Encrypted Photo');
+                });
             } else if (msg.type === 'file') {
                 div.innerHTML = `
+                    ${reactionBar}
+                    ${vanishHeader}
                     <div class="file-bubble">
                         <div class="file-icon-box"><i class="ph ph-file-arrow-down"></i></div>
                         <div class="file-details">
@@ -2064,22 +2118,78 @@ const ESCTRIX = {
                             <i class="ph ph-download-simple"></i>
                         </a>
                     </div>
+                    <div class="msg-reactions-container"></div>
                     <div class="message-meta">
                         <span>${timeStr}</span>
                         ${statusTick}
                     </div>
+                    ${vanishFooter}
                 `;
             } else {
                 // Text / Markdown snippet
                 const formatted = ESCTRIX.chat.formatMarkdown(msg.text || '');
                 div.innerHTML = `
-                    ${msg.sender !== 'me' && msg.name ? `<span class="sender-name">${msg.name}</span>` : ''}
+                    ${reactionBar}
+                    ${vanishHeader}
+                    ${!isMe && msg.name ? `<span class="sender-name">${msg.name}</span>` : ''}
                     <div class="message-text">${formatted}</div>
+                    <div class="msg-reactions-container"></div>
                     <div class="message-meta">
                         <span>${timeStr}</span>
                         ${statusTick}
                     </div>
+                    ${vanishFooter}
                 `;
+            }
+
+            // Bind Emoji Reaction Clicks
+            div.querySelectorAll('.msg-reaction-btn').forEach(btn => {
+                btn.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    const emoji = btn.dataset.emoji;
+                    const rContainer = div.querySelector('.msg-reactions-container');
+                    if (rContainer) {
+                        let existing = rContainer.querySelector(`.msg-reaction-pill[data-emoji="${emoji}"]`);
+                        if (existing) {
+                            let count = parseInt(existing.dataset.count || '1') + 1;
+                            existing.dataset.count = count;
+                            existing.textContent = `${emoji} ${count}`;
+                        } else {
+                            const pill = document.createElement('span');
+                            pill.className = 'msg-reaction-pill';
+                            pill.dataset.emoji = emoji;
+                            pill.dataset.count = '1';
+                            pill.textContent = emoji;
+                            rContainer.appendChild(pill);
+                        }
+                        ESCTRIX.playSfx('click');
+                    }
+                });
+            });
+
+            // Handle Vanishing Countdown Timer
+            if (msg.vanish) {
+                let timeLeft = 10;
+                const countTxt = div.querySelector('.vanish-countdown-txt');
+                const barFill = div.querySelector('.vanish-bar-fill');
+                const vanishInterval = setInterval(() => {
+                    timeLeft -= 1;
+                    if (countTxt) countTxt.textContent = `${timeLeft}s`;
+                    if (barFill) barFill.style.width = `${(timeLeft / 10) * 100}%`;
+                    if (timeLeft <= 0) {
+                        clearInterval(vanishInterval);
+                        div.classList.add('vanish-disintegrate');
+                        setTimeout(() => {
+                            div.remove();
+                            // Purge from state
+                            const history = ESCTRIX.state.chatHistories[ESCTRIX.state.activeChat.type];
+                            if (history) {
+                                const idx = history.indexOf(msg);
+                                if (idx > -1) history.splice(idx, 1);
+                            }
+                        }, 600);
+                    }
+                }, 1000);
             }
 
             e.messagesList.appendChild(div);
@@ -2113,6 +2223,7 @@ const ESCTRIX = {
                 sender: 'me',
                 text,
                 type: 'text',
+                vanish: s.vanishMode,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
 
@@ -2123,9 +2234,9 @@ const ESCTRIX = {
 
             // Routing
             if (s.activeChat.type === 'ai') {
-                ESCTRIX.ai.sendToAura(text);
+                ESCTRIX.ai.handleUserQuery(text);
             } else if (s.activeChat.type === 'saved') {
-                ESCTRIX.savedMessages.save(text);
+                ESCTRIX.savedVault.save(text);
             } else if (s.activeChat.type === 'space') {
                 if (s.p2p) {
                     s.p2p.sendData({
@@ -2151,24 +2262,33 @@ const ESCTRIX = {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const base64 = e.target.result;
+                const isImg = file.type && file.type.startsWith('image/');
                 const fileMsg = {
                     sender: 'me',
-                    type: 'file',
+                    type: isImg ? 'image' : 'file',
                     fileName: file.name,
                     fileSize: `${(file.size / 1024).toFixed(1)} KB`,
                     fileUrl: base64,
+                    vanish: ESCTRIX.state.vanishMode,
                     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 };
+                if (!ESCTRIX.state.chatHistories[ESCTRIX.state.activeChat.type]) {
+                    ESCTRIX.state.chatHistories[ESCTRIX.state.activeChat.type] = [];
+                }
                 ESCTRIX.state.chatHistories[ESCTRIX.state.activeChat.type].push(fileMsg);
                 ESCTRIX.chat.appendMessageDOM(fileMsg);
                 ESCTRIX.playSfx('send');
 
                 if (ESCTRIX.state.activeChat.type === 'space' && ESCTRIX.state.p2p) {
                     ESCTRIX.state.p2p.sendData({
-                        type: 'file',
+                        type: isImg ? 'image' : 'file',
                         name: file.name,
+                        fileName: file.name,
                         size: file.size,
-                        payload: base64
+                        fileSize: `${(file.size / 1024).toFixed(1)} KB`,
+                        payload: base64,
+                        fileUrl: base64,
+                        vanish: ESCTRIX.state.vanishMode
                     });
                 }
             };
@@ -4143,6 +4263,57 @@ const ESCTRIX = {
                 ESCTRIX.verification.openModal();
             } else if (action === 'settings') {
                 ESCTRIX.settings.open();
+            }
+        }
+    },
+
+    // ─────────────────────────────────────────────────────────
+    // QUANTUM MEDIA LIGHTBOX CONTROLLER
+    // ─────────────────────────────────────────────────────────
+    lightbox: {
+        modal: null,
+        img: null,
+        filename: null,
+        downloadBtn: null,
+        closeBtn: null,
+        backdrop: null,
+
+        init() {
+            this.modal = document.getElementById('media-lightbox-modal');
+            this.img = document.getElementById('lightbox-img');
+            this.filename = document.getElementById('lightbox-filename');
+            this.downloadBtn = document.getElementById('lightbox-download-btn');
+            this.closeBtn = document.getElementById('lightbox-close-btn');
+            this.backdrop = this.modal?.querySelector('.lightbox-backdrop');
+
+            this.closeBtn?.addEventListener('click', () => this.close());
+            this.backdrop?.addEventListener('click', () => this.close());
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && this.modal && !this.modal.classList.contains('hidden') && this.modal.style.display !== 'none') {
+                    this.close();
+                }
+            });
+        },
+
+        open(url, name = 'Media Preview') {
+            if (!this.modal) this.init();
+            if (this.img) this.img.src = url;
+            if (this.filename) this.filename.textContent = name;
+            if (this.downloadBtn) {
+                this.downloadBtn.href = url;
+                this.downloadBtn.download = name || 'encrypted-media.png';
+            }
+            if (this.modal) {
+                this.modal.classList.remove('hidden');
+                this.modal.style.display = 'flex';
+            }
+            ESCTRIX.playSfx('click');
+        },
+
+        close() {
+            if (this.modal) {
+                this.modal.classList.add('hidden');
+                this.modal.style.display = 'none';
             }
         }
     },
