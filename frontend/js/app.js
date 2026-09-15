@@ -73,6 +73,7 @@ const ESCTRIX = {
         this.cursor?.init();
         this.contextMenu?.init();
         this.lightbox?.init();
+        this.nav?.init();
         this.bindEvents();
         this.initPWA();
         this.initSavedPreferences();
@@ -595,10 +596,13 @@ const ESCTRIX = {
         }
     },
 
-    showScreen(screenId) {
+    showScreen(screenId, pushHistory = true) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         const target = document.getElementById(screenId);
         if (target) target.classList.add('active');
+        if (pushHistory && this.nav) {
+            this.nav.pushState('screen', screenId);
+        }
     },
 
     // --- Event Bindings ---
@@ -906,7 +910,11 @@ const ESCTRIX = {
 
         // Mobile Back
         e.backToThreadsBtn?.addEventListener('click', () => {
-            document.querySelector('.telegram-shell')?.classList.remove('chat-open');
+            if (this.nav) {
+                this.nav.goBack();
+            } else {
+                document.querySelector('.telegram-shell')?.classList.remove('chat-open');
+            }
         });
 
         // New Space Modal
@@ -1386,6 +1394,7 @@ const ESCTRIX = {
             }
 
             ESCTRIX.elements.settingsSuiteModal?.classList.remove('hidden');
+            ESCTRIX.nav?.pushState('modal', 'settings-suite-modal');
             if (targetTab && targetTab !== 'hub') {
                 this.switchTab(targetTab);
             } else {
@@ -1697,6 +1706,7 @@ const ESCTRIX = {
             ESCTRIX.playSfx('click');
             const e = ESCTRIX.elements;
             e.addFriendModal?.classList.remove('hidden');
+            ESCTRIX.nav?.pushState('modal', 'add-friend-modal');
             if (e.addFriendInput) {
                 e.addFriendInput.value = '';
                 e.addFriendInput.focus();
@@ -2134,8 +2144,15 @@ const ESCTRIX = {
             e.activeChatName.textContent = s.activeChat.title;
             e.activeChatStatus.textContent = s.activeChat.subtitle;
 
-            // On mobile, trigger layout slide
-            document.querySelector('.telegram-shell')?.classList.add('chat-open');
+            // On mobile, trigger layout slide and push history state
+            const shell = document.querySelector('.telegram-shell');
+            if (shell) {
+                const wasOpen = shell.classList.contains('chat-open');
+                shell.classList.add('chat-open');
+                if (!wasOpen) {
+                    ESCTRIX.nav?.pushState('chat', s.activeChat?.title);
+                }
+            }
 
             this.renderMessages();
         },
@@ -4761,12 +4778,116 @@ const ESCTRIX = {
     },
 
     // ─────────────────────────────────────────────────────────
+    // QUANTUM HISTORY & SYSTEM BACK-NAVIGATION CONTROLLER
+    // ─────────────────────────────────────────────────────────
+    nav: {
+        _isHandlingPop: false,
+
+        init() {
+            // Push initial baseline state so browser & mobile back buttons are intercepted
+            try {
+                if (!window.history.state) {
+                    window.history.replaceState({ type: 'base', screen: 'initial' }, '', window.location.href);
+                }
+            } catch (e) {}
+
+            window.addEventListener('popstate', (ev) => {
+                this.handleBack(ev.state);
+            });
+        },
+
+        pushState(type, id = null) {
+            if (this._isHandlingPop) return;
+            try {
+                window.history.pushState({ type, id, t: Date.now() }, '', window.location.href);
+            } catch (e) {}
+        },
+
+        handleBack(state) {
+            this._isHandlingPop = true;
+
+            try {
+                // 1. Check if active Call overlay is visible
+                const videoOverlay = ESCTRIX.elements?.videoOverlay;
+                if (videoOverlay && !videoOverlay.classList.contains('hidden')) {
+                    ESCTRIX.call.end();
+                    return;
+                }
+
+                // 2. Check if any modal is currently visible
+                const openModals = Array.from(document.querySelectorAll('.modal:not(.hidden), .modal-overlay:not(.hidden), .custom-dialog-modal.active'));
+                if (openModals.length > 0) {
+                    const topModal = openModals[openModals.length - 1];
+                    if (topModal.classList.contains('custom-dialog-modal')) {
+                        topModal.classList.remove('active');
+                    } else if (topModal.id === 'settings-suite-modal') {
+                        ESCTRIX.settings.close();
+                    } else if (topModal.id === 'user-profile-modal') {
+                        ESCTRIX.profileModal.close();
+                    } else if (topModal.id === 'add-friend-modal') {
+                        ESCTRIX.friendSearch.closeModal();
+                    } else {
+                        topModal.classList.add('hidden');
+                    }
+                    return;
+                }
+
+                // 3. Check if on mobile and chat is currently open (.chat-open)
+                const shell = document.querySelector('.telegram-shell');
+                if (shell && shell.classList.contains('chat-open')) {
+                    shell.classList.remove('chat-open');
+                    return;
+                }
+
+                // 4. Check if dropdown menu is open
+                const dropdown = document.getElementById('chat-dropdown-menu');
+                if (dropdown && !dropdown.classList.contains('hidden')) {
+                    dropdown.classList.add('hidden');
+                    return;
+                }
+
+                // 5. Check screen transitions (admin -> dashboard, login -> intro, dashboard -> intro)
+                const adminScreen = document.getElementById('admin-screen');
+                if (adminScreen && adminScreen.classList.contains('active')) {
+                    ESCTRIX.showScreen('dashboard-screen', false);
+                    return;
+                }
+
+                const loginScreen = document.getElementById('login-screen');
+                if (loginScreen && loginScreen.classList.contains('active')) {
+                    ESCTRIX.showScreen('intro-screen', false);
+                    return;
+                }
+
+                const dashboardScreen = document.getElementById('dashboard-screen');
+                if (dashboardScreen && dashboardScreen.classList.contains('active')) {
+                    ESCTRIX.showScreen('intro-screen', false);
+                    return;
+                }
+            } finally {
+                this._isHandlingPop = false;
+            }
+        },
+
+        goBack() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                this.handleBack(null);
+            }
+        }
+    },
+
+    // ─────────────────────────────────────────────────────────
     // MODAL HELPER
     // ─────────────────────────────────────────────────────────
     modal: {
         open(id) {
             const m = document.getElementById(id);
-            if (m) m.classList.remove('hidden');
+            if (m) {
+                m.classList.remove('hidden');
+                ESCTRIX.nav?.pushState('modal', id);
+            }
         },
         close(id) {
             const m = document.getElementById(id);
