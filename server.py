@@ -18,7 +18,8 @@ from database import (
     add_saved_message, get_saved_messages, delete_saved_message,
     add_contact, get_contacts, update_user_role, reset_user_password,
     get_incoming_friend_adds, is_friend, get_friends_count,
-    prune_inactive_users, touch_user_activity
+    prune_inactive_users, touch_user_activity,
+    store_direct_message, get_direct_chat_history, mark_direct_messages_read
 )
 from ai_engine import (
     ai_chat, ai_vibe_analysis, ai_smart_reply,
@@ -323,6 +324,32 @@ async def fetch_friends_count(username: str):
     return {"status": "success", "count": count}
 
 
+# ─────────────────────────────────────────────────────────────
+# 1-on-1 Direct Chat Messages REST API
+# ─────────────────────────────────────────────────────────────
+
+class DirectMessageReadRequest(BaseModel):
+    reader_username: str
+    sender_username: str
+
+
+@app.get("/api/direct-messages/{contact_username}")
+async def fetch_direct_messages(contact_username: str, username: str, limit: int = 100):
+    """Fetch persistent 1-on-1 conversation history between current user and contact."""
+    if not username or not contact_username:
+        return {"status": "error", "message": "Missing username parameters"}
+    history = get_direct_chat_history(username, contact_username, limit=limit)
+    return {"status": "success", "messages": history}
+
+
+@app.post("/api/direct-messages/read")
+async def mark_messages_read(data: DirectMessageReadRequest):
+    """Mark 1-on-1 messages from a sender as read."""
+    success = mark_direct_messages_read(data.reader_username, data.sender_username)
+    return {"status": "success" if success else "error"}
+
+
+
 class SessionTerminateRequest(BaseModel):
     username: str
     current_client_id: Optional[str] = ""
@@ -575,6 +602,48 @@ async def user_websocket_endpoint(websocket: WebSocket, username: str):
             msg_type = message.get("type")
             if msg_type == "ping":
                 await websocket.send_text(json.dumps({"type": "pong"}))
+            elif msg_type == "direct_chat_message":
+                target = message.get("target_username")
+                content = message.get("content", "")
+                msg_format = message.get("msg_type", "text")
+                file_meta = message.get("file_meta", "")
+                vanish = message.get("vanish", 0)
+                if target and content:
+                    stored = store_direct_message(
+                        sender_username=username,
+                        recipient_username=target,
+                        content=content,
+                        msg_type=msg_format,
+                        file_meta=file_meta,
+                        vanish=1 if vanish else 0
+                    )
+                    payload = {
+                        "type": "direct_chat_message",
+                        "id": stored.get("id") if stored else None,
+                        "sender_username": username,
+                        "sender_display_name": message.get("sender_display_name", username),
+                        "target_username": target,
+                        "content": content,
+                        "msg_type": msg_format,
+                        "file_meta": file_meta,
+                        "vanish": vanish,
+                        "timestamp": stored.get("timestamp") if stored else None
+                    }
+                    delivered = await manager.send_to_user(target, payload)
+                    await websocket.send_text(json.dumps({
+                        "type": "direct_chat_sent_ack",
+                        "temp_id": message.get("temp_id"),
+                        "id": stored.get("id") if stored else None,
+                        "delivered": delivered,
+                        "timestamp": stored.get("timestamp") if stored else None
+                    }))
+            elif msg_type == "direct_typing":
+                target = message.get("target_username")
+                if target:
+                    await manager.send_to_user(target, {
+                        "type": "direct_typing",
+                        "sender_username": username
+                    })
             elif msg_type in [
                 "direct_call_offer", "direct_call_answer", "direct_ice_candidate",
                 "direct_call_declined", "direct_call_end"

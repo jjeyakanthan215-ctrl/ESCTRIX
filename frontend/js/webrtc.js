@@ -21,14 +21,31 @@ class P2PConnection {
         // Auth fail reason (for UI)
         this.authReason = null;
 
-        // ICE configuration
+        // ICE configuration with STUN and TURN relays for NAT/Firewall traversal
         this.configuration = {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
                 { urls: 'stun:stun.cloudflare.com:3478' },
-                { urls: 'stun:global.stun.twilio.com:3478' }
-            ]
+                { urls: 'stun:global.stun.twilio.com:3478' },
+                {
+                    urls: 'turn:openrelay.metered.ca:80',
+                    username: 'openrelay',
+                    credential: 'openrelay'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443',
+                    username: 'openrelay',
+                    credential: 'openrelay'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                    username: 'openrelay',
+                    credential: 'openrelay'
+                }
+            ],
+            iceCandidatePoolSize: 10
         };
     }
 

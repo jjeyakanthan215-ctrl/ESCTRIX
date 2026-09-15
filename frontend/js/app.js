@@ -388,28 +388,99 @@ const ESCTRIX = {
             return;
         }
 
+        if (type === 'direct_chat_message') {
+            this.playSfx('receive');
+            const chatKey = `@${msg.sender_username}`;
+            const isMe = msg.sender_username === this.state.user?.username;
+            const newMsg = {
+                id: msg.id,
+                sender: isMe ? 'me' : 'peer',
+                name: msg.sender_display_name || msg.sender_username,
+                text: msg.content,
+                type: msg.msg_type || 'text',
+                fileUrl: (msg.msg_type === 'image' || msg.msg_type === 'file' || msg.msg_type === 'voice') ? msg.content : undefined,
+                payload: msg.msg_type === 'voice' ? msg.content : undefined,
+                fileName: msg.file_meta || 'File',
+                fileSize: '',
+                vanish: Boolean(msg.vanish),
+                time: msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+
+            if (!this.state.chatHistories[chatKey]) {
+                this.state.chatHistories[chatKey] = [];
+            }
+            this.state.chatHistories[chatKey].push(newMsg);
+
+            // If active chat is currently with this sender, display live in DOM
+            if (this.state.activeChat && this.state.activeChat.title === chatKey) {
+                this.chat.appendMessageDOM(newMsg);
+                fetch('/api/direct-messages/read', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        reader_username: this.state.user?.username,
+                        sender_username: msg.sender_username
+                    })
+                }).catch(() => {});
+            } else {
+                this.showToast(`💬 @${msg.sender_username}: ${msg.msg_type === 'text' ? msg.content.substring(0, 40) : '[' + msg.msg_type + ']'}`);
+            }
+            return;
+        }
+
+        if (type === 'direct_typing') {
+            const chatKey = `@${msg.sender_username}`;
+            if (this.state.activeChat && this.state.activeChat.title === chatKey) {
+                const e = this.elements;
+                if (e.typingIndicator && e.typingName) {
+                    e.typingName.textContent = `@${msg.sender_username}`;
+                    e.typingIndicator.classList.remove('hidden');
+                    clearTimeout(this._directTypingTimer);
+                    this._directTypingTimer = setTimeout(() => {
+                        e.typingIndicator.classList.add('hidden');
+                    }, 3000);
+                }
+            }
+            return;
+        }
+
         if (type === 'direct_call_offer') {
             this.playSfx('call');
             const e = this.elements;
-            if (e.callerName) e.callerName.textContent = msg.sender_username;
+            if (e.callerName) e.callerName.textContent = `@${msg.sender_username}`;
             if (e.incomingCallTitle) {
                 e.incomingCallTitle.textContent = msg.call_type === 'video' ? 'Incoming Video Call' : 'Incoming Audio Call';
             }
             this.state.incomingDirectCall = msg;
+            this.state.queuedDirectCandidates = [];
             this.modal.open('call-modal');
             return;
         }
 
         if (type === 'direct_call_answer') {
-            if (this.state.p2p && this.state.p2p.peerConnection) {
-                this.state.p2p.peerConnection.setRemoteDescription(new RTCSessionDescription(msg.answer));
+            if (this.state.directCallPC && msg.answer) {
+                this.state.directCallPC.setRemoteDescription(new RTCSessionDescription(msg.answer))
+                    .then(() => {
+                        console.log('[Direct Call] Remote answer set successfully');
+                        while (this.state.queuedDirectCandidates && this.state.queuedDirectCandidates.length > 0) {
+                            const cand = this.state.queuedDirectCandidates.shift();
+                            this.state.directCallPC.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
+                        }
+                    })
+                    .catch(err => console.error('[Direct Call] Failed to set remote description:', err));
             }
+            this.showToast('Call connected! 📞');
             return;
         }
 
         if (type === 'direct_ice_candidate') {
-            if (this.state.p2p && this.state.p2p.peerConnection && msg.candidate) {
-                this.state.p2p.peerConnection.addIceCandidate(new RTCIceCandidate(msg.candidate)).catch(() => {});
+            if (msg.candidate) {
+                if (this.state.directCallPC && this.state.directCallPC.remoteDescription) {
+                    this.state.directCallPC.addIceCandidate(new RTCIceCandidate(msg.candidate)).catch(() => {});
+                } else {
+                    if (!this.state.queuedDirectCandidates) this.state.queuedDirectCandidates = [];
+                    this.state.queuedDirectCandidates.push(msg.candidate);
+                }
             }
             return;
         }
@@ -737,6 +808,32 @@ const ESCTRIX = {
 
         e.clearMediaCacheBtn?.addEventListener('click', () => this.settings.clearMediaCache());
         e.clearChatHistoryBtn?.addEventListener('click', () => this.settings.clearChatHistory());
+
+        // Help & Contact Support Actions
+        document.getElementById('copy-support-email-btn')?.addEventListener('click', () => {
+            navigator.clipboard.writeText('esctrix369@gmail.com').then(() => {
+                this.playSfx('send');
+                this.showToast('Support email (esctrix369@gmail.com) copied to clipboard! 📋');
+            });
+        });
+
+        document.getElementById('support-submit-btn')?.addEventListener('click', () => {
+            const cat = document.getElementById('support-request-category')?.value || 'General Support';
+            const subject = document.getElementById('support-request-subject')?.value.trim() || `[ESCTRIX Support] ${cat}`;
+            const message = document.getElementById('support-request-message')?.value.trim();
+            if (!message) {
+                this.showToast('Please describe your issue or request.', true);
+                return;
+            }
+            const username = this.state.user?.username || 'Guest';
+            const accountId = this.state.user?.account_id || 'N/A';
+            const body = `Support Request for Admin Jeyakanthan\n\nUser: @${username} (Account ID: ${accountId})\nCategory: ${cat}\n\nMessage / Request Details:\n${message}\n\n---\nSent via ESCTRIX Quantum Support`;
+            const mailUrl = `mailto:esctrix369@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.open(mailUrl, '_blank');
+            this.playSfx('send');
+            this.showToast('Opening email client for Admin Jeyakanthan... ✨');
+        });
+
 
         // User Profile Modal Actions
         e.userProfileCloseBtn?.addEventListener('click', () => this.profileModal.close());
@@ -1347,6 +1444,7 @@ const ESCTRIX = {
                 chats: { text: 'Chats & Aesthetics', icon: 'ph-paint-brush' },
                 notifications: { text: 'Sounds & Alerts', icon: 'ph-bell-ringing' },
                 storage: { text: 'Data & Storage', icon: 'ph-hard-drives' },
+                help: { text: 'Help & Contact Support', icon: 'ph-headset' },
                 admin: { text: 'Admin Command Console', icon: 'ph-shield-star' }
             };
 
@@ -2000,6 +2098,33 @@ const ESCTRIX = {
 
                 if (isDirect && targetUname) {
                     this.checkChatGate(targetUname);
+                    // Fetch direct message history from database
+                    if (s.user?.username) {
+                        const chatKey = `@${targetUname}`;
+                        fetch(`/api/direct-messages/${encodeURIComponent(targetUname)}?username=${encodeURIComponent(s.user.username)}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.status === 'success' && data.messages) {
+                                    s.chatHistories[chatKey] = data.messages.map(m => ({
+                                        id: m.id,
+                                        sender: m.sender_username === s.user.username ? 'me' : 'peer',
+                                        name: m.sender_username,
+                                        text: m.content,
+                                        type: m.msg_type || 'text',
+                                        fileUrl: (m.msg_type === 'image' || m.msg_type === 'file' || m.msg_type === 'voice') ? m.content : undefined,
+                                        payload: m.msg_type === 'voice' ? m.content : undefined,
+                                        fileName: m.file_meta || 'File',
+                                        fileSize: '',
+                                        vanish: Boolean(m.vanish),
+                                        time: m.timestamp ? new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
+                                    }));
+                                    if (s.activeChat && s.activeChat.title === chatKey) {
+                                        this.renderMessages();
+                                    }
+                                }
+                            })
+                            .catch(() => {});
+                    }
                 } else {
                     this.hideChatGate();
                 }
@@ -2017,7 +2142,8 @@ const ESCTRIX = {
         renderMessages() {
             const e = ESCTRIX.elements;
             const s = ESCTRIX.state;
-            const msgs = s.chatHistories[s.activeChat.type] || [];
+            const chatKey = (s.activeChat?.title && s.activeChat.title.startsWith('@')) ? s.activeChat.title : s.activeChat?.type;
+            const msgs = s.chatHistories[chatKey] || s.chatHistories[s.activeChat?.type] || [];
 
             e.messagesList.innerHTML = `
                 <div class="message system-bubble">
@@ -2030,7 +2156,7 @@ const ESCTRIX = {
             e.messagesViewport.scrollTop = e.messagesViewport.scrollHeight;
 
             // Trigger AI Smart Replies & Vibe check if there are recent messages
-            if (msgs.length > 0 && s.activeChat.type !== 'saved') {
+            if (msgs.length > 0 && s.activeChat?.type !== 'saved') {
                 ESCTRIX.ai.updateSmartReplies(msgs.map(x => x.text || ''));
                 ESCTRIX.ai.updateVibeBadge(msgs.map(x => x.text || ''));
             }
@@ -2048,55 +2174,55 @@ const ESCTRIX = {
             const vanishHeader = msg.vanish ? `
                 <div class="vanish-badge">
                     <i class="ph ph-ghost"></i> <span class="vanish-countdown-txt">10s</span>
+                    <div class="vanish-bar"><div class="vanish-bar-fill"></div></div>
                 </div>
             ` : '';
 
-            const vanishFooter = msg.vanish ? `
-                <div class="vanish-bar-track">
-                    <div class="vanish-bar-fill"></div>
-                </div>
-            ` : '';
-
-            // Emoji Reaction Bar on Hover
+            // Quick Emoji Reaction Bar (Float on hover)
             const reactionBar = `
-                <div class="msg-reaction-bar">
-                    <button class="msg-reaction-btn" data-emoji="❤️">❤️</button>
-                    <button class="msg-reaction-btn" data-emoji="🔥">🔥</button>
-                    <button class="msg-reaction-btn" data-emoji="👍">👍</button>
-                    <button class="msg-reaction-btn" data-emoji="😂">😂</button>
-                    <button class="msg-reaction-btn" data-emoji="😮">😮</button>
-                    <button class="msg-reaction-btn" data-emoji="🙏">🙏</button>
+                <div class="msg-reactions-bar">
+                    <button class="reaction-quick-btn" data-emoji="🔥">🔥</button>
+                    <button class="reaction-quick-btn" data-emoji="⚡">⚡</button>
+                    <button class="reaction-quick-btn" data-emoji="🛡️">🛡️</button>
+                    <button class="reaction-quick-btn" data-emoji="👀">👀</button>
+                    <button class="reaction-quick-btn" data-emoji="❤️">❤️</button>
                 </div>
             `;
+
+            const vanishFooter = msg.vanish ? `
+                <div class="vanish-footer">
+                    <i class="ph ph-shield-warning"></i> Auto-destructing in 10 seconds
+                </div>
+            ` : '';
 
             if (msg.type === 'voice') {
                 div.innerHTML = `
                     ${reactionBar}
                     ${vanishHeader}
                     <div class="voice-bubble">
-                        <button class="voice-play-btn" data-audio="${encodeURIComponent(msg.data)}">
+                        <button class="voice-play-btn" data-audio="${encodeURIComponent(msg.data || msg.payload || '')}">
                             <i class="ph ph-play"></i>
                         </button>
-                        <div class="voice-waveform-wrap">
-                            <svg class="voice-waveform-svg" viewBox="0 0 160 24">
+                        <div class="voice-waveform-preview">
+                            <svg class="voice-waveform-svg" viewBox="0 0 160 24" fill="none">
                                 <rect x="0" y="8" width="4" height="8" rx="2" fill="currentColor"/>
                                 <rect x="8" y="4" width="4" height="16" rx="2" fill="currentColor"/>
                                 <rect x="16" y="2" width="4" height="20" rx="2" fill="currentColor"/>
                                 <rect x="24" y="6" width="4" height="12" rx="2" fill="currentColor"/>
                                 <rect x="32" y="3" width="4" height="18" rx="2" fill="currentColor"/>
-                                <rect x="40" y="10" width="4" height="4" rx="2" fill="currentColor"/>
-                                <rect x="48" y="4" width="4" height="16" rx="2" fill="currentColor"/>
-                                <rect x="56" y="1" width="4" height="22" rx="2" fill="currentColor"/>
-                                <rect x="64" y="7" width="4" height="10" rx="2" fill="currentColor"/>
-                                <rect x="72" y="3" width="4" height="18" rx="2" fill="currentColor"/>
-                                <rect x="80" y="5" width="4" height="14" rx="2" fill="currentColor"/>
-                                <rect x="88" y="2" width="4" height="20" rx="2" fill="currentColor"/>
-                                <rect x="96" y="9" width="4" height="6" rx="2" fill="currentColor"/>
-                                <rect x="104" y="4" width="4" height="16" rx="2" fill="currentColor"/>
-                                <rect x="112" y="6" width="4" height="12" rx="2" fill="currentColor"/>
-                                <rect x="120" y="2" width="4" height="20" rx="2" fill="currentColor"/>
-                                <rect x="128" y="8" width="4" height="8" rx="2" fill="currentColor"/>
-                                <rect x="136" y="4" width="4" height="16" rx="2" fill="currentColor"/>
+                                <rect x="40" y="7" width="4" height="10" rx="2" fill="currentColor"/>
+                                <rect x="48" y="1" width="4" height="22" rx="2" fill="currentColor"/>
+                                <rect x="56" y="5" width="4" height="14" rx="2" fill="currentColor"/>
+                                <rect x="64" y="2" width="4" height="20" rx="2" fill="currentColor"/>
+                                <rect x="72" y="8" width="4" height="8" rx="2" fill="currentColor"/>
+                                <rect x="80" y="4" width="4" height="16" rx="2" fill="currentColor"/>
+                                <rect x="88" y="6" width="4" height="12" rx="2" fill="currentColor"/>
+                                <rect x="96" y="1" width="4" height="22" rx="2" fill="currentColor"/>
+                                <rect x="104" y="3" width="4" height="18" rx="2" fill="currentColor"/>
+                                <rect x="112" y="7" width="4" height="10" rx="2" fill="currentColor"/>
+                                <rect x="120" y="4" width="4" height="16" rx="2" fill="currentColor"/>
+                                <rect x="128" y="2" width="4" height="20" rx="2" fill="currentColor"/>
+                                <rect x="136" y="8" width="4" height="8" rx="2" fill="currentColor"/>
                                 <rect x="144" y="7" width="4" height="10" rx="2" fill="currentColor"/>
                             </svg>
                             <div class="voice-meta-row">
@@ -2130,8 +2256,8 @@ const ESCTRIX = {
                 div.innerHTML = `
                     ${reactionBar}
                     ${vanishHeader}
-                    <div class="image-bubble" data-url="${msg.fileUrl}">
-                        <img src="${msg.fileUrl}" class="chat-media-thumb" alt="${msg.fileName || 'Shared Photo'}">
+                    <div class="image-bubble" data-url="${msg.fileUrl || msg.content || ''}">
+                        <img src="${msg.fileUrl || msg.content || ''}" class="chat-media-thumb" alt="${msg.fileName || 'Shared Photo'}">
                         <div class="image-bubble-overlay">
                             <span><i class="ph ph-image"></i> ${msg.fileName || 'Photo'}</span>
                             <span>${msg.fileSize || ''}</span>
@@ -2145,7 +2271,7 @@ const ESCTRIX = {
                     ${vanishFooter}
                 `;
                 div.querySelector('.image-bubble')?.addEventListener('click', () => {
-                    ESCTRIX.lightbox.open(msg.fileUrl, msg.fileName || 'Encrypted Photo');
+                    ESCTRIX.lightbox.open(msg.fileUrl || msg.content || '', msg.fileName || 'Encrypted Photo');
                 });
             } else if (msg.type === 'file') {
                 div.innerHTML = `
@@ -2157,7 +2283,7 @@ const ESCTRIX = {
                             <span class="file-name">${msg.fileName || 'Shared Document'}</span>
                             <span class="file-size">${msg.fileSize || 'Encrypted File'}</span>
                         </div>
-                        <a href="${msg.fileUrl || '#'}" download="${msg.fileName || 'file'}" class="file-dl-btn">
+                        <a href="${msg.fileUrl || msg.content || '#'}" download="${msg.fileName || 'file'}" class="file-dl-btn">
                             <i class="ph ph-download-simple"></i>
                         </a>
                     </div>
@@ -2170,7 +2296,7 @@ const ESCTRIX = {
                 `;
             } else {
                 // Text / Markdown snippet
-                const formatted = ESCTRIX.chat.formatMarkdown(msg.text || '');
+                const formatted = ESCTRIX.chat.formatMarkdown(msg.text || msg.content || '');
                 div.innerHTML = `
                     ${reactionBar}
                     ${vanishHeader}
@@ -2185,18 +2311,18 @@ const ESCTRIX = {
                 `;
             }
 
-            // Bind Emoji Reaction Clicks
-            div.querySelectorAll('.msg-reaction-btn').forEach(btn => {
+            // Bind Reaction Emojis
+            div.querySelectorAll('.reaction-quick-btn').forEach(btn => {
                 btn.addEventListener('click', (ev) => {
                     ev.stopPropagation();
                     const emoji = btn.dataset.emoji;
                     const rContainer = div.querySelector('.msg-reactions-container');
                     if (rContainer) {
-                        let existing = rContainer.querySelector(`.msg-reaction-pill[data-emoji="${emoji}"]`);
-                        if (existing) {
-                            let count = parseInt(existing.dataset.count || '1') + 1;
-                            existing.dataset.count = count;
-                            existing.textContent = `${emoji} ${count}`;
+                        const existingPill = rContainer.querySelector(`[data-emoji="${emoji}"]`);
+                        if (existingPill) {
+                            let count = parseInt(existingPill.dataset.count || '1') + 1;
+                            existingPill.dataset.count = String(count);
+                            existingPill.textContent = `${emoji} ${count}`;
                         } else {
                             const pill = document.createElement('span');
                             pill.className = 'msg-reaction-pill';
@@ -2224,8 +2350,8 @@ const ESCTRIX = {
                         div.classList.add('vanish-disintegrate');
                         setTimeout(() => {
                             div.remove();
-                            // Purge from state
-                            const history = ESCTRIX.state.chatHistories[ESCTRIX.state.activeChat.type];
+                            const chatKey = (ESCTRIX.state.activeChat?.title && ESCTRIX.state.activeChat.title.startsWith('@')) ? ESCTRIX.state.activeChat.title : ESCTRIX.state.activeChat?.type;
+                            const history = ESCTRIX.state.chatHistories[chatKey];
                             if (history) {
                                 const idx = history.indexOf(msg);
                                 if (idx > -1) history.splice(idx, 1);
@@ -2262,6 +2388,10 @@ const ESCTRIX = {
             e.messageInput.value = '';
             ESCTRIX.playSfx('send');
 
+            const chatKey = (s.activeChat?.title && s.activeChat.title.startsWith('@')) ? s.activeChat.title : s.activeChat?.type;
+            const isDirect = s.activeChat?.title && s.activeChat.title.startsWith('@');
+            const targetUname = isDirect ? s.activeChat.title.slice(1) : null;
+
             const newMsg = {
                 sender: 'me',
                 text,
@@ -2271,8 +2401,8 @@ const ESCTRIX = {
             };
 
             // Store in active chat history
-            if (!s.chatHistories[s.activeChat.type]) s.chatHistories[s.activeChat.type] = [];
-            s.chatHistories[s.activeChat.type].push(newMsg);
+            if (!s.chatHistories[chatKey]) s.chatHistories[chatKey] = [];
+            s.chatHistories[chatKey].push(newMsg);
             this.appendMessageDOM(newMsg);
 
             // Routing
@@ -2280,6 +2410,25 @@ const ESCTRIX = {
                 ESCTRIX.ai.handleUserQuery(text);
             } else if (s.activeChat.type === 'saved') {
                 ESCTRIX.savedVault.save(text);
+            } else if (isDirect && targetUname) {
+                if (s.userWs && s.userWs.readyState === WebSocket.OPEN) {
+                    s.userWs.send(JSON.stringify({
+                        type: 'direct_chat_message',
+                        target_username: targetUname,
+                        content: text,
+                        msg_type: 'text',
+                        vanish: s.vanishMode ? 1 : 0,
+                        sender_display_name: s.user?.display_name || s.user?.username
+                    }));
+                }
+                if (s.p2p) {
+                    s.p2p.sendData({
+                        type: 'chat',
+                        text,
+                        senderName: s.user?.display_name || s.user?.username,
+                        vanish: s.vanishMode
+                    });
+                }
             } else if (s.activeChat.type === 'space') {
                 if (s.p2p) {
                     s.p2p.sendData({
@@ -2294,7 +2443,14 @@ const ESCTRIX = {
 
         handleTyping() {
             const s = ESCTRIX.state;
-            if (s.activeChat.type === 'space' && s.p2p) {
+            const isDirect = s.activeChat?.title && s.activeChat.title.startsWith('@');
+            const targetUname = isDirect ? s.activeChat.title.slice(1) : null;
+            if (isDirect && targetUname && s.userWs && s.userWs.readyState === WebSocket.OPEN) {
+                s.userWs.send(JSON.stringify({
+                    type: 'direct_typing',
+                    target_username: targetUname
+                }));
+            } else if (s.activeChat?.type === 'space' && s.p2p) {
                 s.p2p.sendSignalingMessage('typing', { username: s.user?.username });
             }
         },
@@ -3553,9 +3709,71 @@ const ESCTRIX = {
     // WEBRTC CALLING & MEDIA MODULE
     // ─────────────────────────────────────────────────────────
     call: {
+        setupDirectPeerConnection(targetUsername) {
+            const s = ESCTRIX.state;
+            if (s.directCallPC) {
+                try { s.directCallPC.close(); } catch (e) {}
+                s.directCallPC = null;
+            }
+            s.queuedDirectCandidates = [];
+
+            const pc = new RTCPeerConnection({
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun.cloudflare.com:3478' },
+                    { urls: 'stun:global.stun.twilio.com:3478' },
+                    {
+                        urls: 'turn:openrelay.metered.ca:80',
+                        username: 'openrelay',
+                        credential: 'openrelay'
+                    },
+                    {
+                        urls: 'turn:openrelay.metered.ca:443',
+                        username: 'openrelay',
+                        credential: 'openrelay'
+                    },
+                    {
+                        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                        username: 'openrelay',
+                        credential: 'openrelay'
+                    }
+                ],
+                iceCandidatePoolSize: 10
+            });
+
+            pc.onicecandidate = (ev) => {
+                if (ev.candidate && s.userWs && s.userWs.readyState === WebSocket.OPEN) {
+                    s.userWs.send(JSON.stringify({
+                        type: 'direct_ice_candidate',
+                        target_username: targetUsername,
+                        candidate: ev.candidate
+                    }));
+                }
+            };
+
+            pc.ontrack = (ev) => {
+                console.log('[Direct Call] Remote audio/video track received:', ev.streams);
+                if (ev.streams && ev.streams[0]) {
+                    this.handleRemoteStream(ev.streams[0]);
+                }
+            };
+
+            pc.onconnectionstatechange = () => {
+                console.log('[Direct Call] Connection state:', pc.connectionState);
+                if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+                    console.log('[Direct Call] Call disconnected or failed');
+                }
+            };
+
+            s.directCallPC = pc;
+            return pc;
+        },
+
         openCallChooser() {
             ESCTRIX.playSfx('click');
-            ESCTRIX.elements.callTypePeerName.textContent = ESCTRIX.state.activeChat.title;
+            ESCTRIX.elements.callTypePeerName.textContent = ESCTRIX.state.activeChat?.title || 'Peer';
             ESCTRIX.modal.open('call-type-modal');
         },
 
@@ -3584,35 +3802,46 @@ const ESCTRIX = {
                     video: type === 'video' ? { facingMode: s.currentFacingMode } : false
                 };
                 s.localVideoStream = await navigator.mediaDevices.getUserMedia(constraints);
-                if (type === 'video') {
+                if (type === 'video' && e.localVideo) {
                     e.localVideo.srcObject = s.localVideoStream;
                 }
-
-                // Add tracks to WebRTC
-                s.localVideoStream.getTracks().forEach(track => {
-                    s.p2p?.addTrack(track, s.localVideoStream);
-                });
 
                 // Route through persistent User WebSocket if direct call, otherwise through room signaling
                 if (isDirect && targetUname && s.userWs && s.userWs.readyState === WebSocket.OPEN) {
                     s.activeDirectCallTarget = targetUname;
+                    const pc = this.setupDirectPeerConnection(targetUname);
+                    s.localVideoStream.getTracks().forEach(track => {
+                        pc.addTrack(track, s.localVideoStream);
+                    });
+
+                    const offer = await pc.createOffer({
+                        offerToReceiveAudio: true,
+                        offerToReceiveVideo: type === 'video'
+                    });
+                    await pc.setLocalDescription(offer);
+
                     s.userWs.send(JSON.stringify({
                         type: 'direct_call_offer',
                         target_username: targetUname,
                         caller_username: s.user?.username,
                         caller_display_name: s.user?.display_name || s.user?.username,
-                        call_type: type
+                        call_type: type,
+                        offer: offer
                     }));
                 } else {
+                    s.localVideoStream.getTracks().forEach(track => {
+                        s.p2p?.addTrack(track, s.localVideoStream);
+                    });
                     s.p2p?.sendCallSignal('call_request', { callType: type, caller: s.user?.username });
                 }
 
                 e.videoOverlay.classList.remove('hidden');
-                e.videoPeerName.textContent = s.activeChat.title;
+                e.videoPeerName.textContent = s.activeChat?.title || 'Call in progress';
                 s.isVideoCalling = true;
                 this.startTimer();
                 ESCTRIX.showToast(`Initiating ${type} call...`);
             } catch (err) {
+                console.error('[Call initiate error]:', err);
                 ESCTRIX.showToast('Camera or Microphone access required for calls.', true);
             }
         },
@@ -3636,28 +3865,55 @@ const ESCTRIX = {
             const e = ESCTRIX.elements;
 
             try {
-                s.localVideoStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-                e.localVideo.srcObject = s.localVideoStream;
-                s.localVideoStream.getTracks().forEach(track => {
-                    s.p2p?.addTrack(track, s.localVideoStream);
+                const isVideo = s.incomingDirectCall ? (s.incomingDirectCall.call_type === 'video') : true;
+                s.localVideoStream = await navigator.mediaDevices.getUserMedia({
+                    audio: true,
+                    video: isVideo ? { facingMode: s.currentFacingMode } : false
                 });
+                if (isVideo && e.localVideo) {
+                    e.localVideo.srcObject = s.localVideoStream;
+                }
 
                 if (s.incomingDirectCall && s.userWs && s.userWs.readyState === WebSocket.OPEN) {
-                    s.activeDirectCallTarget = s.incomingDirectCall.sender_username;
+                    const targetUname = s.incomingDirectCall.sender_username;
+                    s.activeDirectCallTarget = targetUname;
+
+                    const pc = this.setupDirectPeerConnection(targetUname);
+                    s.localVideoStream.getTracks().forEach(track => {
+                        pc.addTrack(track, s.localVideoStream);
+                    });
+
+                    if (s.incomingDirectCall.offer) {
+                        await pc.setRemoteDescription(new RTCSessionDescription(s.incomingDirectCall.offer));
+                        while (s.queuedDirectCandidates && s.queuedDirectCandidates.length > 0) {
+                            const cand = s.queuedDirectCandidates.shift();
+                            pc.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
+                        }
+                    }
+
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+
                     s.userWs.send(JSON.stringify({
                         type: 'direct_call_answer',
-                        target_username: s.incomingDirectCall.sender_username,
-                        accepted: true
+                        target_username: targetUname,
+                        accepted: true,
+                        answer: answer
                     }));
                     s.incomingDirectCall = null;
                 } else {
+                    s.localVideoStream.getTracks().forEach(track => {
+                        s.p2p?.addTrack(track, s.localVideoStream);
+                    });
                     s.p2p?.sendCallSignal('call_accepted', {});
                 }
 
                 e.videoOverlay.classList.remove('hidden');
+                e.videoPeerName.textContent = s.activeDirectCallTarget ? `@${s.activeDirectCallTarget}` : (s.activeChat?.title || 'In Call');
                 s.isVideoCalling = true;
                 this.startTimer();
             } catch (err) {
+                console.error('[Call accept error]:', err);
                 ESCTRIX.showToast('Media access error.', true);
             }
         },
@@ -3716,6 +3972,10 @@ const ESCTRIX = {
                 }));
                 s.activeDirectCallTarget = null;
             }
+            if (s.directCallPC) {
+                try { s.directCallPC.close(); } catch (e) {}
+                s.directCallPC = null;
+            }
             if (s.localVideoStream) {
                 s.localVideoStream.getTracks().forEach(t => t.stop());
                 s.localVideoStream = null;
@@ -3724,6 +3984,9 @@ const ESCTRIX = {
                 s.screenStream.getTracks().forEach(t => t.stop());
                 s.screenStream = null;
             }
+            const remoteVid = document.getElementById('remote-video-stream');
+            if (remoteVid) remoteVid.srcObject = null;
+
             clearInterval(s.callTimerInterval);
             e.videoOverlay.classList.add('hidden');
             s.isVideoCalling = false;

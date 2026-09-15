@@ -932,6 +932,9 @@
                     <button class="settings-nav-btn" data-tab="storage">
                         <i class="ph ph-hard-drives"></i> Data & Storage
                     </button>
+                    <button class="settings-nav-btn" data-tab="help" id="settings-help-tab-btn">
+                        <i class="ph ph-headset"></i> Help & Contact
+                    </button>
                     <button class="settings-nav-btn stealth-admin-tab hidden" data-tab="admin" id="settings-admin-tab-btn">
                         <i class="ph ph-shield-star"></i> Admin Console
                     </button>
@@ -1008,6 +1011,17 @@
                                 <div class="hub-card-details">
                                     <span class="hub-card-title">Data & Storage</span>
                                     <span class="hub-card-desc">Encrypted local storage meter, cache clear, history reset</span>
+                                </div>
+                                <i class="ph ph-caret-right hub-card-arrow"></i>
+                            </button>
+
+                            <button class="settings-hub-card" data-tab="help">
+                                <div class="hub-card-icon" style="background:linear-gradient(135deg, rgba(6,214,199,0.2), rgba(16,185,129,0.2)); color:var(--accent);">
+                                    <i class="ph ph-headset"></i>
+                                </div>
+                                <div class="hub-card-details">
+                                    <span class="hub-card-title">Help & Contact Support</span>
+                                    <span class="hub-card-desc">Reach Admin Jeyakanthan at esctrix369@gmail.com for user requests & help</span>
                                 </div>
                                 <i class="ph ph-caret-right hub-card-arrow"></i>
                             </button>
@@ -1516,7 +1530,130 @@
                         </div>
                     </div>
 
-                    <!-- ── TAB 6: Stealth Admin Console ── -->
+                    <!-- ── TAB 6: Help & Contact Support ── -->
+                    <div class="settings-tab-view" id="tab-help-view">
+                        <!-- Admin Profile & Contact Card -->
+                        <div class="help-admin-card glass-panel" style="background:linear-gradient(135deg, rgba(6,214,199,0.08), rgba(59,130,246,0.08)); border:1px solid rgba(6,214,199,0.25); border-radius:14px; padding:18px; margin-bottom:18px;">
+                            <div style="display:flex; align-items:center; gap:16px; margin-bottom:14px;">
+                                <div style="width:56px; height:56px; border-radius:16px; background:linear-gradient(135deg, var(--accent), var(--primary)); display:flex; align-items:center; justify-content:center; color:#0b0f19; font-size:1.8rem; font-weight:800; box-shadow:0 0 20px rgba(6,214,199,0.35); flex-shrink:0;">
+                                    <i class="ph ph-shield-check"></i>
+                                </div>
+                                <div style="flex:1;">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <h3 style="margin:0; font-size:1.15rem; font-weight:700; color:var(--text-bright);">Jeyakanthan</h3>
+                                        <span style="font-size:0.68rem; font-weight:700; background:rgba(6,214,199,0.18); color:var(--accent); border:1px solid rgba(6,214,199,0.35); padding:2px 7px; border-radius:10px; text-transform:uppercase; letter-spacing:0.05em;">Lead Admin</span>
+                                    </div>
+                                    <span style="display:block; font-size:0.8rem; color:var(--text-muted); margin-top:2px;">
+                                        Creator & System Administrator • ESCTRIX Quantum
+                                    </span>
+                                    <div style="display:flex; align-items:center; gap:6px; margin-top:6px; font-size:0.75rem; color:#10b981; font-weight:600;">
+                                        <span style="width:7px; height:7px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981; display:inline-block;"></span>
+                                        Available for user help, custom requests & direct inquiries
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Email Contact Info Pill -->
+                            <div style="background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <i class="ph ph-envelope-simple" style="color:var(--accent); font-size:1.2rem;"></i>
+                                    <div>
+                                        <div style="font-size:0.7rem; text-transform:uppercase; color:var(--text-muted); font-weight:600; letter-spacing:0.05em;">Official Support Email</div>
+                                        <span id="support-email-text" style="font-family:var(--font-mono); font-size:0.88rem; color:var(--text-bright); font-weight:600;">esctrix369@gmail.com</span>
+                                    </div>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <button id="copy-support-email-btn" class="btn secondary-btn" style="padding:6px 12px; font-size:0.78rem;" title="Copy email address to clipboard">
+                                        <i class="ph ph-copy"></i> Copy
+                                    </button>
+                                    <a href="mailto:esctrix369@gmail.com?subject=ESCTRIX%20User%20Support%20Request" class="btn primary-btn" style="padding:6px 14px; font-size:0.78rem; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                                        <i class="ph ph-paper-plane-tilt"></i> Email Admin
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Request / Help Form Accordion -->
+                        <div class="settings-accordion-item open">
+                            <button class="settings-accordion-header" type="button">
+                                <div class="acc-header-left">
+                                    <i class="ph ph-paper-plane-right acc-icon" style="color:var(--accent)"></i>
+                                    <div class="acc-titles">
+                                        <strong>Submit Support Request</strong>
+                                        <span class="acc-desc">Compose an inquiry or feature request directly to Jeyakanthan</span>
+                                    </div>
+                                </div>
+                                <div class="acc-header-right">
+                                    <i class="ph ph-caret-down acc-caret"></i>
+                                </div>
+                            </button>
+                            <div class="settings-accordion-body">
+                                <div class="settings-form-group">
+                                    <label>Request Category</label>
+                                    <select id="support-request-category" class="text-input">
+                                        <option value="General Help & Inquiries">General Help & Inquiries</option>
+                                        <option value="1-on-1 Calling & Audio/Video Support">1-on-1 Calling & Audio/Video Support</option>
+                                        <option value="Chat & Contacts Syncing">Chat & Contacts Syncing</option>
+                                        <option value="Feature Request & Improvement">Feature Request & Improvement</option>
+                                        <option value="Bug Report / Technical Issue">Bug Report / Technical Issue</option>
+                                        <option value="Security & Encryption Question">Security & Encryption Question</option>
+                                    </select>
+                                </div>
+
+                                <div class="settings-form-group">
+                                    <label>Subject / Topic</label>
+                                    <input type="text" id="support-request-subject" class="text-input" placeholder="e.g. Help with video calling over mobile network">
+                                </div>
+
+                                <div class="settings-form-group">
+                                    <label>Your Message / Issue Details</label>
+                                    <textarea id="support-request-message" class="text-input" rows="4" style="resize:vertical; min-height:85px;" placeholder="Describe how we can assist you..."></textarea>
+                                </div>
+
+                                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:12px;">
+                                    <button id="support-submit-btn" class="btn primary-btn" style="display:flex; align-items:center; gap:6px;">
+                                        <i class="ph ph-paper-plane-tilt"></i> Send to esctrix369@gmail.com
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FAQ & Self-Help Guides Accordion -->
+                        <div class="settings-accordion-item">
+                            <button class="settings-accordion-header" type="button">
+                                <div class="acc-header-left">
+                                    <i class="ph ph-book-open acc-icon" style="color:#a855f7;"></i>
+                                    <div class="acc-titles">
+                                        <strong>Frequently Asked Questions</strong>
+                                        <span class="acc-desc">Instant answers to common platform questions</span>
+                                    </div>
+                                </div>
+                                <div class="acc-header-right">
+                                    <i class="ph ph-caret-down acc-caret"></i>
+                                </div>
+                            </button>
+                            <div class="settings-accordion-body" style="font-size:0.85rem; line-height:1.6; color:var(--text-muted);">
+                                <div style="margin-bottom:14px;">
+                                    <strong style="color:var(--text-bright); display:block; margin-bottom:3px;">📞 How do I make 1-on-1 audio/video calls?</strong>
+                                    Add the user to your Contacts first. Once added, open their chat thread and click the Phone or Video icon in the top header to initiate direct WebRTC calling.
+                                </div>
+                                <div style="margin-bottom:14px;">
+                                    <strong style="color:var(--text-bright); display:block; margin-bottom:3px;">👥 How do I find and add friends?</strong>
+                                    Click the Search bar or QR icon in the top navigation bar. Enter the user's `@username`, view their profile card, and click "Add Friend".
+                                </div>
+                                <div style="margin-bottom:14px;">
+                                    <strong style="color:var(--text-bright); display:block; margin-bottom:3px;">🔒 Is my communication encrypted?</strong>
+                                    Yes. ESCTRIX uses Zero-Knowledge end-to-end encryption with client-side WebRTC DTLS/SRTP media channels and AES-GCM 256-bit cryptography.
+                                </div>
+                                <div>
+                                    <strong style="color:var(--text-bright); display:block; margin-bottom:3px;">🤖 How do I use Aura AI?</strong>
+                                    Click on "Aura AI Neural Companion" in your chat list to ask coding questions, summarize messages, analyze sentiment, or translate text across languages.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── TAB 7: Stealth Admin Console ── -->
                     <div class="settings-tab-view" id="tab-admin-view">
                         <div class="settings-accordion-item open">
                             <button class="settings-accordion-header" type="button">

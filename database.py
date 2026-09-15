@@ -103,6 +103,21 @@ def init_db():
         )
     ''')
 
+    # Direct Messages (1-on-1 Persistent Chat History)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS direct_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender_username TEXT NOT NULL,
+            recipient_username TEXT NOT NULL,
+            content TEXT NOT NULL,
+            msg_type TEXT DEFAULT 'text',
+            file_meta TEXT DEFAULT '',
+            vanish INTEGER DEFAULT 0,
+            is_read INTEGER DEFAULT 0,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     # Run migrations for contacts table
     contact_cols = [c[1] for c in cursor.execute("PRAGMA table_info(contacts)").fetchall()]
     if "status" not in contact_cols:
@@ -665,6 +680,83 @@ def delete_offline_messages(username: str) -> bool:
         return True
     finally:
         conn.close()
+
+
+# ─────────────────────────────────────────────────────────────
+# Direct Messages Persistence & History
+# ─────────────────────────────────────────────────────────────
+
+def store_direct_message(
+    sender_username: str,
+    recipient_username: str,
+    content: str,
+    msg_type: str = 'text',
+    file_meta: str = '',
+    vanish: int = 0
+) -> Optional[Dict[str, Any]]:
+    """Store a 1-on-1 direct chat message."""
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            '''INSERT INTO direct_messages (sender_username, recipient_username, content, msg_type, file_meta, vanish)
+               VALUES (?, ?, ?, ?, ?, ?)''',
+            (sender_username, recipient_username, content, msg_type, file_meta, 1 if vanish else 0)
+        )
+        msg_id = cursor.lastrowid
+        conn.commit()
+        cursor.execute('SELECT * FROM direct_messages WHERE id = ?', (msg_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    except Exception as e:
+        logger.error(f"Error storing direct message: {e}")
+        return None
+    finally:
+        conn.close()
+
+
+def get_direct_chat_history(user_a: str, user_b: str, limit: int = 100) -> List[Dict[str, Any]]:
+    """Retrieve 1-on-1 chat history between two users."""
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            '''SELECT id, sender_username, recipient_username, content, msg_type, file_meta, vanish, is_read, timestamp
+               FROM direct_messages
+               WHERE (sender_username = ? AND recipient_username = ?)
+                  OR (sender_username = ? AND recipient_username = ?)
+               ORDER BY id ASC
+               LIMIT ?''',
+            (user_a, user_b, user_b, user_a, limit)
+        )
+        rows = cursor.fetchall()
+        return [dict(r) for r in rows]
+    except Exception as e:
+        logger.error(f"Error fetching direct chat history: {e}")
+        return []
+    finally:
+        conn.close()
+
+
+def mark_direct_messages_read(reader_username: str, sender_username: str) -> bool:
+    """Mark all unread direct messages from a sender as read."""
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            '''UPDATE direct_messages 
+               SET is_read = 1 
+               WHERE recipient_username = ? AND sender_username = ? AND is_read = 0''',
+            (reader_username, sender_username)
+        )
+        conn.commit()
+        return True
+    except Exception as e:
+        logger.error(f"Error marking messages read: {e}")
+        return False
+    finally:
+        conn.close()
+
 
 
 # ─────────────────────────────────────────────────────────────

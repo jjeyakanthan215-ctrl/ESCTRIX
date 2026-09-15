@@ -23,53 +23,56 @@ GEMINI_AVAILABLE = bool(GEMINI_API_KEY)
 
 
 def _call_gemini(prompt: str, system_instruction: str = "") -> Optional[str]:
-    """Call Google Gemini REST API if GEMINI_API_KEY is available."""
+    """Call Google Gemini REST API with multi-model fallback."""
     if not GEMINI_API_KEY:
         return None
 
-    try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-        
-        contents = []
-        if system_instruction:
-            contents.append({
-                "role": "user",
-                "parts": [{"text": f"System Context: {system_instruction}"}]
-            })
-            contents.append({
-                "role": "model",
-                "parts": [{"text": "Understood. I will act according to this context."}]
-            })
+    model_candidates = [
+        "gemini-flash-latest",
+        "gemma-4-26b-a4b-it",
+        "gemma-4-31b-it",
+        "gemini-pro-latest",
+        "gemini-2.5-flash"
+    ]
+
+    for model in model_candidates:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
             
-        contents.append({
-            "role": "user",
-            "parts": [{"text": prompt}]
-        })
-
-        payload = {
-            "contents": contents,
-            "generationConfig": {
-                "temperature": 0.7,
-                "maxOutputTokens": 800
+            full_text = f"System Context: {system_instruction}\n\nUser Question: {prompt}" if system_instruction else prompt
+            payload = {
+                "contents": [
+                    {
+                        "role": "user",
+                        "parts": [{"text": full_text}]
+                    }
+                ],
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "maxOutputTokens": 800
+                }
             }
-        }
 
-        req = urllib.request.Request(
-            url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
-            method="POST"
-        )
-        with urllib.request.urlopen(req, timeout=8) as response:
-            res_data = json.loads(response.read().decode("utf-8"))
-            candidates = res_data.get("candidates", [])
-            if candidates:
-                parts = candidates[0].get("content", {}).get("parts", [])
-                if parts:
-                    return parts[0].get("text", "").strip()
-    except Exception as e:
-        logger.warning(f"Gemini API call failed: {e}")
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=12) as response:
+                res_data = json.loads(response.read().decode("utf-8"))
+                candidates = res_data.get("candidates", [])
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    if parts:
+                        return parts[0].get("text", "").strip()
+        except Exception as e:
+            logger.debug(f"Model {model} attempt failed: {e}")
+            continue
+
     return None
+
+
 
 
 def _call_free_ai(prompt: str, system_instruction: str = "") -> Optional[str]:
@@ -123,9 +126,18 @@ def ai_chat(user_message: str, chat_history: Optional[List[Dict[str, str]]] = No
         "You help users with programming, decentralized technology, security, privacy, writing, and everyday questions."
     )
 
+    # 1. Prioritize live Generative AI when available
+    gemini_res = _call_gemini(user_message, system_instruction=system_prompt)
+    if gemini_res:
+        return gemini_res
+
+    free_ai_res = _call_free_ai(user_message, system_instruction=system_prompt)
+    if free_ai_res:
+        return free_ai_res
+
     msg = user_message.strip().lower()
 
-    # 1. Instant ESCTRIX-specific high accuracy Knowledge Base
+    # 2. Instant ESCTRIX-specific high accuracy Knowledge Base fallback
     if ("friend" in msg and ("add" in msg or "find" in msg or "search" in msg or "how" in msg)) or "contact" in msg:
         if "count" in msg or "how many" in msg:
             return (
@@ -207,17 +219,7 @@ def ai_chat(user_message: str, chat_history: Optional[List[Dict[str, str]]] = No
             "- **Vanish & Burn**: Instant cryptographic wiping of sessions."
         )
 
-    # 2. Try Gemini if configured
-    gemini_res = _call_gemini(user_message, system_instruction=system_prompt)
-    if gemini_res:
-        return gemini_res
-
-    # 3. Call Free AI generation (Pollinations / OpenAI backend)
-    free_ai_res = _call_free_ai(user_message, system_instruction=system_prompt)
-    if free_ai_res:
-        return free_ai_res
-
-    # 4. Intelligent Local Fallback
+    # 3. Intelligent Local Fallback
     if any(w in msg for w in ["code", "python", "javascript", "program", "function", "bug", "api"]):
         return (
             "💻 **Code & Architecture Advisor**:\n"
