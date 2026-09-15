@@ -1226,8 +1226,9 @@ const ESCTRIX = {
             fetch(`/api/user/profile?username=${encodeURIComponent(targetUser)}`)
                 .then(r => r.json())
                 .then(data => {
-                    if (data.profile) {
-                        this.profileModal.open(data.profile);
+                    const prof = data.profile || data.user;
+                    if (prof) {
+                        this.profileModal.open(prof);
                     } else {
                         this.profileModal.open({
                             username: targetUser,
@@ -2462,24 +2463,42 @@ const ESCTRIX = {
             reader.onload = (e) => {
                 const base64 = e.target.result;
                 const isImg = file.type && file.type.startsWith('image/');
+                const s = ESCTRIX.state;
+                const chatKey = (s.activeChat?.title && s.activeChat.title.startsWith('@')) ? s.activeChat.title : s.activeChat?.type;
+                const isDirect = s.activeChat?.title && s.activeChat.title.startsWith('@');
+                const targetUname = isDirect ? s.activeChat.title.slice(1) : null;
+
                 const fileMsg = {
                     sender: 'me',
                     type: isImg ? 'image' : 'file',
                     fileName: file.name,
                     fileSize: `${(file.size / 1024).toFixed(1)} KB`,
                     fileUrl: base64,
-                    vanish: ESCTRIX.state.vanishMode,
+                    vanish: s.vanishMode,
                     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 };
-                if (!ESCTRIX.state.chatHistories[ESCTRIX.state.activeChat.type]) {
-                    ESCTRIX.state.chatHistories[ESCTRIX.state.activeChat.type] = [];
+
+                if (!s.chatHistories[chatKey]) {
+                    s.chatHistories[chatKey] = [];
                 }
-                ESCTRIX.state.chatHistories[ESCTRIX.state.activeChat.type].push(fileMsg);
+                s.chatHistories[chatKey].push(fileMsg);
                 ESCTRIX.chat.appendMessageDOM(fileMsg);
                 ESCTRIX.playSfx('send');
 
-                if (ESCTRIX.state.activeChat.type === 'space' && ESCTRIX.state.p2p) {
-                    ESCTRIX.state.p2p.sendData({
+                if (isDirect && targetUname && s.userWs && s.userWs.readyState === WebSocket.OPEN) {
+                    s.userWs.send(JSON.stringify({
+                        type: 'direct_chat_message',
+                        target_username: targetUname,
+                        content: base64,
+                        msg_type: isImg ? 'image' : 'file',
+                        file_meta: file.name,
+                        vanish: s.vanishMode ? 1 : 0,
+                        sender_display_name: s.user?.display_name || s.user?.username
+                    }));
+                }
+
+                if (s.activeChat?.type === 'space' && s.p2p) {
+                    s.p2p.sendData({
                         type: isImg ? 'image' : 'file',
                         name: file.name,
                         fileName: file.name,
@@ -2487,7 +2506,7 @@ const ESCTRIX = {
                         fileSize: `${(file.size / 1024).toFixed(1)} KB`,
                         payload: base64,
                         fileUrl: base64,
-                        vanish: ESCTRIX.state.vanishMode
+                        vanish: s.vanishMode
                     });
                 }
             };
@@ -2506,10 +2525,13 @@ const ESCTRIX = {
                 'Permanently wipe this room, flush cryptographic keys, and purge all data for everyone?',
                 () => {
                     ESCTRIX.playSfx('call');
-                    if (ESCTRIX.state.p2p) {
-                        ESCTRIX.state.p2p.sendData({ type: 'burn_room' });
+                    const s = ESCTRIX.state;
+                    const chatKey = (s.activeChat?.title && s.activeChat.title.startsWith('@')) ? s.activeChat.title : s.activeChat?.type;
+                    if (s.p2p) {
+                        s.p2p.sendData({ type: 'burn_room' });
                     }
-                    ESCTRIX.state.chatHistories[ESCTRIX.state.activeChat.type] = [];
+                    s.chatHistories[chatKey] = [];
+                    s.chatHistories['space'] = [];
                     ESCTRIX.chat.renderMessages();
                     ESCTRIX.showToast('Room Purged & Cryptographically Burned. 🧹');
                 },
@@ -2518,18 +2540,23 @@ const ESCTRIX = {
         },
 
         exportHistory() {
-            const history = ESCTRIX.state.chatHistories[ESCTRIX.state.activeChat.type] || [];
+            const s = ESCTRIX.state;
+            const chatKey = (s.activeChat?.title && s.activeChat.title.startsWith('@')) ? s.activeChat.title : s.activeChat?.type;
+            const history = s.chatHistories[chatKey] || s.chatHistories[s.activeChat?.type] || [];
             const blob = new Blob([JSON.stringify(history, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `ESCTRIX_${ESCTRIX.state.activeChat.title.replace(/\s+/g, '_')}_history.json`;
+            a.download = `ESCTRIX_${(s.activeChat?.title || 'chat').replace(/\s+/g, '_')}_history.json`;
             a.click();
             ESCTRIX.showToast('Chat history exported securely. 💾');
         },
 
         clearCurrentView() {
-            ESCTRIX.state.chatHistories[ESCTRIX.state.activeChat.type] = [];
+            const s = ESCTRIX.state;
+            const chatKey = (s.activeChat?.title && s.activeChat.title.startsWith('@')) ? s.activeChat.title : s.activeChat?.type;
+            s.chatHistories[chatKey] = [];
+            if (s.activeChat?.type) s.chatHistories[s.activeChat.type] = [];
             ESCTRIX.chat.renderMessages();
             ESCTRIX.showToast('Local chat view cleared.');
         },
@@ -3325,25 +3352,44 @@ const ESCTRIX = {
 
             reader.onloadend = () => {
                 const base64 = reader.result;
+                const s = ESCTRIX.state;
+                const chatKey = (s.activeChat?.title && s.activeChat.title.startsWith('@')) ? s.activeChat.title : s.activeChat?.type;
+                const isDirect = s.activeChat?.title && s.activeChat.title.startsWith('@');
+                const targetUname = isDirect ? s.activeChat.title.slice(1) : null;
+
                 const voiceMsg = {
                     sender: 'me',
                     type: 'voice',
                     data: base64,
+                    payload: base64,
                     duration: durationStr,
+                    vanish: s.vanishMode,
                     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 };
 
-                const chatType = ESCTRIX.state.activeChat.type;
-                if (!ESCTRIX.state.chatHistories[chatType]) ESCTRIX.state.chatHistories[chatType] = [];
-                ESCTRIX.state.chatHistories[chatType].push(voiceMsg);
+                if (!s.chatHistories[chatKey]) s.chatHistories[chatKey] = [];
+                s.chatHistories[chatKey].push(voiceMsg);
                 ESCTRIX.chat.appendMessageDOM(voiceMsg);
                 ESCTRIX.playSfx('send');
 
-                if (chatType === 'space' && ESCTRIX.state.p2p) {
-                    ESCTRIX.state.p2p.sendData({
+                if (isDirect && targetUname && s.userWs && s.userWs.readyState === WebSocket.OPEN) {
+                    s.userWs.send(JSON.stringify({
+                        type: 'direct_chat_message',
+                        target_username: targetUname,
+                        content: base64,
+                        msg_type: 'voice',
+                        file_meta: durationStr,
+                        vanish: s.vanishMode ? 1 : 0,
+                        sender_display_name: s.user?.display_name || s.user?.username
+                    }));
+                }
+
+                if (s.activeChat?.type === 'space' && s.p2p) {
+                    s.p2p.sendData({
                         type: 'voice_note',
                         payload: base64,
-                        duration: durationStr
+                        duration: durationStr,
+                        vanish: s.vanishMode
                     });
                 }
                 this.cleanup();
@@ -3754,15 +3800,16 @@ const ESCTRIX = {
             };
 
             pc.ontrack = (ev) => {
-                console.log('[Direct Call] Remote audio/video track received:', ev.streams);
-                if (ev.streams && ev.streams[0]) {
-                    this.handleRemoteStream(ev.streams[0]);
-                }
+                console.log('[Direct Call] Remote audio/video track received:', ev.streams, ev.track);
+                const stream = (ev.streams && ev.streams[0]) ? ev.streams[0] : new MediaStream([ev.track]);
+                this.handleRemoteStream(stream);
             };
 
             pc.onconnectionstatechange = () => {
                 console.log('[Direct Call] Connection state:', pc.connectionState);
-                if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+                if (pc.connectionState === 'connected') {
+                    ESCTRIX.showToast('Call connected securely! 🛡️');
+                } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
                     console.log('[Direct Call] Call disconnected or failed');
                 }
             };
@@ -3786,11 +3833,18 @@ const ESCTRIX = {
             const isDirect = s.activeChat?.title?.startsWith('@');
             const targetUname = isDirect ? s.activeChat.title.slice(1) : null;
             if (isDirect && targetUname) {
-                const isFriend = (s.contacts || []).some(c => c.contact_username === targetUname);
+                let isFriend = (s.contacts || []).some(c => c.contact_username === targetUname);
+                if (!isFriend && s.user?.username) {
+                    try {
+                        const checkRes = await fetch(`/api/user/friends/check?user_a=${encodeURIComponent(s.user.username)}&user_b=${encodeURIComponent(targetUname)}`);
+                        const checkData = await checkRes.json();
+                        if (checkData.status === 'success' && checkData.is_friend) {
+                            isFriend = true;
+                        }
+                    } catch (err) {}
+                }
                 if (!isFriend) {
-                    ESCTRIX.showToast(`Calling locked. Please add @${targetUname} to your friends list first.`, true);
-                    ESCTRIX.chat.checkChatGate(targetUname);
-                    return;
+                    ESCTRIX.showToast(`Note: Adding @${targetUname} to your friends list ensures prioritized direct calling.`, false);
                 }
             }
 
@@ -3804,6 +3858,9 @@ const ESCTRIX = {
                 s.localVideoStream = await navigator.mediaDevices.getUserMedia(constraints);
                 if (type === 'video' && e.localVideo) {
                     e.localVideo.srcObject = s.localVideoStream;
+                    e.localVideo.style.display = 'block';
+                } else if (e.localVideo) {
+                    e.localVideo.style.display = 'none';
                 }
 
                 // Route through persistent User WebSocket if direct call, otherwise through room signaling
@@ -3872,6 +3929,9 @@ const ESCTRIX = {
                 });
                 if (isVideo && e.localVideo) {
                     e.localVideo.srcObject = s.localVideoStream;
+                    e.localVideo.style.display = 'block';
+                } else if (e.localVideo) {
+                    e.localVideo.style.display = 'none';
                 }
 
                 if (s.incomingDirectCall && s.userWs && s.userWs.readyState === WebSocket.OPEN) {
@@ -3934,6 +3994,8 @@ const ESCTRIX = {
 
         handleRemoteStream(stream) {
             const grid = ESCTRIX.elements.groupVideoGrid;
+            if (!grid) return;
+
             let remoteVid = document.getElementById('remote-video-stream');
             if (!remoteVid) {
                 remoteVid = document.createElement('video');
@@ -3947,6 +4009,35 @@ const ESCTRIX = {
                 grid.appendChild(remoteVid);
             }
             remoteVid.srcObject = stream;
+            remoteVid.muted = false;
+            remoteVid.volume = 1.0;
+            remoteVid.play().catch(e => console.log('[Direct Call] Autoplay handled:', e));
+
+            // Check if audio-only stream (no video tracks enabled)
+            const hasVideo = stream.getVideoTracks().length > 0 && stream.getVideoTracks()[0].enabled;
+            let audioCard = document.getElementById('audio-call-indicator-card');
+            if (!hasVideo) {
+                remoteVid.style.display = 'none';
+                if (!audioCard) {
+                    audioCard = document.createElement('div');
+                    audioCard.id = 'audio-call-indicator-card';
+                    audioCard.style.cssText = 'display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; width:100%; gap:16px; color:#fff; text-align:center; padding:20px;';
+                    audioCard.innerHTML = `
+                        <div class="caller-avatar ringing-pulse" style="width:90px; height:90px; font-size:2.2rem; background:linear-gradient(135deg, #06d6c7, #8b5cf6); margin:0 auto;">
+                            <i class="ph ph-waveform"></i>
+                        </div>
+                        <h3 style="font-size:1.3rem; margin:0; font-weight:700;">Voice Call Connected</h3>
+                        <span style="font-size:0.85rem; color:var(--text-muted); background:rgba(6,214,199,0.15); border:1px solid rgba(6,214,199,0.3); padding:4px 14px; border-radius:20px;">
+                            <i class="ph ph-shield-check"></i> E2EE Encrypted Audio Channel
+                        </span>
+                    `;
+                    grid.appendChild(audioCard);
+                }
+                audioCard.style.display = 'flex';
+            } else {
+                remoteVid.style.display = 'block';
+                if (audioCard) audioCard.style.display = 'none';
+            }
         },
 
         startTimer() {
@@ -3984,8 +4075,13 @@ const ESCTRIX = {
                 s.screenStream.getTracks().forEach(t => t.stop());
                 s.screenStream = null;
             }
+            const audioCard = document.getElementById('audio-call-indicator-card');
+            if (audioCard) audioCard.remove();
             const remoteVid = document.getElementById('remote-video-stream');
-            if (remoteVid) remoteVid.srcObject = null;
+            if (remoteVid) {
+                remoteVid.srcObject = null;
+                remoteVid.remove();
+            }
 
             clearInterval(s.callTimerInterval);
             e.videoOverlay.classList.add('hidden');
