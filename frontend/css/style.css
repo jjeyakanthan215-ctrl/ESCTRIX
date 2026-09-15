@@ -937,6 +937,43 @@ img {
     box-shadow: 0 0 16px var(--accent-glow);
 }
 
+/* ── Password Visibility Eye Toggle ── */
+.pwd-input-group {
+    position: relative;
+    width: 100%;
+}
+
+.pwd-input-group .text-input {
+    padding-right: 48px !important;
+}
+
+.pwd-toggle-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    z-index: 3;
+    line-height: 1;
+}
+
+.pwd-toggle-btn:hover,
+.pwd-toggle-btn:focus {
+    color: var(--accent);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+
 .btn {
     display: inline-flex;
     align-items: center;
@@ -3151,9 +3188,112 @@ input:checked + .slider:before {
         height: 150px;
     }
 
-    .stats-grid,
+    /* ── MOBILE ADMIN COMMAND CENTER OPTIMIZATION ── */
+    .admin-shell {
+        padding: 16px 12px 60px;
+    }
+
+    .admin-top-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
+        text-align: center;
+        margin-bottom: 18px;
+        padding-bottom: 14px;
+    }
+
+    .admin-top-bar > div:last-child {
+        flex-direction: column;
+        width: 100%;
+        gap: 8px;
+    }
+
+    .admin-top-bar .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+        margin-bottom: 16px !important;
+    }
+
+    .stat-card {
+        padding: 14px 10px;
+        border-radius: 14px;
+    }
+
+    .stat-card i {
+        font-size: 1.5rem;
+        margin-bottom: 4px;
+    }
+
+    .stat-card h3 {
+        font-size: 1.35rem;
+    }
+
+    .stat-card p {
+        font-size: 0.74rem;
+        margin-top: 2px;
+    }
+
     .admin-grid {
         grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .admin-panel {
+        padding: 18px 14px;
+        border-radius: 16px;
+    }
+
+    .table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-top: 8px;
+    }
+
+    .admin-table {
+        min-width: 560px;
+    }
+
+    .admin-pwd-row {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 8px !important;
+    }
+
+    .admin-pwd-row .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .broadcast-panel .broadcast-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .broadcast-panel .broadcast-row .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* ── MOBILE AUTH CARD TOUCH ERGONOMICS ── */
+    .auth-card {
+        padding: 26px 18px;
+        max-width: 95%;
+        border-radius: 20px;
+    }
+
+    .auth-brand h2 {
+        font-size: 1.35rem;
+    }
+
+    .auth-logo-halo {
+        width: 60px;
+        height: 60px;
     }
 }
 

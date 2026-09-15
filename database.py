@@ -60,7 +60,8 @@ def init_db():
             bio TEXT DEFAULT '',
             avatar_color TEXT,
             role TEXT DEFAULT 'user',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            last_login_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
 
@@ -155,6 +156,13 @@ def init_db():
         except Exception:
             pass
 
+    if "last_login_at" not in columns:
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN last_login_at DATETIME")
+            cursor.execute("UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE last_login_at IS NULL")
+        except Exception as e:
+            logger.error(f"Migration error for last_login_at: {e}")
+
     # Populate missing account_id, display_name, avatar_color for existing users
     cursor.execute("SELECT id, username, account_id, display_name, avatar_color FROM users")
     existing_users = cursor.fetchall()
@@ -243,6 +251,14 @@ def verify_user(username: str, password: str) -> Optional[Dict[str, Any]]:
                 pass
 
         if is_valid:
+            try:
+                up_conn = get_db()
+                up_conn.cursor().execute('UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?', (row['id'],))
+                up_conn.commit()
+                up_conn.close()
+            except Exception:
+                pass
+
             return {
                 "id": row['id'],
                 "account_id": row['account_id'],
@@ -253,6 +269,60 @@ def verify_user(username: str, password: str) -> Optional[Dict[str, Any]]:
                 "role": row['role']
             }
     return None
+
+
+def touch_user_activity(username: str):
+    """Update last_login_at timestamp to keep account active."""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE username = ?", (username,))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error updating user activity timestamp: {e}")
+
+
+def prune_inactive_users(days: int = 7) -> int:
+    """
+    Purge user accounts that have been inactive (no login) for more than `days` (default 7).
+    Never purges admin accounts (role == 'admin' or username == 'ESCTRIX_Admin').
+    Also removes their associated contacts, offline messages, and personal vault notes.
+    Returns the count of purged accounts.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cutoff_query = f"datetime('now', '-{days} days')"
+        cursor.execute(f"""
+            SELECT username FROM users 
+            WHERE (role IS NULL OR role != 'admin')
+              AND username != 'ESCTRIX_Admin'
+              AND (
+                  (last_login_at IS NOT NULL AND last_login_at < {cutoff_query})
+                  OR (last_login_at IS NULL AND created_at IS NOT NULL AND created_at < {cutoff_query})
+              )
+        """)
+        inactive_users = [r['username'] for r in cursor.fetchall()]
+
+        if not inactive_users:
+            return 0
+
+        logger.info(f"Auto-pruning {len(inactive_users)} inactive users (inactive > {days} days): {inactive_users}")
+
+        for u in inactive_users:
+            cursor.execute("DELETE FROM contacts WHERE owner_username = ? OR contact_username = ?", (u, u))
+            cursor.execute("DELETE FROM offline_messages WHERE recipient_username = ? OR sender_username = ?", (u, u))
+            cursor.execute("DELETE FROM saved_messages WHERE username = ?", (u,))
+            cursor.execute("DELETE FROM users WHERE username = ?", (u,))
+
+        conn.commit()
+        return len(inactive_users)
+    except Exception as e:
+        logger.error(f"Failed to prune inactive users: {e}")
+        return 0
+    finally:
+        conn.close()
 
 
 def get_user_profile(username: str) -> Optional[Dict[str, Any]]:

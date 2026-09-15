@@ -17,7 +17,8 @@ from database import (
     get_user_profile, update_user_profile, search_users,
     add_saved_message, get_saved_messages, delete_saved_message,
     add_contact, get_contacts, update_user_role, reset_user_password,
-    get_incoming_friend_adds, is_friend, get_friends_count
+    get_incoming_friend_adds, is_friend, get_friends_count,
+    prune_inactive_users, touch_user_activity
 )
 from ai_engine import (
     ai_chat, ai_vibe_analysis, ai_smart_reply,
@@ -48,9 +49,32 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Initializing database...")
     init_db()
+    try:
+        pruned = prune_inactive_users(7)
+        if pruned > 0:
+            logger.info(f"Startup: Successfully purged {pruned} inactive account(s) (>7 days inactivity).")
+    except Exception as e:
+        logger.error(f"Startup account pruning error: {e}")
+
+    # Launch background periodic pruning task (runs every 6 hours)
+    import asyncio
+    async def periodic_pruner():
+        while True:
+            try:
+                await asyncio.sleep(6 * 3600)
+                pruned_count = prune_inactive_users(7)
+                if pruned_count > 0:
+                    logger.info(f"Periodic sweep: Purged {pruned_count} inactive account(s).")
+            except asyncio.CancelledError:
+                break
+            except Exception as ex:
+                logger.error(f"Periodic pruning error: {ex}")
+
+    pruner_task = asyncio.create_task(periodic_pruner())
     logger.info("ESCTRIX Quantum server online. Ready for connections...")
     yield
     # Shutdown
+    pruner_task.cancel()
     if mdns_service:
         logger.info("Stopping mDNS service...")
         mdns_service.stop()
@@ -212,6 +236,22 @@ async def login_user(data: AuthData):
     if user:
         return {"status": "success", "user": user, "role": user["role"]}
     return {"status": "error", "message": "Incorrect username or password. Please try again."}
+
+
+class SessionValidation(BaseModel):
+    username: str
+    account_id: Optional[str] = None
+
+
+@app.post("/api/auth/validate-session")
+async def validate_session(data: SessionValidation):
+    profile = get_user_profile(data.username)
+    if profile:
+        if data.account_id and profile.get("account_id") != data.account_id:
+            return {"status": "error", "message": "Session ID mismatch or invalidated."}
+        touch_user_activity(data.username)
+        return {"status": "success", "user": profile, "role": profile.get("role", "user")}
+    return {"status": "error", "message": "Account does not exist or has expired due to 7 days of inactivity."}
 
 
 # ─────────────────────────────────────────────────────────────

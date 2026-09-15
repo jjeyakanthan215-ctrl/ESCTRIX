@@ -86,8 +86,9 @@ const ESCTRIX = {
             'admin-enter-chat-btn', 'admin-logout-btn',
             'auth-brand-badge', 'auth-user-icon', 'auth-security-text', 'auth-switch-bar',
             'login-screen', 'dashboard-screen', 'admin-screen',
-            'auth-title', 'auth-subtitle', 'auth-username', 'auth-password', 'auth-displayname',
+            'auth-title', 'auth-subtitle', 'auth-username', 'auth-password', 'auth-pwd-toggle', 'auth-displayname',
             'display-name-group', 'auth-submit-btn', 'auth-toggle', 'auth-toggle-msg', 'login-error',
+            'admin-new-password-input', 'admin-pwd-toggle', 'admin-change-pwd-btn',
             'telegram-sidebar', 'telegram-chat-pane', 'chat-search-input', 'search-clear-btn',
             'sidebar-add-friend-btn', 'new-space-btn', 'chat-threads-list', 'dynamic-chat-threads', 'thread-aura-ai', 'thread-saved-messages',
             'drawer-open-btn', 'footer-user-chip', 'footer-user-avatar', 'footer-user-name', 'footer-user-id',
@@ -288,6 +289,29 @@ const ESCTRIX = {
                     this.connectUserSocket(user.username);
                     this.updateContactsCount();
                     this.renderIntroUserState(user);
+
+                    // Validate session with backend to refresh activity timestamp & verify 7-day retention
+                    fetch('/api/auth/validate-session', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: user.username, account_id: user.account_id })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success' && data.user) {
+                            this.state.user = data.user;
+                            localStorage.setItem('esctrix_quantum_session', JSON.stringify(data.user));
+                            this.applyUserProfile(data.user);
+                            this.renderIntroUserState(data.user);
+                        } else if (data.status === 'error') {
+                            // Account expired after 7 days inactivity or was deleted
+                            console.warn('Session expired or account purged:', data.message);
+                            localStorage.removeItem('esctrix_quantum_session');
+                            this.state.user = null;
+                            this.renderIntroUserState(null);
+                        }
+                    })
+                    .catch(() => {});
                 }
             } catch (e) {
                 localStorage.removeItem('esctrix_quantum_session');
@@ -569,6 +593,25 @@ const ESCTRIX = {
         e.authToggle?.addEventListener('click', () => this.auth.toggleMode());
         e.authSubmitBtn?.addEventListener('click', () => this.auth.submit());
         e.authPassword?.addEventListener('keypress', (ev) => { if (ev.key === 'Enter') this.auth.submit(); });
+
+        // Password Visibility Toggles (Eye View Button)
+        const setupPasswordToggle = (btn, input) => {
+            if (!btn || !input) return;
+            btn.addEventListener('click', (ev) => {
+                ev.preventDefault();
+                ev.stopPropagation();
+                const isPwd = input.type === 'password';
+                input.type = isPwd ? 'text' : 'password';
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = isPwd ? 'ph ph-eye-slash' : 'ph ph-eye';
+                }
+                btn.title = isPwd ? 'Hide Password' : 'Show Password';
+                this.playSfx('click');
+            });
+        };
+        setupPasswordToggle(e.authPwdToggle, e.authPassword);
+        setupPasswordToggle(e.adminPwdToggle, e.adminNewPasswordInput);
 
         // Settings Suite Triggers
         e.drawerOpenBtn?.addEventListener('click', () => this.settings.open());

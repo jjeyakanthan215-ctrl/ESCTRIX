@@ -23,12 +23,12 @@
     <meta name="twitter:description" content="Decentralized peer-to-peer messaging platform with Zero-Knowledge E2EE, WebRTC mesh media, and Aura AI Neural Copilot.">
     <meta name="twitter:image" content="https://esctrix.onrender.com/static/logo.png">
 
-    <link rel="stylesheet" href="/static/css/style.css?v=2.1.5">
+    <link rel="stylesheet" href="/static/css/style.css?v=2.2.0">
     <link rel="manifest" href="/manifest.json">
     <script>
         /* ── Automated Self-Healing Cache Cleaner (Purges stale PWA cache on load) ── */
         (function() {
-            var CURRENT_VER = '2.1.4-quantum';
+            var CURRENT_VER = '2.2.0-quantum';
             var lastVer = localStorage.getItem('esctrix_cache_ver');
             if (lastVer !== CURRENT_VER) {
                 localStorage.setItem('esctrix_cache_ver', CURRENT_VER);
@@ -238,9 +238,12 @@
                         <input type="text" id="auth-username" placeholder="Username (Handle)" autocomplete="off" class="text-input">
                     </div>
 
-                    <div class="input-group">
+                    <div class="input-group pwd-input-group">
                         <i class="ph ph-lock-key input-icon"></i>
                         <input type="password" id="auth-password" placeholder="Password" autocomplete="off" class="text-input">
+                        <button type="button" id="auth-pwd-toggle" class="pwd-toggle-btn" title="Show/Hide Password" aria-label="Show or hide password">
+                            <i class="ph ph-eye"></i>
+                        </button>
                     </div>
 
                     <button id="auth-submit-btn" class="btn primary-btn full-width">
@@ -675,8 +678,14 @@
                     <div class="admin-panel">
                         <h3><i class="ph ph-key"></i> Administrator Key Management</h3>
                         <p class="muted" style="font-size:0.85rem; margin-bottom:12px;">Update your administrator account access password.</p>
-                        <div style="display:flex; gap:8px;">
-                            <input type="password" id="admin-new-password-input" placeholder="Enter new password (min 4 chars)..." class="text-input">
+                        <div class="admin-pwd-row" style="display:flex; gap:8px; align-items:center;">
+                            <div class="input-group pwd-input-group" style="flex:1; margin-bottom:0;">
+                                <i class="ph ph-lock-key input-icon"></i>
+                                <input type="password" id="admin-new-password-input" placeholder="Enter new password (min 4 chars)..." class="text-input">
+                                <button type="button" id="admin-pwd-toggle" class="pwd-toggle-btn" title="Show/Hide Password" aria-label="Show or hide password">
+                                    <i class="ph ph-eye"></i>
+                                </button>
+                            </div>
                             <button id="admin-change-pwd-btn" class="btn primary-btn"><i class="ph ph-check"></i> Update</button>
                         </div>
                     </div>
@@ -2028,7 +2037,7 @@
     <div id="quantum-cursor-ring" class="quantum-cursor-ring"></div>
 
     <!-- Scripts with Cache Busters -->
-    <script src="/static/js/webrtc.js?v=2.1.1"></script>
-    <script src="/static/js/app.js?v=2.1.1"></script>
+    <script src="/static/js/webrtc.js?v=2.2.0"></script>
+    <script src="/static/js/app.js?v=2.2.0"></script>
 </body>
 </html>
