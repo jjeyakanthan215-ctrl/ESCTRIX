@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://esctrix.onrender.com/api/$1" },
+    { "source": "/ws/(.*)", "destination": "https://esctrix.onrender.com/ws/$1" },
+    { "source": "/static/(.*)", "destination": "/frontend/$1" },
+    { "source": "/(.*)", "destination": "/frontend/$1" }
+  ]
+}

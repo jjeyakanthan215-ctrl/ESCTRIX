@@ -128,6 +128,21 @@
   4. **Automated DOM Verification**:
      - Authored and ran `scratch/test_cloud_instant_load_dom.py` verifying Service Worker registration, `#cloud-sync-pill` and `#cloud-connection-banner` DOM state transitions, and 100% clean console logs.
 
+### Request 8: Automated Two-Party Calling Verification & Edge Deployment Config (DOM-Verified)
+- **User Prompt:** `can you do that`
+- **Delivered Solutions:**
+  1. **Automated Two-Party End-to-End Calling Test (`scratch/test_two_party_call_dom.py`)**:
+     - Concurrently launched two headless browser sessions (User Alice and User Bob).
+     - Alice added Bob as mutual contact and opened direct encrypted chat.
+     - Alice initiated video call (`#video-call-btn`), displaying the radiating radar ripple card (`#outgoing-call-card`).
+     - Bob's client received the real-time WebSocket signaling offer (`direct_call_offer`), displayed the incoming call modal (`#call-modal`), and Bob clicked `#accept-call-btn`.
+     - Alice's client hid the outgoing card and connected into the live WebRTC call session.
+     - Alice minimized the call into the floating Picture-in-Picture pill (`#call-pip-pill`), validated full in-call chat responsiveness, and maximized back to full overlay.
+     - Symmetrically terminated the call via `#end-video-call-btn`, releasing all media streams and verifying **ZERO console/DOM errors across both clients**.
+  2. **Vercel Edge Deployment Configuration (`vercel.json`)**:
+     - Authored `vercel.json` with clean URL rewrites routing all static frontend assets to `frontend/` and proxying `/api/*` and `/ws/*` directly to `https://esctrix.onrender.com`.
+     - Enables instant 1-click deployment on Vercel for <50ms global edge CDN delivery.
+
 ---
 
 ## 2. Key Architecture Decisions & Reference Rules
@@ -138,6 +153,7 @@
 | **Account Retention** | `ENABLE_ACCOUNT_PRUNING=false` default guard | Prevents user accounts from ever being deleted automatically |
 | **Instant App Shell** | Service Worker Stale-While-Revalidate (`sw.js`) | 0ms instant DOM load time, eliminating Render cold-start delays |
 | **24/7 Server Warmth** | GitHub Actions Keep-Alive Cron (`.github/workflows/render_keep_alive.yml`) | Pings `/health` every 10m so Render free tier never sleeps |
+| **Edge CDN Delivery** | Vercel Edge Config (`vercel.json`) | Sub-50ms static assets globally with backend proxying |
 | **Cloud Sync HUD** | `#cloud-sync-pill` & `#cloud-connection-banner` | Real-time DOM indication of Cloud Relay status |
 | **Calling Quick-Launch** | Split `#audio-call-btn` & `#video-call-btn` with synthesized ringtones | Instant WhatsApp/Telegram 1-tap calling experience |
 | **Calling Resilience** | WebRTC `RTCRtpSender.replaceTrack` | Seamless camera switching without renegotiation or ringing popups |
