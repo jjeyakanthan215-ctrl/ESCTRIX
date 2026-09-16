@@ -1,0 +1,25 @@
+name: Render Keep-Alive 24/7
+
+on:
+  schedule:
+    # Runs every 10 minutes (cron: '*/10 * * * *')
+    # Render spins down free containers after 15 minutes of inactivity.
+    # Pinging every 10 minutes keeps the server permanently warm.
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub anytime
+
+jobs:
+  keepalive:
+    name: Ping Render Health
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Keep-Alive Ping to Render
+        run: |
+          echo "Dispatching automated keep-alive ping to Render..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -m 30 "https://esctrix.onrender.com/health" || echo "000")
+          echo "Render health check response code: $STATUS"
+          if [ "$STATUS" -eq "200" ]; then
+            echo "✅ Render server is warm and running!"
+          else
+            echo "⚡ Render service pinged (status: $STATUS)"
+          fi

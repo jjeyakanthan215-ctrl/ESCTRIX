@@ -1,4 +1,4 @@
-const CACHE_NAME = 'esctrix-v19-quantum';
+const CACHE_NAME = 'esctrix-v21-instant-quantum';
 const OFFLINE_URL = '/offline.html';
 const ASSETS = [
     '/',
@@ -17,13 +17,13 @@ const ASSETS = [
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then(async (cache) => {
-            for (const asset of ASSETS) {
-                try {
-                    await cache.add(asset);
-                } catch (e) {
-                    console.warn('[SW] Optional asset pre-cache skipped:', asset);
-                }
-            }
+            await Promise.allSettled(
+                ASSETS.map((asset) =>
+                    cache.add(asset).catch((err) => {
+                        console.warn('[SW] Pre-cache skipped:', asset, err);
+                    })
+                )
+            );
         })
     );
     self.skipWaiting();
@@ -43,31 +43,42 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// ── Fetch: Network-first with offline fallback ──
+// ── Fetch: Stale-While-Revalidate with Instant Cache Delivery ──
+// Never wait for Render cold starts: Return cached DOM instantly (0ms) and update in background!
 self.addEventListener('fetch', (event) => {
     if (event.request.method !== 'GET') return;
-    if (!event.request.url.startsWith(self.location.origin)) return;
-    if (event.request.url.includes('/api/') || event.request.url.includes('/ws/')) return;
+    const url = new URL(event.request.url);
+    if (url.origin !== self.location.origin) return;
+    if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/')) return;
 
     event.respondWith(
-        fetch(event.request)
-            .then((response) => {
-                // Cache successful responses dynamically
-                if (response && response.status === 200 && response.type === 'basic') {
-                    const clone = response.clone();
-                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-                }
-                return response;
-            })
-            .catch(() =>
-                caches.match(event.request).then((cached) => {
-                    if (cached) return cached;
-                    // For navigation requests, return the offline page
-                    if (event.request.mode === 'navigate') {
-                        return caches.match(OFFLINE_URL);
+        caches.open(CACHE_NAME).then(async (cache) => {
+            const cachedResponse = await cache.match(event.request);
+
+            // Revalidation in background
+            const fetchPromise = fetch(event.request)
+                .then((networkResponse) => {
+                    if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+                        cache.put(event.request, networkResponse.clone());
                     }
+                    return networkResponse;
                 })
-            )
+                .catch(() => {
+                    if (event.request.mode === 'navigate' && !cachedResponse) {
+                        return cache.match(OFFLINE_URL);
+                    }
+                    return null;
+                });
+
+            // If we have cached copy, return it immediately (<5ms)!
+            // Network fetch executes in the background to update cache for next load.
+            if (cachedResponse) {
+                return cachedResponse;
+            }
+
+            // Otherwise, wait for the network (first visit)
+            return fetchPromise;
+        })
     );
 });
 

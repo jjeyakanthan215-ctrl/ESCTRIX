@@ -93,6 +93,7 @@ const ESCTRIX = {
             'admin-new-password-input', 'admin-pwd-toggle', 'admin-change-pwd-btn',
             'telegram-sidebar', 'telegram-chat-pane', 'chat-search-input', 'search-clear-btn',
             'sidebar-add-friend-btn', 'new-space-btn', 'chat-threads-list', 'dynamic-chat-threads', 'thread-aura-ai', 'thread-saved-messages',
+            'cloud-connection-banner', 'cloud-banner-msg', 'cloud-sync-pill', 'cloud-sync-label',
             'drawer-open-btn', 'footer-user-chip', 'footer-user-avatar', 'footer-user-name', 'footer-user-id',
             'footer-settings-btn', 'cmd-palette-btn', 'admin-panel-btn', 'admin-back-btn',
             'back-to-threads-btn', 'active-chat-avatar', 'active-chat-dot', 'active-chat-name', 'active-chat-status',
@@ -421,6 +422,28 @@ const ESCTRIX = {
     },
 
     // ─────────────────────────────────────────────────────────
+    // CLOUD CONNECTION & REAL-TIME SYNC STATE CONTROLLER
+    // ─────────────────────────────────────────────────────────
+    setCloudSyncState(state) {
+        const pill = document.getElementById('cloud-sync-pill');
+        const label = document.getElementById('cloud-sync-label');
+        const banner = document.getElementById('cloud-connection-banner');
+        if (state === 'connected') {
+            if (pill) {
+                pill.className = 'cloud-sync-pill connected';
+                if (label) label.textContent = 'Cloud Online';
+            }
+            if (banner) banner.classList.add('hidden');
+        } else {
+            if (pill) {
+                pill.className = 'cloud-sync-pill syncing';
+                if (label) label.textContent = 'Syncing Cloud Relay...';
+            }
+            if (banner) banner.classList.remove('hidden');
+        }
+    },
+
+    // ─────────────────────────────────────────────────────────
     // PERSISTENT USER SIGNALING WEBSOCKET (GLOBAL PRESENCE & CALLING)
     // ─────────────────────────────────────────────────────────
     connectUserSocket(username) {
@@ -434,11 +457,13 @@ const ESCTRIX = {
         const wsUrl = `${protocol}//${window.location.host}/ws/user/${encodeURIComponent(username)}`;
 
         try {
+            this.setCloudSyncState('syncing');
             const ws = new WebSocket(wsUrl);
             this.state.userWs = ws;
 
             ws.onopen = () => {
                 console.log(`⚡ Persistent global user socket connected: @${username}`);
+                this.setCloudSyncState('connected');
                 // 25-second keepalive ping to prevent Render 55s reverse-proxy timeout
                 this.state.userWsPingInterval = setInterval(() => {
                     if (ws.readyState === WebSocket.OPEN) {
@@ -456,6 +481,7 @@ const ESCTRIX = {
 
             ws.onclose = () => {
                 clearInterval(this.state.userWsPingInterval);
+                this.setCloudSyncState('syncing');
                 console.log('User socket disconnected, attempting reconnect in 3s...');
                 if (this.state.user && this.state.user.username === username) {
                     setTimeout(() => this.connectUserSocket(username), 3000);
@@ -463,9 +489,11 @@ const ESCTRIX = {
             };
 
             ws.onerror = () => {
+                this.setCloudSyncState('syncing');
                 ws.close();
             };
         } catch (e) {
+            this.setCloudSyncState('syncing');
             console.error('Failed to create user socket:', e);
         }
     },

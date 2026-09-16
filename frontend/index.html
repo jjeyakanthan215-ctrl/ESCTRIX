@@ -319,6 +319,12 @@
                         <button class="folder-tab" data-folder="saved">Saved</button>
                     </div>
 
+                    <!-- Cloud Connection Notice Banner (when waking from sleep or offline) -->
+                    <div id="cloud-connection-banner" class="cloud-connection-banner hidden">
+                        <i class="ph ph-lightning pulse-fast"></i>
+                        <span id="cloud-banner-msg">Connecting to Quantum Cloud Relay...</span>
+                    </div>
+
                     <!-- Chat Threads List -->
                     <div class="chat-threads-container" id="chat-threads-list">
                         <!-- Pinned: Aura AI Companion Bot -->
@@ -407,7 +413,13 @@
                                 <span class="presence-dot online" id="active-chat-dot"></span>
                             </div>
                             <div class="chat-header-meta">
-                                <h3 id="active-chat-name">Aura AI Neural Companion</h3>
+                                <div class="chat-header-title-row">
+                                    <h3 id="active-chat-name">Aura AI Neural Companion</h3>
+                                    <div id="cloud-sync-pill" class="cloud-sync-pill connected" title="Cloud Relay Status">
+                                        <span class="sync-dot"></span>
+                                        <span id="cloud-sync-label">Cloud Online</span>
+                                    </div>
+                                </div>
                                 <div class="chat-header-sub">
                                     <span id="active-chat-status" class="status-sub">Neural link synchronized • E2EE</span>
                                 </div>
