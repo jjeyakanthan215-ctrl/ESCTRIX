@@ -80,15 +80,23 @@ H. Call Modality Alignment, Space QR Code, Tab State Bug & WebRTC Fixes:
    - Host vs Join Tab Switching Bug: Fixed state collision in `space.switchTab` by isolating active room card (`#host-waiting`) from setup form (`#host-setup`), preventing dual-form stack. Clean input reset on `stopHosting()`.
    - P2P Space Chat Delivery: Added `sendData(message)` alias to `P2PConnection.send()` to eliminate silent `TypeError`, and implemented `quantum_chat` room WebSocket signaling fallback.
    - WebRTC Audio/Video Calling: Added `sendCallSignal()`, `addTrack()`, ICE candidate queueing before remote description, media renegotiation (`startMedia`), and full room broadcast in `server.py`.
-   - Service Worker & Cache: Bumped cache to `esctrix-v18-quantum` and version to `2.2.1-quantum`.
+
+I. End-to-End Encrypted File Chunking, In-Chat Video Player, Multi-Tier Vanish Timer & WebAuthn Passkeys:
+   - E2EE Large File Chunking Engine: 64KB chunk slicing (`CHUNK_SIZE = 64 * 1024`) with backpressure flow control across both WebRTC `RTCDataChannel` and ephemeral WebSocket direct relay (`direct_file_meta`, `direct_file_chunk`, `direct_file_complete`), avoiding socket congestion and database memory bloat.
+   - Live Transfer Progress HUD: Visual progress HUD (`#file-upload-progress`) displaying filename, transfer percentage bar with cyan/violet neon gradient, and real-time transfer speed (`KB/s` / `MB/s`).
+   - In-Chat Video Player: Native glassmorphic inline video player (`msg.type === 'video'`) with play/pause controls, metadata overlay, direct download button, and fullscreen lightbox video player.
+   - Multi-Tier Ephemeral Vanish Timer: Configurable timers (`Off`, `5s`, `10s`, `30s`, `View-Once 🔒`) synchronized between chat header menu, context menu, and settings preference.
+   - View-Once Secrecy Cards: Encrypted blurred cards with glowing shield lock icon; reveals media upon click and instantly self-destructs and purges from DOM and memory upon close.
+   - Biometric WebAuthn / Passkeys: Full hardware FaceID, TouchID, and Windows Hello passkey enrollment in Settings Suite, with 1-tap "Sign In with Passkey / Biometrics" on login screen.
+   - Service Worker & Cache: Bumped cache to `esctrix-v19-quantum` and version to `2.3.0-quantum`.
 
 --------------------------------------------------------------------------------
 3. FILE SITEMAP & PROJECT STRUCTURE
 --------------------------------------------------------------------------------
 d:\Projects\P2P SMS\
 │
-├── server.py                   # FastAPI backend server, WebSockets signaling relay, REST APIs
-├── database.py                 # SQLite database engine (users, contacts, offline_messages, saved_messages)
+├── server.py                   # FastAPI backend server, WebSockets signaling relay, Passkey APIs, REST APIs
+├── database.py                 # SQLite database engine (users, contacts, passkey_credentials, direct_messages)
 ├── security.py                 # QR Code generator & crypto helpers
 ├── ai_engine.py                # Aura Neural AI (Gemini Flash & local neural heuristics)
 ├── connection_manager.py       # WebSocket room broadcasting & admin event relays
@@ -97,15 +105,15 @@ d:\Projects\P2P SMS\
 ├── users.db                    # SQLite persistent database (Render DB_PATH: users.db / /data/users.db)
 │
 ├── frontend/
-│   ├── index.html              # Single Page Application HTML (Hero, Login, 2-Pane Chat, Admin, Dialogs)
+│   ├── index.html              # Single Page Application HTML (Hero, Login, 2-Pane Chat, Admin, Dialogs, Passkey)
 │   ├── offline.html            # PWA offline fallback screen
 │   ├── manifest.json           # PWA Web App Manifest (standalone, theme colors, icons)
-│   ├── sw.js                   # Progressive Web App Service Worker (v15-quantum cache management)
+│   ├── sw.js                   # Progressive Web App Service Worker (v19-quantum cache management)
 │   ├── css/
-│   │   └── style.css           # Vanilla CSS design system (Glassmorphism, animations, responsive media queries)
+│   │   └── style.css           # Vanilla CSS design system (Glassmorphism, Video Bubbles, View-Once, Progress HUD)
 │   ├── js/
-│   │   ├── app.js              # Core client application logic, state manager, UI controllers, Aura AI
-│   │   └── webrtc.js           # WebRTC mesh engine, DTLS/SRTP audio/video streams, data channels
+│   │   ├── app.js              # Core client application logic, Chunks engine, Passkey suite, Aura AI
+│   │   └── webrtc.js           # WebRTC mesh engine, sendFileChunked with flow control, audio/video streams
 │   └── (icons & logos)         # logo.png, icon-192.png, icon-512.png, screenshot_wide.png
 │
 ├── render.yaml                 # Render cloud deployment blueprint
@@ -141,10 +149,15 @@ To run the project locally on Windows PowerShell:
   (Render builds automatically via webhook within 1-2 minutes)
 
 --------------------------------------------------------------------------------
-6. ROADMAP & NEXT TASKS FOR TOMORROW
+6. ROADMAP & NEXT TASKS
 --------------------------------------------------------------------------------
-- [ ] End-to-end multi-device WebRTC call stress test on mobile networks via Render.
-- [ ] Implement end-to-end encrypted file sharing chunking for large video files.
-- [ ] Optional: Add ephemeral vanishing media timer (5s / 10s / 30s view-once photos).
-- [ ] Optional: Add biometric WebAuthn / Passkey support for frictionless instant login.
+- [x] End-to-end multi-device WebRTC call stress test on mobile networks via Render.
+- [x] Implement end-to-end encrypted file sharing chunking for large video files.
+- [x] Add ephemeral vanishing media timer (5s / 10s / 30s / view-once photos & videos).
+- [x] Add biometric WebAuthn / Passkey support for frictionless instant login.
+- [x] Connect Supabase PostgreSQL cloud storage to permanently retain accounts across Render reloads.
+- [x] Disable user account auto-pruning by default to protect all accounts from deletion.
+- [x] Fix video call camera flip bug via RTCRtpSender.replaceTrack (no duplicate incoming call popup).
+- [x] Symmetrical WebRTC call teardown (synchronized hangup for direct and space calls).
 ================================================================================
+

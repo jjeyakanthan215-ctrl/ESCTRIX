@@ -1,5 +1,6 @@
 import json
 import logging
+import secrets
 from typing import List, Optional
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.staticfiles import StaticFiles
@@ -18,8 +19,9 @@ from database import (
     add_saved_message, get_saved_messages, delete_saved_message,
     add_contact, get_contacts, update_user_role, reset_user_password,
     get_incoming_friend_adds, is_friend, get_friends_count,
-    prune_inactive_users, touch_user_activity,
-    store_direct_message, get_direct_chat_history, mark_direct_messages_read
+    prune_inactive_users, touch_user_activity, ENABLE_ACCOUNT_PRUNING,
+    store_direct_message, get_direct_chat_history, mark_direct_messages_read,
+    save_passkey_credential, get_passkey_credential, get_user_passkeys, delete_passkey_credential
 )
 from ai_engine import (
     ai_chat, ai_vibe_analysis, ai_smart_reply,
@@ -50,32 +52,38 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Initializing database...")
     init_db()
-    try:
-        pruned = prune_inactive_users(7)
-        if pruned > 0:
-            logger.info(f"Startup: Successfully purged {pruned} inactive account(s) (>7 days inactivity).")
-    except Exception as e:
-        logger.error(f"Startup account pruning error: {e}")
+    pruner_task = None
+    if ENABLE_ACCOUNT_PRUNING:
+        try:
+            pruned = prune_inactive_users(7)
+            if pruned > 0:
+                logger.info(f"Startup: Purged {pruned} inactive account(s) (>7 days inactivity).")
+        except Exception as e:
+            logger.error(f"Startup account pruning error: {e}")
 
-    # Launch background periodic pruning task (runs every 6 hours)
-    import asyncio
-    async def periodic_pruner():
-        while True:
-            try:
-                await asyncio.sleep(6 * 3600)
-                pruned_count = prune_inactive_users(7)
-                if pruned_count > 0:
-                    logger.info(f"Periodic sweep: Purged {pruned_count} inactive account(s).")
-            except asyncio.CancelledError:
-                break
-            except Exception as ex:
-                logger.error(f"Periodic pruning error: {ex}")
+        # Launch background periodic pruning task (runs every 6 hours)
+        import asyncio
+        async def periodic_pruner():
+            while True:
+                try:
+                    await asyncio.sleep(6 * 3600)
+                    pruned_count = prune_inactive_users(7)
+                    if pruned_count > 0:
+                        logger.info(f"Periodic sweep: Purged {pruned_count} inactive account(s).")
+                except asyncio.CancelledError:
+                    break
+                except Exception as ex:
+                    logger.error(f"Periodic pruning error: {ex}")
 
-    pruner_task = asyncio.create_task(periodic_pruner())
+        pruner_task = asyncio.create_task(periodic_pruner())
+    else:
+        logger.info("Account retention active: Auto-pruning is disabled by default. User accounts persist permanently.")
+
     logger.info("ESCTRIX Quantum server online. Ready for connections...")
     yield
     # Shutdown
-    pruner_task.cancel()
+    if pruner_task:
+        pruner_task.cancel()
     if mdns_service:
         logger.info("Stopping mDNS service...")
         mdns_service.stop()
@@ -253,6 +261,66 @@ async def validate_session(data: SessionValidation):
         touch_user_activity(data.username)
         return {"status": "success", "user": profile, "role": profile.get("role", "user")}
     return {"status": "error", "message": "Account does not exist or has expired due to 7 days of inactivity."}
+
+
+# ─────────────────────────────────────────────────────────────
+# WebAuthn / Passkey Authentication
+# ─────────────────────────────────────────────────────────────
+
+class PasskeyRegisterData(BaseModel):
+    username: str
+    credential_id: str
+    public_key: str
+    attestation_type: Optional[str] = "none"
+
+
+class PasskeyLoginData(BaseModel):
+    credential_id: str
+    client_data_json: Optional[str] = None
+    signature: Optional[str] = None
+
+
+@app.get("/api/auth/passkey/challenge")
+async def get_passkey_challenge(username: Optional[str] = None):
+    challenge = secrets.token_hex(32)
+    credentials = []
+    if username:
+        credentials = get_user_passkeys(username)
+    return {
+        "status": "success",
+        "challenge": challenge,
+        "credentials": credentials
+    }
+
+
+@app.post("/api/auth/passkey/register")
+async def register_passkey(data: PasskeyRegisterData):
+    profile = get_user_profile(data.username)
+    if not profile:
+        return {"status": "error", "message": "User not found."}
+    ok = save_passkey_credential(data.username, data.credential_id, data.public_key)
+    if ok:
+        return {"status": "success", "message": "Passkey biometric enrolled successfully."}
+    return {"status": "error", "message": "Failed to store passkey credential."}
+
+
+@app.post("/api/auth/passkey/login")
+async def login_passkey(data: PasskeyLoginData):
+    cred = get_passkey_credential(data.credential_id)
+    if not cred:
+        return {"status": "error", "message": "Passkey credential not recognized on this device."}
+    username = cred["username"]
+    profile = get_user_profile(username)
+    if not profile:
+        return {"status": "error", "message": "Account associated with passkey was not found."}
+    touch_user_activity(username)
+    return {"status": "success", "user": profile, "role": profile.get("role", "user")}
+
+
+@app.get("/api/auth/passkey/status")
+async def check_passkey_status(username: str):
+    creds = get_user_passkeys(username)
+    return {"has_passkey": len(creds) > 0, "count": len(creds)}
 
 
 # ─────────────────────────────────────────────────────────────
@@ -653,6 +721,49 @@ async def user_websocket_endpoint(websocket: WebSocket, username: str):
                         "type": "direct_typing",
                         "sender_username": username
                     })
+            elif msg_type in ["direct_file_meta", "direct_file_chunk", "direct_file_ack"]:
+                target = message.get("target_username")
+                if target:
+                    forward_payload = dict(message)
+                    forward_payload["sender_username"] = username
+                    forward_payload["sender_display_name"] = message.get("sender_display_name", username)
+                    await manager.send_to_user(target, forward_payload)
+            elif msg_type == "direct_file_complete":
+                target = message.get("target_username")
+                transfer_id = message.get("transfer_id")
+                file_name = message.get("file_name", "file")
+                file_size = message.get("file_size", "")
+                msg_format = message.get("msg_type", "file")
+                vanish = message.get("vanish", 0)
+                if target:
+                    receipt_text = f"[{msg_format.capitalize()}: {file_name} ({file_size})]"
+                    stored = store_direct_message(
+                        sender_username=username,
+                        recipient_username=target,
+                        content=receipt_text,
+                        msg_type=msg_format,
+                        file_meta=file_name,
+                        vanish=1 if vanish else 0
+                    )
+                    payload = {
+                        "type": "direct_file_complete",
+                        "transfer_id": transfer_id,
+                        "id": stored.get("id") if stored else None,
+                        "sender_username": username,
+                        "sender_display_name": message.get("sender_display_name", username),
+                        "target_username": target,
+                        "file_name": file_name,
+                        "file_size": file_size,
+                        "msg_type": msg_format,
+                        "vanish": vanish,
+                        "timestamp": stored.get("timestamp") if stored else None
+                    }
+                    await manager.send_to_user(target, payload)
+                    await websocket.send_text(json.dumps({
+                        "type": "direct_file_sent_ack",
+                        "transfer_id": transfer_id,
+                        "id": stored.get("id") if stored else None
+                    }))
             elif msg_type in [
                 "direct_call_offer", "direct_call_answer", "direct_ice_candidate",
                 "direct_call_declined", "direct_call_end"
@@ -778,7 +889,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
             # ── WebRTC Signaling & Dynamic Quantum Relay ──
             elif current_room and message.get("type") in [
                 "offer", "answer", "candidate",
-                "call_request", "call_accepted", "call_declined",
+                "call_request", "call_accepted", "call_declined", "call_ended",
                 "typing", "vibe_update", "message_delivered", "message_read", "burn_room",
                 "quantum_chat"
             ]:

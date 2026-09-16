@@ -23,12 +23,12 @@
     <meta name="twitter:description" content="Decentralized peer-to-peer messaging platform with Zero-Knowledge E2EE, WebRTC mesh media, and Aura AI Neural Copilot.">
     <meta name="twitter:image" content="https://esctrix.onrender.com/static/logo.png">
 
-    <link rel="stylesheet" href="/static/css/style.css?v=2.2.1">
+    <link rel="stylesheet" href="/static/css/style.css?v=2.3.0">
     <link rel="manifest" href="/manifest.json">
     <script>
         /* ── Automated Self-Healing Cache Cleaner (Purges stale PWA cache on load) ── */
         (function() {
-            var CURRENT_VER = '2.2.1-quantum';
+            var CURRENT_VER = '2.3.0-quantum';
             var lastVer = localStorage.getItem('esctrix_cache_ver');
             if (lastVer !== CURRENT_VER) {
                 localStorage.setItem('esctrix_cache_ver', CURRENT_VER);
@@ -250,6 +250,16 @@
                         <i class="ph ph-sign-in"></i> Sign In
                     </button>
 
+                    <div class="auth-divider" style="display:flex; align-items:center; margin:14px 0 10px; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px;">
+                        <span style="flex:1; height:1px; background:rgba(255,255,255,0.08); margin-right:8px;"></span>
+                        <span>OR</span>
+                        <span style="flex:1; height:1px; background:rgba(255,255,255,0.08); margin-left:8px;"></span>
+                    </div>
+
+                    <button type="button" id="passkey-login-btn" class="btn secondary-btn full-width" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                        <i class="ph ph-fingerprint" style="font-size:1.2rem; color:var(--accent);"></i> Sign In with Passkey / Biometrics
+                    </button>
+
                     <div id="login-error" class="error-msg"></div>
 
                     <div class="auth-switch-bar" id="auth-switch-bar">
@@ -436,7 +446,7 @@
                                     </button>
                                     <div class="dropdown-divider" style="height:1px; background:var(--panel-border); margin:4px 0;"></div>
                                     <button id="menu-vanish-btn" class="dropdown-item">
-                                        <i class="ph ph-ghost"></i> <span>Vanish Mode (10s)</span>
+                                        <i class="ph ph-ghost"></i> <span id="menu-vanish-label">Vanish Timer: Off</span>
                                     </button>
                                     <button id="menu-burn-btn" class="dropdown-item text-danger">
                                         <i class="ph ph-fire"></i> <span>Burn Space (Wipe Chat)</span>
@@ -1219,11 +1229,41 @@
                                     </div>
                                     <select id="pref-burn-timer" class="settings-select">
                                         <option value="0">Off (Keep history)</option>
+                                        <option value="5">5 Seconds (Ultra-Fast)</option>
                                         <option value="10">10 Seconds (Fast)</option>
+                                        <option value="30">30 Seconds</option>
+                                        <option value="view_once">View-Once 🔒 (Single View Auto-Burn)</option>
                                         <option value="60">1 Minute</option>
                                         <option value="3600">1 Hour</option>
                                         <option value="86400">24 Hours</option>
                                     </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Option: Biometric Passkey / WebAuthn -->
+                        <div class="settings-accordion-item">
+                            <button class="settings-accordion-header" type="button">
+                                <div class="acc-header-left">
+                                    <i class="ph ph-fingerprint acc-icon"></i>
+                                    <div class="acc-titles">
+                                        <strong>Biometric Passkey (WebAuthn)</strong>
+                                        <span class="acc-desc">FaceID, TouchID, or Windows Hello instant sign-in</span>
+                                    </div>
+                                </div>
+                                <div class="acc-header-right">
+                                    <i class="ph ph-caret-down acc-caret"></i>
+                                </div>
+                            </button>
+                            <div class="settings-accordion-body">
+                                <div class="settings-row">
+                                    <div class="settings-row-info">
+                                        <strong>Hardware Device Passkey</strong>
+                                        <p class="muted">Register this device for instant passwordless biometric sign-in.</p>
+                                    </div>
+                                    <button id="register-passkey-btn" class="btn secondary-btn btn-sm">
+                                        <i class="ph ph-fingerprint"></i> <span id="passkey-status-label">Register Passkey</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -2176,7 +2216,7 @@
     <div id="quantum-cursor-ring" class="quantum-cursor-ring"></div>
 
     <!-- Scripts with Cache Busters -->
-    <script src="/static/js/webrtc.js?v=2.2.1"></script>
-    <script src="/static/js/app.js?v=2.2.1"></script>
+    <script src="/static/js/webrtc.js?v=2.3.0"></script>
+    <script src="/static/js/app.js?v=2.3.0"></script>
 </body>
 </html>

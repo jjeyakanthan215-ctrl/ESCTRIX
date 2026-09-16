@@ -6,15 +6,25 @@ import random
 import json
 import logging
 import urllib.request
+from contextlib import contextmanager
 from typing import Optional, Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
-# On Render, use /data for persistent storage (set DB_PATH env var in Render dashboard).
-# Falls back to local users.db for development.
+# ─────────────────────────────────────────────────────────────
+# Database Engine Configuration: Supabase PostgreSQL / SQLite
+# ─────────────────────────────────────────────────────────────
+# When deployed on Render, set SUPABASE_DB_URL (or standard DATABASE_URL)
+# in Render environment variables for permanent cloud persistence across restarts.
+# When running locally without cloud DB configured, falls back seamlessly to SQLite.
+SUPABASE_DB_URL = os.environ.get('SUPABASE_DB_URL', '').strip() or os.environ.get('DATABASE_URL', '').strip()
 DB_FILE = os.environ.get('DB_PATH', 'users.db')
 
-# Firebase Cloud Database configuration (optional, for persistent multi-region cloud sync on Render)
+# Safety switch: Account pruning is disabled by default to protect all accounts from deletion.
+# Only enabled if explicitly set to true in environment variables.
+ENABLE_ACCOUNT_PRUNING = os.environ.get('ENABLE_ACCOUNT_PRUNING', 'false').strip().lower() in ('true', '1', 'yes')
+
+# Firebase Cloud Database configuration (optional auxiliary sync)
 FIREBASE_PROJECT_ID = os.environ.get('FIREBASE_PROJECT_ID', '').strip()
 FIREBASE_API_KEY = os.environ.get('FIREBASE_API_KEY', '').strip()
 
@@ -27,6 +37,27 @@ AVATAR_COLORS = [
     'linear-gradient(135deg, #6366f1, #a855f7)'
 ]
 
+_pg_pool = None
+IS_POSTGRES = False
+
+if SUPABASE_DB_URL:
+    try:
+        import psycopg2
+        from psycopg2 import pool
+        from psycopg2.extras import RealDictCursor
+
+        pg_url = SUPABASE_DB_URL
+        if pg_url.startswith('postgres://'):
+            pg_url = 'postgresql://' + pg_url[11:]
+
+        _pg_pool = pool.ThreadedConnectionPool(1, 10, pg_url)
+        IS_POSTGRES = True
+        logger.info("Connected to Supabase PostgreSQL cloud database! Accounts will persist permanently.")
+    except Exception as e:
+        logger.error(f"Failed to initialize Supabase PostgreSQL connection pool: {e}. Falling back to SQLite.")
+        _pg_pool = None
+        IS_POSTGRES = False
+
 
 def generate_account_id() -> str:
     """Generate a permanent, unique 6-digit public Account ID."""
@@ -34,178 +65,277 @@ def generate_account_id() -> str:
     return f"ESC-{num}"
 
 
-def get_db():
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
-    return conn
+@contextmanager
+def get_db_cursor(commit: bool = False):
+    """
+    Context manager yielding (cursor, is_postgres).
+    Handles connection pooling, dict row formatting, and transaction commit/rollback.
+    """
+    global _pg_pool, IS_POSTGRES
+    if IS_POSTGRES and _pg_pool:
+        conn = _pg_pool.getconn()
+        try:
+            from psycopg2.extras import RealDictCursor
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                yield cur, True
+                if commit:
+                    conn.commit()
+        except Exception:
+            if commit:
+                conn.rollback()
+            raise
+        finally:
+            _pg_pool.putconn(conn)
+    else:
+        conn = sqlite3.connect(DB_FILE, check_same_thread=False)
+        conn.row_factory = sqlite3.Row
+        try:
+            cur = conn.cursor()
+            yield cur, False
+            if commit:
+                conn.commit()
+        except Exception:
+            if commit:
+                conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+
+def _format_query(query: str, is_postgres: bool) -> str:
+    """Translate standard '?' parameter markers to '%s' for PostgreSQL."""
+    if is_postgres:
+        return query.replace('?', '%s')
+    return query
 
 
 def init_db():
-    # Ensure directory exists
-    db_dir = os.path.dirname(DB_FILE)
-    if db_dir:
-        os.makedirs(db_dir, exist_ok=True)
+    """Initialize database schemas for both Supabase PostgreSQL and SQLite."""
+    global IS_POSTGRES
 
-    conn = get_db()
-    cursor = conn.cursor()
+    if IS_POSTGRES and _pg_pool:
+        with get_db_cursor(commit=True) as (cur, _):
+            # 1. Users table
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    account_id VARCHAR(32) UNIQUE,
+                    username VARCHAR(64) UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    display_name VARCHAR(128),
+                    bio TEXT DEFAULT '',
+                    avatar_color VARCHAR(128),
+                    avatar_photo TEXT DEFAULT '',
+                    role VARCHAR(32) DEFAULT 'user',
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    last_login_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+            ''')
+            cur.execute('CREATE INDEX IF NOT EXISTS idx_users_username ON users (LOWER(username));')
+            cur.execute('CREATE INDEX IF NOT EXISTS idx_users_account_id ON users (LOWER(account_id));')
+            cur.execute('CREATE INDEX IF NOT EXISTS idx_users_display_name ON users (LOWER(display_name));')
 
-    # Core users table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            account_id TEXT UNIQUE,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            display_name TEXT,
-            bio TEXT DEFAULT '',
-            avatar_color TEXT,
-            role TEXT DEFAULT 'user',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            last_login_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
+            # 2. Contacts table
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS contacts (
+                    id SERIAL PRIMARY KEY,
+                    owner_username VARCHAR(64) NOT NULL,
+                    contact_account_id VARCHAR(32) NOT NULL,
+                    contact_username VARCHAR(64) NOT NULL,
+                    contact_name VARCHAR(128) DEFAULT '',
+                    status VARCHAR(32) DEFAULT 'added',
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT unique_owner_contact UNIQUE (owner_username, contact_username)
+                );
+            ''')
+            cur.execute('CREATE INDEX IF NOT EXISTS idx_contacts_owner ON contacts (owner_username);')
+            cur.execute('CREATE INDEX IF NOT EXISTS idx_contacts_target ON contacts (contact_username);')
 
-    # Offline encrypted message queue
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS offline_messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            recipient_username TEXT NOT NULL,
-            sender_username TEXT NOT NULL,
-            space_name TEXT NOT NULL,
-            payload TEXT NOT NULL,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
+            # 3. Offline messages queue
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS offline_messages (
+                    id SERIAL PRIMARY KEY,
+                    recipient_username VARCHAR(64) NOT NULL,
+                    sender_username VARCHAR(64) NOT NULL,
+                    space_name VARCHAR(128) NOT NULL,
+                    payload TEXT NOT NULL,
+                    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+            ''')
+            cur.execute('CREATE INDEX IF NOT EXISTS idx_offline_recipient ON offline_messages (recipient_username);')
 
-    # Saved Messages (Encrypted Personal Cloud Vault)
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS saved_messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
-            content TEXT NOT NULL,
-            msg_type TEXT DEFAULT 'text',
-            file_meta TEXT DEFAULT '',
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
+            # 4. Saved messages (Encrypted Cloud Vault)
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS saved_messages (
+                    id SERIAL PRIMARY KEY,
+                    username VARCHAR(64) NOT NULL,
+                    content TEXT NOT NULL,
+                    msg_type VARCHAR(32) DEFAULT 'text',
+                    file_meta TEXT DEFAULT '',
+                    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+            ''')
+            cur.execute('CREATE INDEX IF NOT EXISTS idx_saved_messages_user ON saved_messages (username);')
 
-    # Persistent Contacts & Saved Chats
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS contacts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            owner_username TEXT NOT NULL,
-            contact_account_id TEXT NOT NULL,
-            contact_username TEXT NOT NULL,
-            contact_name TEXT DEFAULT '',
-            status TEXT DEFAULT 'added',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(owner_username, contact_username)
-        )
-    ''')
+            # 5. Direct messages (1-on-1 Persistent Chat History)
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS direct_messages (
+                    id SERIAL PRIMARY KEY,
+                    sender_username VARCHAR(64) NOT NULL,
+                    recipient_username VARCHAR(64) NOT NULL,
+                    content TEXT NOT NULL,
+                    msg_type VARCHAR(32) DEFAULT 'text',
+                    file_meta TEXT DEFAULT '',
+                    vanish INT DEFAULT 0,
+                    is_read INT DEFAULT 0,
+                    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+            ''')
+            cur.execute('CREATE INDEX IF NOT EXISTS idx_dm_users ON direct_messages (sender_username, recipient_username);')
 
-    # Direct Messages (1-on-1 Persistent Chat History)
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS direct_messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            sender_username TEXT NOT NULL,
-            recipient_username TEXT NOT NULL,
-            content TEXT NOT NULL,
-            msg_type TEXT DEFAULT 'text',
-            file_meta TEXT DEFAULT '',
-            vanish INTEGER DEFAULT 0,
-            is_read INTEGER DEFAULT 0,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
+            # 6. Passkey biometric credentials
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS passkey_credentials (
+                    id SERIAL PRIMARY KEY,
+                    username VARCHAR(64) NOT NULL,
+                    credential_id TEXT UNIQUE NOT NULL,
+                    public_key TEXT NOT NULL,
+                    sign_count INT DEFAULT 0,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+            ''')
+            cur.execute('CREATE INDEX IF NOT EXISTS idx_passkey_username ON passkey_credentials (username);')
 
-    # Run migrations for contacts table
-    contact_cols = [c[1] for c in cursor.execute("PRAGMA table_info(contacts)").fetchall()]
-    if "status" not in contact_cols:
-        try:
-            cursor.execute("ALTER TABLE contacts ADD COLUMN status TEXT DEFAULT 'added'")
-        except Exception:
-            pass
+            # Safe migrations for PostgreSQL columns
+            for col, col_type in [
+                ("role", "VARCHAR(32) DEFAULT 'user'"),
+                ("account_id", "VARCHAR(32)"),
+                ("display_name", "VARCHAR(128)"),
+                ("bio", "TEXT DEFAULT ''"),
+                ("avatar_color", "VARCHAR(128)"),
+                ("avatar_photo", "TEXT DEFAULT ''"),
+                ("last_login_at", "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
+            ]:
+                try:
+                    cur.execute(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col} {col_type};")
+                except Exception:
+                    pass
 
-    # Run migrations for existing users table columns if needed
-    columns = [c[1] for c in cursor.execute("PRAGMA table_info(users)").fetchall()]
-    
-    if "role" not in columns:
-        try:
-            cursor.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'")
-        except Exception:
-            pass
+    else:
+        # SQLite schema setup
+        db_dir = os.path.dirname(DB_FILE)
+        if db_dir:
+            os.makedirs(db_dir, exist_ok=True)
 
-    if "account_id" not in columns:
-        try:
-            cursor.execute("ALTER TABLE users ADD COLUMN account_id TEXT")
-        except Exception:
-            pass
+        with get_db_cursor(commit=True) as (cur, _):
+            # Core users table
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    account_id TEXT UNIQUE,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    display_name TEXT,
+                    bio TEXT DEFAULT '',
+                    avatar_color TEXT,
+                    avatar_photo TEXT DEFAULT '',
+                    role TEXT DEFAULT 'user',
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    last_login_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
 
-    if "display_name" not in columns:
-        try:
-            cursor.execute("ALTER TABLE users ADD COLUMN display_name TEXT")
-        except Exception:
-            pass
+            # Offline encrypted message queue
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS offline_messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    recipient_username TEXT NOT NULL,
+                    sender_username TEXT NOT NULL,
+                    space_name TEXT NOT NULL,
+                    payload TEXT NOT NULL,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
 
-    if "bio" not in columns:
-        try:
-            cursor.execute("ALTER TABLE users ADD COLUMN bio TEXT DEFAULT ''")
-        except Exception:
-            pass
+            # Saved Messages (Encrypted Cloud Vault)
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS saved_messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    msg_type TEXT DEFAULT 'text',
+                    file_meta TEXT DEFAULT '',
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
 
-    if "avatar_color" not in columns:
-        try:
-            cursor.execute("ALTER TABLE users ADD COLUMN avatar_color TEXT")
-        except Exception:
-            pass
+            # Persistent Contacts
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS contacts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    owner_username TEXT NOT NULL,
+                    contact_account_id TEXT NOT NULL,
+                    contact_username TEXT NOT NULL,
+                    contact_name TEXT DEFAULT '',
+                    status TEXT DEFAULT 'added',
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(owner_username, contact_username)
+                )
+            ''')
 
-    if "avatar_photo" not in columns:
-        try:
-            cursor.execute("ALTER TABLE users ADD COLUMN avatar_photo TEXT DEFAULT ''")
-        except Exception:
-            pass
+            # Direct Messages (1-on-1 Chat History)
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS direct_messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    sender_username TEXT NOT NULL,
+                    recipient_username TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    msg_type TEXT DEFAULT 'text',
+                    file_meta TEXT DEFAULT '',
+                    vanish INTEGER DEFAULT 0,
+                    is_read INTEGER DEFAULT 0,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
 
-    if "created_at" not in columns:
-        try:
-            cursor.execute("ALTER TABLE users ADD COLUMN created_at TEXT")
-        except Exception:
-            pass
+            # Passkey biometric credentials
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS passkey_credentials (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT NOT NULL,
+                    credential_id TEXT UNIQUE NOT NULL,
+                    public_key TEXT NOT NULL,
+                    sign_count INTEGER DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
 
-    if "last_login_at" not in columns:
-        try:
-            cursor.execute("ALTER TABLE users ADD COLUMN last_login_at DATETIME")
-            cursor.execute("UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE last_login_at IS NULL")
-        except Exception as e:
-            logger.error(f"Migration error for last_login_at: {e}")
+            # SQLite migrations
+            contact_cols = [c[1] for c in cur.execute("PRAGMA table_info(contacts)").fetchall()]
+            if "status" not in contact_cols:
+                try:
+                    cur.execute("ALTER TABLE contacts ADD COLUMN status TEXT DEFAULT 'added'")
+                except Exception:
+                    pass
 
-    # Populate missing account_id, display_name, avatar_color for existing users
-    cursor.execute("SELECT id, username, account_id, display_name, avatar_color FROM users")
-    existing_users = cursor.fetchall()
-    for u in existing_users:
-        updates = []
-        params = []
-        if not u["account_id"]:
-            updates.append("account_id = ?")
-            params.append(generate_account_id())
-        if not u["display_name"]:
-            updates.append("display_name = ?")
-            params.append(u["username"])
-        if not u["avatar_color"]:
-            updates.append("avatar_color = ?")
-            params.append(random.choice(AVATAR_COLORS))
-        
-        if updates:
-            params.append(u["id"])
-            cursor.execute(f"UPDATE users SET {', '.join(updates)} WHERE id = ?", tuple(params))
+            columns = [c[1] for c in cur.execute("PRAGMA table_info(users)").fetchall()]
+            for col, col_type in [
+                ("role", "TEXT DEFAULT 'user'"),
+                ("account_id", "TEXT"),
+                ("display_name", "TEXT"),
+                ("bio", "TEXT DEFAULT ''"),
+                ("avatar_color", "TEXT"),
+                ("avatar_photo", "TEXT DEFAULT ''"),
+                ("created_at", "TEXT"),
+                ("last_login_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
+            ]:
+                if col not in columns:
+                    try:
+                        cur.execute(f"ALTER TABLE users ADD COLUMN {col} {col_type}")
+                    except Exception:
+                        pass
 
-    # Ensure admin role is set for default admin users and purge any obsolete personal/test accounts
-    cursor.execute("DELETE FROM users WHERE username IN ('HABIB_Admin', 'Gayathri')")
-    cursor.execute("DELETE FROM contacts WHERE contact_username IN ('HABIB_Admin', 'ESCTRIX_Admin') OR contact_username LIKE '%Admin%'")
-    cursor.execute("UPDATE users SET role = 'admin' WHERE username = 'ESCTRIX_Admin'")
-    conn.commit()
-    conn.close()
-
-    # Create default admin user if not present (Stealth system account)
+    # Ensure default system admin user exists without overwriting existing data
     create_user('ESCTRIX_Admin', 'Esctrix@215', role='admin', display_name='ESCTRIX Commander')
 
 
@@ -216,27 +346,29 @@ def hash_password(password: str) -> str:
 
 def create_user(username: str, password: str, role: str = 'user', display_name: str = '') -> bool:
     """Create a new user with a permanent Account ID and profile."""
-    conn = get_db()
-    cursor = conn.cursor()
+    # Safety: If 3rd parameter was provided as a display name instead of a role ('user'/'admin')
+    if role not in ('user', 'admin') and not display_name:
+        display_name = role
+        role = 'user'
+
     account_id = generate_account_id()
     disp_name = display_name.strip() if display_name else username
     avatar = random.choice(AVATAR_COLORS)
 
     try:
-        cursor.execute(
-            '''INSERT INTO users (account_id, username, password_hash, display_name, bio, avatar_color, role)
-               VALUES (?, ?, ?, ?, ?, ?, ?)''',
-            (account_id, username, hash_password(password), disp_name, 'Decentralized & Quantum Secured 🚀', avatar, role)
-        )
-        conn.commit()
-        
-        # Also sync to Firebase if configured
+        with get_db_cursor(commit=True) as (cur, is_pg):
+            sql = _format_query(
+                '''INSERT INTO users (account_id, username, password_hash, display_name, bio, avatar_color, role)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                is_pg
+            )
+            cur.execute(sql, (account_id, username, hash_password(password), disp_name, 'Decentralized & Quantum Secured 🚀', avatar, role))
+
         _sync_user_to_firebase(account_id, username, disp_name)
         return True
-    except sqlite3.IntegrityError:
+    except Exception as e:
+        logger.debug(f"User creation notice for '{username}': {e}")
         return False
-    finally:
-        conn.close()
 
 
 def verify_user(username: str, password: str) -> Optional[Dict[str, Any]]:
@@ -244,11 +376,11 @@ def verify_user(username: str, password: str) -> Optional[Dict[str, Any]]:
     Verify a user's password.
     Returns full user profile dictionary on success, or None on failure.
     """
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute('SELECT id, account_id, username, password_hash, display_name, bio, avatar_color, role FROM users WHERE username = ?', (username,))
-    row = cursor.fetchone()
-    conn.close()
+    row = None
+    with get_db_cursor(commit=False) as (cur, is_pg):
+        sql = _format_query('SELECT id, account_id, username, password_hash, display_name, bio, avatar_color, role FROM users WHERE username = ?', is_pg)
+        cur.execute(sql, (username,))
+        row = cur.fetchone()
 
     if row:
         stored_hash = row['password_hash']
@@ -267,10 +399,9 @@ def verify_user(username: str, password: str) -> Optional[Dict[str, Any]]:
 
         if is_valid:
             try:
-                up_conn = get_db()
-                up_conn.cursor().execute('UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?', (row['id'],))
-                up_conn.commit()
-                up_conn.close()
+                with get_db_cursor(commit=True) as (up_cur, is_pg):
+                    up_sql = _format_query('UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?', is_pg)
+                    up_cur.execute(up_sql, (row['id'],))
             except Exception:
                 pass
 
@@ -289,141 +420,138 @@ def verify_user(username: str, password: str) -> Optional[Dict[str, Any]]:
 def touch_user_activity(username: str):
     """Update last_login_at timestamp to keep account active."""
     try:
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute("UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE username = ?", (username,))
-        conn.commit()
-        conn.close()
+        with get_db_cursor(commit=True) as (cur, is_pg):
+            sql = _format_query("UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE username = ?", is_pg)
+            cur.execute(sql, (username,))
     except Exception as e:
         logger.error(f"Error updating user activity timestamp: {e}")
 
 
 def prune_inactive_users(days: int = 7) -> int:
     """
-    Purge user accounts that have been inactive (no login) for more than `days` (default 7).
-    Never purges admin accounts (role == 'admin' or username == 'ESCTRIX_Admin').
-    Also removes their associated contacts, offline messages, and personal vault notes.
-    Returns the count of purged accounts.
+    Purge user accounts that have been inactive for more than `days`.
+    DISABLED BY DEFAULT to prevent accidental account deletion.
+    Only executes if ENABLE_ACCOUNT_PRUNING=true is set in environment.
     """
-    conn = get_db()
-    cursor = conn.cursor()
+    if not ENABLE_ACCOUNT_PRUNING:
+        logger.debug("Account pruning is disabled by default. Skipping prune.")
+        return 0
+
     try:
-        cutoff_query = f"datetime('now', '-{days} days')"
-        cursor.execute(f"""
-            SELECT username FROM users 
-            WHERE (role IS NULL OR role != 'admin')
-              AND username != 'ESCTRIX_Admin'
-              AND (
-                  (last_login_at IS NOT NULL AND last_login_at < {cutoff_query})
-                  OR (last_login_at IS NULL AND created_at IS NOT NULL AND created_at < {cutoff_query})
-              )
-        """)
-        inactive_users = [r['username'] for r in cursor.fetchall()]
+        with get_db_cursor(commit=True) as (cur, is_pg):
+            if is_pg:
+                cutoff_query = f"NOW() - INTERVAL '{days} days'"
+            else:
+                cutoff_query = f"datetime('now', '-{days} days')"
 
-        if not inactive_users:
-            return 0
+            cur.execute(f"""
+                SELECT username FROM users 
+                WHERE (role IS NULL OR role != 'admin')
+                  AND username != 'ESCTRIX_Admin'
+                  AND (
+                      (last_login_at IS NOT NULL AND last_login_at < {cutoff_query})
+                      OR (last_login_at IS NULL AND created_at IS NOT NULL AND created_at < {cutoff_query})
+                  )
+            """)
+            inactive_users = [r['username'] for r in cur.fetchall()]
 
-        logger.info(f"Auto-pruning {len(inactive_users)} inactive users (inactive > {days} days): {inactive_users}")
+            if not inactive_users:
+                return 0
 
-        for u in inactive_users:
-            cursor.execute("DELETE FROM contacts WHERE owner_username = ? OR contact_username = ?", (u, u))
-            cursor.execute("DELETE FROM offline_messages WHERE recipient_username = ? OR sender_username = ?", (u, u))
-            cursor.execute("DELETE FROM saved_messages WHERE username = ?", (u,))
-            cursor.execute("DELETE FROM users WHERE username = ?", (u,))
+            logger.info(f"Auto-pruning {len(inactive_users)} inactive users: {inactive_users}")
+            for u in inactive_users:
+                del_contacts = _format_query("DELETE FROM contacts WHERE owner_username = ? OR contact_username = ?", is_pg)
+                del_offline = _format_query("DELETE FROM offline_messages WHERE recipient_username = ? OR sender_username = ?", is_pg)
+                del_saved = _format_query("DELETE FROM saved_messages WHERE username = ?", is_pg)
+                del_dm = _format_query("DELETE FROM direct_messages WHERE sender_username = ? OR recipient_username = ?", is_pg)
+                del_user = _format_query("DELETE FROM users WHERE username = ?", is_pg)
 
-        conn.commit()
-        return len(inactive_users)
+                cur.execute(del_contacts, (u, u))
+                cur.execute(del_offline, (u, u))
+                cur.execute(del_saved, (u,))
+                cur.execute(del_dm, (u, u))
+                cur.execute(del_user, (u,))
+
+            return len(inactive_users)
     except Exception as e:
         logger.error(f"Failed to prune inactive users: {e}")
         return 0
-    finally:
-        conn.close()
 
 
 def get_user_profile(username: str) -> Optional[Dict[str, Any]]:
     """Fetch user profile by username."""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute('SELECT account_id, username, display_name, bio, avatar_color, avatar_photo, role, created_at FROM users WHERE username = ?', (username,))
-    row = cursor.fetchone()
-    conn.close()
-    if row:
-        return dict(row)
+    with get_db_cursor(commit=False) as (cur, is_pg):
+        sql = _format_query('SELECT account_id, username, display_name, bio, avatar_color, avatar_photo, role, created_at FROM users WHERE username = ?', is_pg)
+        cur.execute(sql, (username,))
+        row = cur.fetchone()
+        if row:
+            return dict(row)
     return None
 
 
 def update_user_profile(username: str, display_name: str, bio: str, avatar_color: str = '', avatar_photo: Optional[str] = None) -> bool:
     """Update display name, bio, avatar color, and avatar photo."""
-    conn = get_db()
-    cursor = conn.cursor()
-    try:
+    with get_db_cursor(commit=True) as (cur, is_pg):
         if avatar_photo is not None and avatar_color:
-            cursor.execute('UPDATE users SET display_name = ?, bio = ?, avatar_color = ?, avatar_photo = ? WHERE username = ?',
-                           (display_name, bio, avatar_color, avatar_photo, username))
+            sql = _format_query('UPDATE users SET display_name = ?, bio = ?, avatar_color = ?, avatar_photo = ? WHERE username = ?', is_pg)
+            cur.execute(sql, (display_name, bio, avatar_color, avatar_photo, username))
         elif avatar_photo is not None:
-            cursor.execute('UPDATE users SET display_name = ?, bio = ?, avatar_photo = ? WHERE username = ?',
-                           (display_name, bio, avatar_photo, username))
+            sql = _format_query('UPDATE users SET display_name = ?, bio = ?, avatar_photo = ? WHERE username = ?', is_pg)
+            cur.execute(sql, (display_name, bio, avatar_photo, username))
         elif avatar_color:
-            cursor.execute('UPDATE users SET display_name = ?, bio = ?, avatar_color = ? WHERE username = ?',
-                           (display_name, bio, avatar_color, username))
+            sql = _format_query('UPDATE users SET display_name = ?, bio = ?, avatar_color = ? WHERE username = ?', is_pg)
+            cur.execute(sql, (display_name, bio, avatar_color, username))
         else:
-            cursor.execute('UPDATE users SET display_name = ?, bio = ? WHERE username = ?',
-                           (display_name, bio, username))
-        conn.commit()
-        return cursor.rowcount > 0
-    finally:
-        conn.close()
+            sql = _format_query('UPDATE users SET display_name = ?, bio = ? WHERE username = ?', is_pg)
+            cur.execute(sql, (display_name, bio, username))
+        return cur.rowcount > 0
 
 
 def search_users(query: str) -> List[Dict[str, Any]]:
-    """Search registered users by username, account_id, or display_name (prioritizing exact and prefix username match)."""
+    """Search registered users by username, account_id, or display_name."""
     raw = query.strip()
     if not raw:
         return []
     clean_q = raw.lstrip('@')
     q_wildcard = f"%{clean_q}%"
     q_prefix = f"{clean_q}%"
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        '''SELECT account_id, username, display_name, bio, avatar_color, avatar_photo 
-           FROM users 
-           WHERE (role IS NULL OR role != 'admin')
-             AND LOWER(username) NOT LIKE '%admin%'
-             AND LOWER(display_name) NOT LIKE '%admin%'
-             AND (LOWER(username) LIKE LOWER(?) OR LOWER(account_id) LIKE LOWER(?) OR LOWER(display_name) LIKE LOWER(?))
-           ORDER BY 
-             CASE 
-               WHEN LOWER(username) = LOWER(?) THEN 1
-               WHEN LOWER(username) LIKE LOWER(?) THEN 2
-               WHEN LOWER(display_name) LIKE LOWER(?) THEN 3
-               ELSE 4
-             END,
-             username ASC
-           LIMIT 20''',
-        (q_wildcard, q_wildcard, q_wildcard, clean_q, q_prefix, q_prefix)
-    )
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
+
+    with get_db_cursor(commit=False) as (cur, is_pg):
+        sql = _format_query(
+            '''SELECT account_id, username, display_name, bio, avatar_color, avatar_photo 
+               FROM users 
+               WHERE (role IS NULL OR role != 'admin')
+                 AND LOWER(username) NOT LIKE '%admin%'
+                 AND LOWER(display_name) NOT LIKE '%admin%'
+                 AND (LOWER(username) LIKE LOWER(?) OR LOWER(account_id) LIKE LOWER(?) OR LOWER(display_name) LIKE LOWER(?))
+               ORDER BY 
+                 CASE 
+                   WHEN LOWER(username) = LOWER(?) THEN 1
+                   WHEN LOWER(username) LIKE LOWER(?) THEN 2
+                   WHEN LOWER(display_name) LIKE LOWER(?) THEN 3
+                   ELSE 4
+                 END,
+                 username ASC
+               LIMIT 20''',
+            is_pg
+        )
+        cur.execute(sql, (q_wildcard, q_wildcard, q_wildcard, clean_q, q_prefix, q_prefix))
+        rows = cur.fetchall()
+        return [dict(r) for r in rows]
 
 
 def get_total_users() -> int:
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute('SELECT COUNT(*) as count FROM users')
-    row = cursor.fetchone()
-    conn.close()
-    return row['count'] if row else 0
+    with get_db_cursor(commit=False) as (cur, is_pg):
+        cur.execute('SELECT COUNT(*) as count FROM users')
+        row = cur.fetchone()
+        return row['count'] if row else 0
 
 
-def get_all_users():
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute('SELECT id, account_id, username, display_name, role, created_at FROM users ORDER BY id ASC')
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
+def get_all_users() -> List[Dict[str, Any]]:
+    with get_db_cursor(commit=False) as (cur, is_pg):
+        cur.execute('SELECT id, account_id, username, display_name, role, created_at FROM users ORDER BY id ASC')
+        rows = cur.fetchall()
+        return [dict(r) for r in rows]
 
 
 def update_user_role(target_username: str, new_role: str) -> bool:
@@ -432,41 +560,29 @@ def update_user_role(target_username: str, new_role: str) -> bool:
         return False
     if new_role not in ['admin', 'user']:
         return False
-    conn = get_db()
-    cursor = conn.cursor()
-    try:
-        cursor.execute('UPDATE users SET role = ? WHERE username = ?', (new_role, target_username))
-        conn.commit()
-        return cursor.rowcount > 0
-    finally:
-        conn.close()
+    with get_db_cursor(commit=True) as (cur, is_pg):
+        sql = _format_query('UPDATE users SET role = ? WHERE username = ?', is_pg)
+        cur.execute(sql, (new_role, target_username))
+        return cur.rowcount > 0
 
 
 def reset_user_password(target_username: str, new_password: str) -> bool:
     """Reset a user's password."""
     if not new_password or len(new_password) < 4:
         return False
-    conn = get_db()
-    cursor = conn.cursor()
-    try:
-        cursor.execute('UPDATE users SET password_hash = ? WHERE username = ?', (hash_password(new_password), target_username))
-        conn.commit()
-        return cursor.rowcount > 0
-    finally:
-        conn.close()
+    with get_db_cursor(commit=True) as (cur, is_pg):
+        sql = _format_query('UPDATE users SET password_hash = ? WHERE username = ?', is_pg)
+        cur.execute(sql, (hash_password(new_password), target_username))
+        return cur.rowcount > 0
 
 
 def delete_user(username: str) -> bool:
     if username == 'ESCTRIX_Admin':
         return False
-    conn = get_db()
-    cursor = conn.cursor()
-    try:
-        cursor.execute('DELETE FROM users WHERE username = ?', (username,))
-        conn.commit()
-        return cursor.rowcount > 0
-    finally:
-        conn.close()
+    with get_db_cursor(commit=True) as (cur, is_pg):
+        sql = _format_query('DELETE FROM users WHERE username = ?', is_pg)
+        cur.execute(sql, (username,))
+        return cur.rowcount > 0
 
 
 # ─────────────────────────────────────────────────────────────
@@ -475,41 +591,45 @@ def delete_user(username: str) -> bool:
 
 def add_saved_message(username: str, content: str, msg_type: str = 'text', file_meta: str = '') -> Optional[int]:
     """Store an entry in the user's personal Saved Messages vault."""
-    conn = get_db()
-    cursor = conn.cursor()
-    try:
-        cursor.execute(
-            'INSERT INTO saved_messages (username, content, msg_type, file_meta) VALUES (?, ?, ?, ?)',
-            (username, content, msg_type, file_meta)
-        )
-        conn.commit()
-        return cursor.lastrowid
-    finally:
-        conn.close()
+    with get_db_cursor(commit=True) as (cur, is_pg):
+        if is_pg:
+            cur.execute(
+                'INSERT INTO saved_messages (username, content, msg_type, file_meta) VALUES (%s, %s, %s, %s) RETURNING id',
+                (username, content, msg_type, file_meta)
+            )
+            row = cur.fetchone()
+            return row['id'] if row else None
+        else:
+            cur.execute(
+                'INSERT INTO saved_messages (username, content, msg_type, file_meta) VALUES (?, ?, ?, ?)',
+                (username, content, msg_type, file_meta)
+            )
+            return cur.lastrowid
 
 
 def get_saved_messages(username: str) -> List[Dict[str, Any]]:
     """Retrieve all saved personal messages."""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        'SELECT id, content, msg_type, file_meta, timestamp FROM saved_messages WHERE username = ? ORDER BY timestamp ASC',
-        (username,)
-    )
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
+    with get_db_cursor(commit=False) as (cur, is_pg):
+        sql = _format_query(
+            'SELECT id, content, msg_type, file_meta, timestamp FROM saved_messages WHERE username = ? ORDER BY timestamp ASC',
+            is_pg
+        )
+        cur.execute(sql, (username,))
+        rows = cur.fetchall()
+        return [dict(r) for r in rows]
 
 
 def delete_saved_message(username: str, message_id: int) -> bool:
-    conn = get_db()
-    cursor = conn.cursor()
-    try:
-        cursor.execute('DELETE FROM saved_messages WHERE username = ? AND id = ?', (username, message_id))
-        conn.commit()
-        return cursor.rowcount > 0
-    finally:
-        conn.close()
+    with get_db_cursor(commit=True) as (cur, is_pg):
+        sql = _format_query('DELETE FROM saved_messages WHERE username = ? AND id = ?', is_pg)
+        cur.execute(sql, (username, message_id))
+        return cur.rowcount > 0
+
+
+# ─────────────────────────────────────────────────────────────
+# Contacts & Friends
+# ─────────────────────────────────────────────────────────────
+
 def add_contact(owner_username: str, contact_username: str) -> Dict[str, Any]:
     """Add a contact to the user's permanent contact list with mutual friendship detection."""
     if 'admin' in contact_username.lower() or contact_username == 'ESCTRIX_Admin':
@@ -521,118 +641,111 @@ def add_contact(owner_username: str, contact_username: str) -> Dict[str, Any]:
     if not profile or profile.get('role') == 'admin':
         return {"status": "error", "message": "User not found."}
 
-    conn = get_db()
-    cursor = conn.cursor()
-    try:
+    with get_db_cursor(commit=True) as (cur, is_pg):
         # Check if other user already added this user
-        cursor.execute(
-            'SELECT id FROM contacts WHERE owner_username = ? AND contact_username = ?',
-            (contact_username, owner_username)
-        )
-        other_row = cursor.fetchone()
+        chk_sql = _format_query('SELECT id FROM contacts WHERE owner_username = ? AND contact_username = ?', is_pg)
+        cur.execute(chk_sql, (contact_username, owner_username))
+        other_row = cur.fetchone()
         is_mutual = bool(other_row)
         new_status = 'mutual' if is_mutual else 'added'
 
         if is_mutual:
-            # Upgrade other user's record to mutual
-            cursor.execute(
-                'UPDATE contacts SET status = ? WHERE owner_username = ? AND contact_username = ?',
-                ('mutual', contact_username, owner_username)
-            )
+            up_sql = _format_query('UPDATE contacts SET status = ? WHERE owner_username = ? AND contact_username = ?', is_pg)
+            cur.execute(up_sql, ('mutual', contact_username, owner_username))
 
-        cursor.execute(
-            '''INSERT OR REPLACE INTO contacts (owner_username, contact_account_id, contact_username, contact_name, status)
-               VALUES (?, ?, ?, ?, ?)''',
-            (owner_username, profile['account_id'], contact_username, profile['display_name'], new_status)
+        # Modern SQLite and PostgreSQL both support ON CONFLICT
+        insert_sql = _format_query(
+            '''INSERT INTO contacts (owner_username, contact_account_id, contact_username, contact_name, status)
+               VALUES (?, ?, ?, ?, ?)
+               ON CONFLICT(owner_username, contact_username) DO UPDATE SET
+                   contact_account_id = excluded.contact_account_id,
+                   contact_name = excluded.contact_name,
+                   status = excluded.status''',
+            is_pg
         )
-        conn.commit()
+        cur.execute(insert_sql, (owner_username, profile['account_id'], contact_username, profile['display_name'], new_status))
+
         return {
             "status": "success",
             "relation": new_status,
             "is_mutual": is_mutual,
             "contact": profile
         }
-    finally:
-        conn.close()
 
 
 def get_contacts(owner_username: str) -> List[Dict[str, Any]]:
-    """Retrieve all saved contacts for a user with full profile info, status, and avatar photo."""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        '''SELECT c.id, c.contact_account_id, c.contact_username, 
-                  COALESCE(u.display_name, c.contact_name) as display_name,
-                  COALESCE(u.avatar_color, '') as avatar_color,
-                  COALESCE(u.avatar_photo, '') as avatar_photo,
-                  COALESCE(u.bio, '') as bio,
-                  COALESCE(c.status, 'added') as status,
-                  c.created_at
-           FROM contacts c
-           LEFT JOIN users u ON c.contact_username = u.username
-           WHERE c.owner_username = ?
-             AND (u.role IS NULL OR u.role != 'admin')
-             AND LOWER(c.contact_username) NOT LIKE '%admin%'
-           ORDER BY c.created_at DESC''',
-        (owner_username,)
-    )
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
+    """Retrieve all saved contacts for a user with full profile info and avatar."""
+    with get_db_cursor(commit=False) as (cur, is_pg):
+        sql = _format_query(
+            '''SELECT c.id, c.contact_account_id, c.contact_username, 
+                      COALESCE(u.display_name, c.contact_name) as display_name,
+                      COALESCE(u.avatar_color, '') as avatar_color,
+                      COALESCE(u.avatar_photo, '') as avatar_photo,
+                      COALESCE(u.bio, '') as bio,
+                      COALESCE(c.status, 'added') as status,
+                      c.created_at
+               FROM contacts c
+               LEFT JOIN users u ON c.contact_username = u.username
+               WHERE c.owner_username = ?
+                 AND (u.role IS NULL OR u.role != 'admin')
+                 AND LOWER(c.contact_username) NOT LIKE '%admin%'
+               ORDER BY c.created_at DESC''',
+            is_pg
+        )
+        cur.execute(sql, (owner_username,))
+        rows = cur.fetchall()
+        return [dict(r) for r in rows]
 
 
 def get_incoming_friend_adds(username: str) -> List[Dict[str, Any]]:
     """Retrieve all users who added this user as a friend, but whom this user hasn't added back yet."""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        '''SELECT c.owner_username as sender_username,
-                  c.contact_account_id,
-                  COALESCE(u.display_name, c.owner_username) as display_name,
-                  COALESCE(u.avatar_color, '') as avatar_color,
-                  COALESCE(u.avatar_photo, '') as avatar_photo,
-                  COALESCE(u.bio, '') as bio,
-                  u.account_id,
-                  c.created_at
-           FROM contacts c
-           LEFT JOIN users u ON c.owner_username = u.username
-           WHERE c.contact_username = ?
-             AND c.owner_username NOT IN (
-                 SELECT contact_username FROM contacts WHERE owner_username = ?
-             )
-           ORDER BY c.created_at DESC''',
-        (username, username)
-    )
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
+    with get_db_cursor(commit=False) as (cur, is_pg):
+        sql = _format_query(
+            '''SELECT c.owner_username as sender_username,
+                      c.contact_account_id,
+                      COALESCE(u.display_name, c.owner_username) as display_name,
+                      COALESCE(u.avatar_color, '') as avatar_color,
+                      COALESCE(u.avatar_photo, '') as avatar_photo,
+                      COALESCE(u.bio, '') as bio,
+                      u.account_id,
+                      c.created_at
+               FROM contacts c
+               LEFT JOIN users u ON c.owner_username = u.username
+               WHERE c.contact_username = ?
+                 AND c.owner_username NOT IN (
+                     SELECT contact_username FROM contacts WHERE owner_username = ?
+                 )
+               ORDER BY c.created_at DESC''',
+            is_pg
+        )
+        cur.execute(sql, (username, username))
+        rows = cur.fetchall()
+        return [dict(r) for r in rows]
 
 
 def is_friend(user_a: str, user_b: str) -> bool:
     """Check if two users have a friend connection (either added or mutual)."""
     if not user_a or not user_b or user_a == user_b:
         return False
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        '''SELECT 1 FROM contacts 
-           WHERE (owner_username = ? AND contact_username = ?)
-              OR (owner_username = ? AND contact_username = ?) LIMIT 1''',
-        (user_a, user_b, user_b, user_a)
-    )
-    row = cursor.fetchone()
-    conn.close()
-    return bool(row)
+    with get_db_cursor(commit=False) as (cur, is_pg):
+        sql = _format_query(
+            '''SELECT 1 FROM contacts 
+               WHERE (owner_username = ? AND contact_username = ?)
+                  OR (owner_username = ? AND contact_username = ?) LIMIT 1''',
+            is_pg
+        )
+        cur.execute(sql, (user_a, user_b, user_b, user_a))
+        row = cur.fetchone()
+        return bool(row)
 
 
 def get_friends_count(owner_username: str) -> int:
     """Return the total number of contacts added by a user."""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute('SELECT COUNT(*) FROM contacts WHERE owner_username = ?', (owner_username,))
-    count = cursor.fetchone()[0]
-    conn.close()
-    return count
+    with get_db_cursor(commit=False) as (cur, is_pg):
+        sql = _format_query('SELECT COUNT(*) as count FROM contacts WHERE owner_username = ?', is_pg)
+        cur.execute(sql, (owner_username,))
+        row = cur.fetchone()
+        return row['count'] if row else 0
 
 
 # ─────────────────────────────────────────────────────────────
@@ -641,45 +754,41 @@ def get_friends_count(owner_username: str) -> int:
 
 def store_offline_message(recipient: str, sender: str, space_name: str, payload: str) -> bool:
     """Store an encrypted message for an offline user."""
-    conn = get_db()
-    cursor = conn.cursor()
     try:
-        cursor.execute(
-            'INSERT INTO offline_messages (recipient_username, sender_username, space_name, payload) VALUES (?, ?, ?, ?)',
-            (recipient, sender, space_name, payload)
-        )
-        conn.commit()
-        return True
+        with get_db_cursor(commit=True) as (cur, is_pg):
+            sql = _format_query(
+                'INSERT INTO offline_messages (recipient_username, sender_username, space_name, payload) VALUES (?, ?, ?, ?)',
+                is_pg
+            )
+            cur.execute(sql, (recipient, sender, space_name, payload))
+            return True
     except Exception as e:
         logger.error(f"Error storing offline message: {e}")
         return False
-    finally:
-        conn.close()
 
 
-def get_offline_messages(username: str):
+def get_offline_messages(username: str) -> List[Dict[str, Any]]:
     """Retrieve all queued messages for a user."""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        'SELECT id, sender_username, space_name, payload, timestamp FROM offline_messages WHERE recipient_username = ? ORDER BY timestamp ASC',
-        (username,)
-    )
-    rows = cursor.fetchall()
-    conn.close()
-    return [{"id": r['id'], "sender": r['sender_username'], "space_name": r['space_name'], "payload": r['payload'], "timestamp": r['timestamp']} for r in rows]
+    with get_db_cursor(commit=False) as (cur, is_pg):
+        sql = _format_query(
+            'SELECT id, sender_username, space_name, payload, timestamp FROM offline_messages WHERE recipient_username = ? ORDER BY timestamp ASC',
+            is_pg
+        )
+        cur.execute(sql, (username,))
+        rows = cur.fetchall()
+        return [{"id": r['id'], "sender": r['sender_username'], "space_name": r['space_name'], "payload": r['payload'], "timestamp": r['timestamp']} for r in rows]
 
 
 def delete_offline_messages(username: str) -> bool:
-    """Delete all queued messages for a user after they have been retrieved."""
-    conn = get_db()
-    cursor = conn.cursor()
+    """Delete all queued messages for a user after retrieval."""
     try:
-        cursor.execute('DELETE FROM offline_messages WHERE recipient_username = ?', (username,))
-        conn.commit()
-        return True
-    finally:
-        conn.close()
+        with get_db_cursor(commit=True) as (cur, is_pg):
+            sql = _format_query('DELETE FROM offline_messages WHERE recipient_username = ?', is_pg)
+            cur.execute(sql, (username,))
+            return True
+    except Exception as e:
+        logger.error(f"Error deleting offline messages: {e}")
+        return False
 
 
 # ─────────────────────────────────────────────────────────────
@@ -695,72 +804,131 @@ def store_direct_message(
     vanish: int = 0
 ) -> Optional[Dict[str, Any]]:
     """Store a 1-on-1 direct chat message."""
-    conn = get_db()
-    cursor = conn.cursor()
     try:
-        cursor.execute(
-            '''INSERT INTO direct_messages (sender_username, recipient_username, content, msg_type, file_meta, vanish)
-               VALUES (?, ?, ?, ?, ?, ?)''',
-            (sender_username, recipient_username, content, msg_type, file_meta, 1 if vanish else 0)
-        )
-        msg_id = cursor.lastrowid
-        conn.commit()
-        cursor.execute('SELECT * FROM direct_messages WHERE id = ?', (msg_id,))
-        row = cursor.fetchone()
-        return dict(row) if row else None
+        with get_db_cursor(commit=True) as (cur, is_pg):
+            if is_pg:
+                cur.execute(
+                    '''INSERT INTO direct_messages (sender_username, recipient_username, content, msg_type, file_meta, vanish)
+                       VALUES (%s, %s, %s, %s, %s, %s) RETURNING *''',
+                    (sender_username, recipient_username, content, msg_type, file_meta, 1 if vanish else 0)
+                )
+                row = cur.fetchone()
+                return dict(row) if row else None
+            else:
+                cur.execute(
+                    '''INSERT INTO direct_messages (sender_username, recipient_username, content, msg_type, file_meta, vanish)
+                       VALUES (?, ?, ?, ?, ?, ?)''',
+                    (sender_username, recipient_username, content, msg_type, file_meta, 1 if vanish else 0)
+                )
+                msg_id = cur.lastrowid
+                cur.execute('SELECT * FROM direct_messages WHERE id = ?', (msg_id,))
+                row = cur.fetchone()
+                return dict(row) if row else None
     except Exception as e:
         logger.error(f"Error storing direct message: {e}")
         return None
-    finally:
-        conn.close()
 
 
 def get_direct_chat_history(user_a: str, user_b: str, limit: int = 100) -> List[Dict[str, Any]]:
     """Retrieve 1-on-1 chat history between two users."""
-    conn = get_db()
-    cursor = conn.cursor()
     try:
-        cursor.execute(
-            '''SELECT id, sender_username, recipient_username, content, msg_type, file_meta, vanish, is_read, timestamp
-               FROM direct_messages
-               WHERE (sender_username = ? AND recipient_username = ?)
-                  OR (sender_username = ? AND recipient_username = ?)
-               ORDER BY id ASC
-               LIMIT ?''',
-            (user_a, user_b, user_b, user_a, limit)
-        )
-        rows = cursor.fetchall()
-        return [dict(r) for r in rows]
+        with get_db_cursor(commit=False) as (cur, is_pg):
+            sql = _format_query(
+                '''SELECT id, sender_username, recipient_username, content, msg_type, file_meta, vanish, is_read, timestamp
+                   FROM direct_messages
+                   WHERE (sender_username = ? AND recipient_username = ?)
+                      OR (sender_username = ? AND recipient_username = ?)
+                   ORDER BY id ASC
+                   LIMIT ?''',
+                is_pg
+            )
+            cur.execute(sql, (user_a, user_b, user_b, user_a, limit))
+            rows = cur.fetchall()
+            return [dict(r) for r in rows]
     except Exception as e:
         logger.error(f"Error fetching direct chat history: {e}")
         return []
-    finally:
-        conn.close()
 
 
 def mark_direct_messages_read(reader_username: str, sender_username: str) -> bool:
     """Mark all unread direct messages from a sender as read."""
-    conn = get_db()
-    cursor = conn.cursor()
     try:
-        cursor.execute(
-            '''UPDATE direct_messages 
-               SET is_read = 1 
-               WHERE recipient_username = ? AND sender_username = ? AND is_read = 0''',
-            (reader_username, sender_username)
-        )
-        conn.commit()
-        return True
+        with get_db_cursor(commit=True) as (cur, is_pg):
+            sql = _format_query(
+                '''UPDATE direct_messages 
+                   SET is_read = 1 
+                   WHERE recipient_username = ? AND sender_username = ? AND is_read = 0''',
+                is_pg
+            )
+            cur.execute(sql, (reader_username, sender_username))
+            return True
     except Exception as e:
         logger.error(f"Error marking messages read: {e}")
         return False
-    finally:
-        conn.close()
-
 
 
 # ─────────────────────────────────────────────────────────────
-# Firebase Cloud DB Sync Helper (Optional)
+# Passkey / WebAuthn Biometric Credentials
+# ─────────────────────────────────────────────────────────────
+
+def save_passkey_credential(username: str, credential_id: str, public_key: str) -> bool:
+    """Register or update a WebAuthn biometric credential for a user."""
+    try:
+        with get_db_cursor(commit=True) as (cur, is_pg):
+            sql = _format_query(
+                '''INSERT INTO passkey_credentials (username, credential_id, public_key)
+                   VALUES (?, ?, ?)
+                   ON CONFLICT(credential_id) DO UPDATE SET
+                   public_key = excluded.public_key,
+                   username = excluded.username''',
+                is_pg
+            )
+            cur.execute(sql, (username, credential_id, public_key))
+            return True
+    except Exception as e:
+        logger.error(f"Error saving passkey credential: {e}")
+        return False
+
+
+def get_passkey_credential(credential_id: str) -> Optional[Dict[str, Any]]:
+    """Fetch credential by credential_id."""
+    try:
+        with get_db_cursor(commit=False) as (cur, is_pg):
+            sql = _format_query('SELECT * FROM passkey_credentials WHERE credential_id = ?', is_pg)
+            cur.execute(sql, (credential_id,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+    except Exception as e:
+        logger.error(f"Error retrieving passkey credential: {e}")
+        return None
+
+
+def get_user_passkeys(username: str) -> List[Dict[str, Any]]:
+    """Retrieve all passkey credentials registered to a username."""
+    try:
+        with get_db_cursor(commit=False) as (cur, is_pg):
+            sql = _format_query('SELECT credential_id, created_at FROM passkey_credentials WHERE username = ?', is_pg)
+            cur.execute(sql, (username,))
+            return [dict(row) for row in cur.fetchall()]
+    except Exception as e:
+        logger.error(f"Error fetching user passkeys: {e}")
+        return []
+
+
+def delete_passkey_credential(credential_id: str, username: str) -> bool:
+    """Delete a passkey credential."""
+    try:
+        with get_db_cursor(commit=True) as (cur, is_pg):
+            sql = _format_query('DELETE FROM passkey_credentials WHERE credential_id = ? AND username = ?', is_pg)
+            cur.execute(sql, (credential_id, username))
+            return True
+    except Exception as e:
+        logger.error(f"Error deleting passkey: {e}")
+        return False
+
+
+# ─────────────────────────────────────────────────────────────
+# Firebase Auxiliary Sync Helper (Optional)
 # ─────────────────────────────────────────────────────────────
 
 def _sync_user_to_firebase(account_id: str, username: str, display_name: str):

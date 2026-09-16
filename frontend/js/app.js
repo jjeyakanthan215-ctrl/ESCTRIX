@@ -26,6 +26,7 @@ const ESCTRIX = {
         activeSpaceName: '',
         activeSpacePin: '',
         vanishMode: false,
+        vanishTimer: 0,
         isLoginMode: true,
         sfxEnabled: true,
         audioCtx: null,
@@ -88,7 +89,7 @@ const ESCTRIX = {
             'auth-brand-badge', 'auth-user-icon', 'auth-security-text', 'auth-switch-bar',
             'login-screen', 'dashboard-screen', 'admin-screen',
             'auth-title', 'auth-subtitle', 'auth-username', 'auth-password', 'auth-pwd-toggle', 'auth-displayname',
-            'display-name-group', 'auth-submit-btn', 'auth-toggle', 'auth-toggle-msg', 'login-error',
+            'display-name-group', 'auth-submit-btn', 'passkey-login-btn', 'register-passkey-btn', 'passkey-status-label', 'menu-vanish-label', 'auth-toggle', 'auth-toggle-msg', 'login-error',
             'admin-new-password-input', 'admin-pwd-toggle', 'admin-change-pwd-btn',
             'telegram-sidebar', 'telegram-chat-pane', 'chat-search-input', 'search-clear-btn',
             'sidebar-add-friend-btn', 'new-space-btn', 'chat-threads-list', 'dynamic-chat-threads', 'thread-aura-ai', 'thread-saved-messages',
@@ -404,6 +405,21 @@ const ESCTRIX = {
             return;
         }
 
+        if (type === 'direct_file_meta') {
+            this.chunks.handleChunkMeta(msg, true);
+            return;
+        }
+
+        if (type === 'direct_file_chunk') {
+            this.chunks.handleChunkData(msg, true);
+            return;
+        }
+
+        if (type === 'direct_file_complete') {
+            this.chunks.handleChunkComplete(msg, true);
+            return;
+        }
+
         if (type === 'direct_chat_message') {
             this.playSfx('receive');
             const chatKey = `@${msg.sender_username}`;
@@ -503,13 +519,13 @@ const ESCTRIX = {
 
         if (type === 'direct_call_declined') {
             this.showToast(`@${msg.sender_username} declined the call.`);
-            this.call.end();
+            this.call.end(false);
             return;
         }
 
         if (type === 'direct_call_end') {
             this.showToast(`@${msg.sender_username} ended the call.`);
-            this.call.end();
+            this.call.end(false);
             return;
         }
     },
@@ -682,7 +698,25 @@ const ESCTRIX = {
         // Auth Screen
         e.authToggle?.addEventListener('click', () => this.auth.toggleMode());
         e.authSubmitBtn?.addEventListener('click', () => this.auth.submit());
+        e.passkeyLoginBtn?.addEventListener('click', () => this.passkey.authenticate());
+        e.registerPasskeyBtn?.addEventListener('click', () => this.passkey.register());
         e.authPassword?.addEventListener('keypress', (ev) => { if (ev.key === 'Enter') this.auth.submit(); });
+
+        // Burn Timer Preference Selector
+        const burnPref = document.getElementById('pref-burn-timer');
+        burnPref?.addEventListener('change', (ev) => {
+            const val = ev.target.value;
+            const parsed = val === 'view_once' ? 'view_once' : parseInt(val);
+            this.state.vanishTimer = parsed;
+            this.state.vanishMode = parsed !== 0;
+            const labelEl = document.getElementById('menu-vanish-label');
+            if (labelEl) {
+                labelEl.textContent = parsed === 0 
+                    ? 'Vanish Timer: Off' 
+                    : (parsed === 'view_once' ? 'Vanish: View-Once 🔒' : `Vanish: ${parsed}s`);
+            }
+            this.showToast(`Default vanish duration set to: ${ev.target.options[ev.target.selectedIndex].text}`);
+        });
 
         // Password Visibility Toggles (Eye View Button)
         const setupPasswordToggle = (btn, input) => {
@@ -1104,6 +1138,11 @@ const ESCTRIX = {
                 e.authToggleMsg.textContent = 'Already have an account?';
                 e.authToggle.textContent = 'Sign In';
                 e.displayNameGroup.style.display = 'flex';
+            }
+            if (e.passkeyLoginBtn) {
+                e.passkeyLoginBtn.style.display = ESCTRIX.state.isLoginMode ? 'flex' : 'none';
+                const divider = document.querySelector('.auth-divider');
+                if (divider) divider.style.display = ESCTRIX.state.isLoginMode ? 'flex' : 'none';
             }
         },
 
@@ -2202,14 +2241,16 @@ const ESCTRIX = {
             const e = ESCTRIX.elements;
             const div = document.createElement('div');
             const isMe = msg.sender === 'me';
+            const isViewOnce = msg.vanish === 'view_once' || msg.vanish === -1 || msg.viewOnce;
             div.className = `message ${isMe ? 'sent' : 'received'} ${msg.vanish ? 'vanish-msg' : ''}`;
             const timeStr = msg.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             const statusTick = isMe ? '<span class="msg-status-tick tick-read"><i class="ph ph-checks"></i></span>' : '';
 
+            const vanishDuration = typeof msg.vanish === 'number' && msg.vanish > 0 ? msg.vanish : 10;
             // Vanish header badge if active
-            const vanishHeader = msg.vanish ? `
+            const vanishHeader = (msg.vanish && !isViewOnce) ? `
                 <div class="vanish-badge">
-                    <i class="ph ph-ghost"></i> <span class="vanish-countdown-txt">10s</span>
+                    <i class="ph ph-ghost"></i> <span class="vanish-countdown-txt">${vanishDuration}s</span>
                     <div class="vanish-bar"><div class="vanish-bar-fill"></div></div>
                 </div>
             ` : '';
@@ -2225,13 +2266,75 @@ const ESCTRIX = {
                 </div>
             `;
 
-            const vanishFooter = msg.vanish ? `
+            const vanishFooter = (msg.vanish && !isViewOnce) ? `
                 <div class="vanish-footer">
-                    <i class="ph ph-shield-warning"></i> Auto-destructing in 10 seconds
+                    <i class="ph ph-shield-warning"></i> Auto-destructing in ${vanishDuration} seconds
                 </div>
             ` : '';
 
-            if (msg.type === 'voice') {
+            if (isViewOnce) {
+                div.innerHTML = `
+                    ${reactionBar}
+                    <div class="view-once-bubble">
+                        <div class="view-once-card">
+                            <div class="view-once-icon"><i class="ph ph-lock-key"></i></div>
+                            <div class="view-once-meta">
+                                <span class="view-once-title">View-Once Encrypted Media</span>
+                                <span class="view-once-sub">${msg.fileName || (msg.type === 'video' ? 'Encrypted Video' : 'Encrypted Photo')} • Single View</span>
+                            </div>
+                            <button class="view-once-reveal-btn"><i class="ph ph-eye"></i> View</button>
+                        </div>
+                    </div>
+                    <div class="message-meta">
+                        <span>${timeStr}</span>
+                        ${statusTick}
+                    </div>
+                `;
+                const card = div.querySelector('.view-once-card');
+                card?.addEventListener('click', () => {
+                    const mediaUrl = msg.fileUrl || msg.content || '';
+                    const isVid = msg.type === 'video';
+                    const triggerBurn = () => {
+                        card.classList.add('view-once-burned');
+                        card.innerHTML = `
+                            <div class="view-once-icon" style="background:rgba(255,255,255,0.05); color:#64748b; border-color:transparent;"><i class="ph ph-lock-key-open"></i></div>
+                            <div class="view-once-meta"><span class="view-once-title" style="color:#64748b;">Opened & Destroyed</span><span class="view-once-sub">Media permanently erased</span></div>
+                        `;
+                        setTimeout(() => {
+                            div.classList.add('vanish-disintegrate');
+                            setTimeout(() => div.remove(), 600);
+                        }, 1200);
+                    };
+
+                    if (isVid) {
+                        ESCTRIX.lightbox.openVideo(mediaUrl, msg.fileName || 'View Once Video', triggerBurn);
+                    } else {
+                        ESCTRIX.lightbox.open(mediaUrl, msg.fileName || 'View Once Photo', triggerBurn);
+                    }
+                });
+            } else if (msg.type === 'video') {
+                const mediaUrl = msg.fileUrl || msg.content || '';
+                div.innerHTML = `
+                    ${reactionBar}
+                    ${vanishHeader}
+                    <div class="video-bubble" data-url="${mediaUrl}">
+                        <video src="${mediaUrl}" controls playsinline preload="metadata" class="chat-media-video"></video>
+                        <div class="video-bubble-overlay">
+                            <span><i class="ph ph-video-camera"></i> ${msg.fileName || 'Video'}</span>
+                            <span>${msg.fileSize || ''}</span>
+                            <a href="${mediaUrl}" download="${msg.fileName || 'video.mp4'}" class="video-dl-btn" title="Download Video">
+                                <i class="ph ph-download-simple"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="msg-reactions-container"></div>
+                    <div class="message-meta">
+                        <span>${timeStr}</span>
+                        ${statusTick}
+                    </div>
+                    ${vanishFooter}
+                `;
+            } else if (msg.type === 'voice') {
                 div.innerHTML = `
                     ${reactionBar}
                     ${vanishHeader}
@@ -2373,14 +2476,16 @@ const ESCTRIX = {
             });
 
             // Handle Vanishing Countdown Timer
-            if (msg.vanish) {
-                let timeLeft = 10;
+            if (msg.vanish && !isViewOnce) {
+                const totalDuration = typeof msg.vanish === 'number' && msg.vanish > 0 ? msg.vanish : 10;
+                let timeLeft = totalDuration;
                 const countTxt = div.querySelector('.vanish-countdown-txt');
                 const barFill = div.querySelector('.vanish-bar-fill');
+                if (countTxt) countTxt.textContent = `${timeLeft}s`;
                 const vanishInterval = setInterval(() => {
                     timeLeft -= 1;
                     if (countTxt) countTxt.textContent = `${timeLeft}s`;
-                    if (barFill) barFill.style.width = `${(timeLeft / 10) * 100}%`;
+                    if (barFill) barFill.style.width = `${(timeLeft / totalDuration) * 100}%`;
                     if (timeLeft <= 0) {
                         clearInterval(vanishInterval);
                         div.classList.add('vanish-disintegrate');
@@ -2494,64 +2599,48 @@ const ESCTRIX = {
         handleFileSelect(ev) {
             const file = ev.target.files[0];
             if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const base64 = e.target.result;
-                const isImg = file.type && file.type.startsWith('image/');
-                const s = ESCTRIX.state;
-                const chatKey = (s.activeChat?.title && s.activeChat.title.startsWith('@')) ? s.activeChat.title : s.activeChat?.type;
-                const isDirect = s.activeChat?.title && s.activeChat.title.startsWith('@');
-                const targetUname = isDirect ? s.activeChat.title.slice(1) : null;
+            ev.target.value = '';
 
-                const fileMsg = {
-                    sender: 'me',
-                    type: isImg ? 'image' : 'file',
-                    fileName: file.name,
-                    fileSize: `${(file.size / 1024).toFixed(1)} KB`,
-                    fileUrl: base64,
-                    vanish: s.vanishMode,
-                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                };
+            const s = ESCTRIX.state;
+            const isDirect = s.activeChat?.title && s.activeChat.title.startsWith('@');
+            const targetUname = isDirect ? s.activeChat.title.slice(1) : null;
+            const vanishSetting = s.vanishTimer !== undefined && s.vanishTimer !== 0 ? s.vanishTimer : (s.vanishMode ? 10 : 0);
 
-                if (!s.chatHistories[chatKey]) {
-                    s.chatHistories[chatKey] = [];
-                }
-                s.chatHistories[chatKey].push(fileMsg);
-                ESCTRIX.chat.appendMessageDOM(fileMsg);
-                ESCTRIX.playSfx('send');
-
-                if (isDirect && targetUname && s.userWs && s.userWs.readyState === WebSocket.OPEN) {
-                    s.userWs.send(JSON.stringify({
-                        type: 'direct_chat_message',
-                        target_username: targetUname,
-                        content: base64,
-                        msg_type: isImg ? 'image' : 'file',
-                        file_meta: file.name,
-                        vanish: s.vanishMode ? 1 : 0,
-                        sender_display_name: s.user?.display_name || s.user?.username
-                    }));
-                }
-
-                if (s.activeChat?.type === 'space' && s.p2p) {
-                    s.p2p.sendData({
-                        type: isImg ? 'image' : 'file',
-                        name: file.name,
-                        fileName: file.name,
-                        size: file.size,
-                        fileSize: `${(file.size / 1024).toFixed(1)} KB`,
-                        payload: base64,
-                        fileUrl: base64,
-                        vanish: s.vanishMode
-                    });
-                }
-            };
-            reader.readAsDataURL(file);
+            ESCTRIX.chunks.sendFile({
+                file,
+                isDirect,
+                targetUsername: targetUname,
+                p2p: s.p2p,
+                vanish: vanishSetting
+            });
         },
 
         toggleVanishMode() {
-            ESCTRIX.state.vanishMode = !ESCTRIX.state.vanishMode;
+            const durations = [0, 5, 10, 30, 'view_once'];
+            let cur = ESCTRIX.state.vanishTimer || 0;
+            let nextIdx = (durations.indexOf(cur) + 1) % durations.length;
+            let nextVal = durations[nextIdx];
+            ESCTRIX.state.vanishTimer = nextVal;
+            ESCTRIX.state.vanishMode = nextVal !== 0;
+
+            const burnSelect = document.getElementById('pref-burn-timer');
+            if (burnSelect) burnSelect.value = String(nextVal);
+
+            const labelEl = document.getElementById('menu-vanish-label');
+            const toastTxt = nextVal === 0 
+                ? 'Vanish Timer: OFF (Messages preserved)' 
+                : (nextVal === 'view_once' 
+                    ? 'Vanish Mode: VIEW-ONCE 🔒 (Single view auto-burn)' 
+                    : `Vanish Timer: ${nextVal} SECONDS ⏱️`);
+
+            if (labelEl) {
+                labelEl.textContent = nextVal === 0 
+                    ? 'Vanish Timer: Off' 
+                    : (nextVal === 'view_once' ? 'Vanish: View-Once 🔒' : `Vanish: ${nextVal}s`);
+            }
+
             ESCTRIX.playSfx('click');
-            ESCTRIX.showToast(`Vanish Mode (10s): ${ESCTRIX.state.vanishMode ? 'ENABLED 👻' : 'DISABLED'}`);
+            ESCTRIX.showToast(toastTxt);
         },
 
         burnSpace() {
@@ -3763,6 +3852,12 @@ const ESCTRIX = {
                                 e.typingIndicator.classList.add('hidden');
                             }, 3000);
                         }
+                    } else if (data.type === 'file_chunk_meta') {
+                        ESCTRIX.chunks.handleChunkMeta(data, false);
+                    } else if (data.type === 'file_chunk_data') {
+                        ESCTRIX.chunks.handleChunkData(data, false);
+                    } else if (data.type === 'file_chunk_complete') {
+                        ESCTRIX.chunks.handleChunkComplete(data, false);
                     } else if (data.type === 'file') {
                         const fMsg = {
                             sender: 'peer',
@@ -3988,7 +4083,10 @@ const ESCTRIX = {
                 ESCTRIX.showToast('Call connected! 📞');
             } else if (signal.type === 'call_declined') {
                 ESCTRIX.showToast('Call declined.');
-                this.end();
+                this.end(false);
+            } else if (signal.type === 'call_ended') {
+                ESCTRIX.showToast('Call ended by peer.');
+                this.end(false);
             }
         },
 
@@ -4131,18 +4229,30 @@ const ESCTRIX = {
             }, 1000);
         },
 
-        end() {
+        end(sendSignal = true) {
             const s = ESCTRIX.state;
             const e = ESCTRIX.elements;
-            if (s.activeDirectCallTarget && s.userWs && s.userWs.readyState === WebSocket.OPEN) {
-                s.userWs.send(JSON.stringify({
-                    type: 'direct_call_end',
-                    target_username: s.activeDirectCallTarget
-                }));
-                s.activeDirectCallTarget = null;
+
+            if (sendSignal) {
+                // Direct 1-on-1 call end signal
+                if (s.activeDirectCallTarget && s.userWs && s.userWs.readyState === WebSocket.OPEN) {
+                    s.userWs.send(JSON.stringify({
+                        type: 'direct_call_end',
+                        target_username: s.activeDirectCallTarget
+                    }));
+                }
+                // Space room call end signal
+                if (s.p2p) {
+                    s.p2p.sendCallSignal('call_ended', {});
+                }
             }
+
+            s.activeDirectCallTarget = null;
+            s.incomingDirectCall = null;
+            s.incomingSpaceCall = null;
+
             if (s.directCallPC) {
-                try { s.directCallPC.close(); } catch (e) {}
+                try { s.directCallPC.close(); } catch (err) {}
                 s.directCallPC = null;
             }
             if (s.localVideoStream) {
@@ -4153,6 +4263,7 @@ const ESCTRIX = {
                 s.screenStream.getTracks().forEach(t => t.stop());
                 s.screenStream = null;
             }
+
             const audioCard = document.getElementById('audio-call-indicator-card');
             if (audioCard) audioCard.remove();
             const remoteVid = document.getElementById('remote-video-stream');
@@ -4161,9 +4272,27 @@ const ESCTRIX = {
                 remoteVid.remove();
             }
 
+            // Also clean up any extra peer video elements in groupVideoGrid
+            if (e.groupVideoGrid) {
+                const extraVideos = e.groupVideoGrid.querySelectorAll('video:not(#local-video-preview)');
+                extraVideos.forEach(v => {
+                    v.srcObject = null;
+                    v.remove();
+                });
+            }
+
             clearInterval(s.callTimerInterval);
-            e.videoOverlay.classList.add('hidden');
+            s.callTimerInterval = null;
+            s.callSeconds = 0;
+            if (e.callTimer) e.callTimer.textContent = '00:00';
+            if (e.videoOverlay) e.videoOverlay.classList.add('hidden');
             s.isVideoCalling = false;
+            s.isScreenSharing = false;
+            s.isMuted = false;
+            s.isCamOff = false;
+
+            ESCTRIX.modal.close('call-modal');
+            ESCTRIX.modal.close('call-type-modal');
             ESCTRIX.showToast('Call ended.');
         },
 
@@ -4190,8 +4319,77 @@ const ESCTRIX = {
 
         async flipCamera() {
             const s = ESCTRIX.state;
+            const e = ESCTRIX.elements;
+            if (!s.isVideoCalling) {
+                ESCTRIX.showToast('No active video call to switch camera.', true);
+                return;
+            }
+
             s.currentFacingMode = s.currentFacingMode === 'user' ? 'environment' : 'user';
-            this.initiate('video');
+            const modeLabel = s.currentFacingMode === 'user' ? 'Front' : 'Back';
+
+            try {
+                // Obtain new video track without renegotiation or touching audio
+                const newStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: s.currentFacingMode } },
+                    audio: false
+                });
+                const newVideoTrack = newStream.getVideoTracks()[0];
+                if (!newVideoTrack) {
+                    ESCTRIX.showToast('Could not access requested camera.', true);
+                    return;
+                }
+
+                // Stop previous local video track
+                const oldVideoTrack = s.localVideoStream ? s.localVideoStream.getVideoTracks()[0] : null;
+                if (oldVideoTrack) {
+                    oldVideoTrack.stop();
+                    s.localVideoStream.removeTrack(oldVideoTrack);
+                }
+
+                // Attach new video track to local stream
+                if (s.localVideoStream) {
+                    s.localVideoStream.addTrack(newVideoTrack);
+                } else {
+                    s.localVideoStream = newStream;
+                }
+
+                // Update local preview DOM
+                if (e.localVideo) {
+                    e.localVideo.srcObject = s.localVideoStream;
+                }
+
+                // 1. Seamlessly replace track on direct 1-on-1 PeerConnection
+                if (s.directCallPC) {
+                    const senders = s.directCallPC.getSenders();
+                    const videoSender = senders.find(sender => sender.track && sender.track.kind === 'video');
+                    if (videoSender) {
+                        await videoSender.replaceTrack(newVideoTrack);
+                    }
+                }
+
+                // 2. Seamlessly replace track on all mesh room PeerConnections (if in Space room)
+                if (s.p2p && s.p2p.peers) {
+                    for (const [peerId, peerObj] of s.p2p.peers) {
+                        const pc = peerObj?.pc;
+                        if (pc) {
+                            const senders = pc.getSenders();
+                            const videoSender = senders.find(sender => sender.track && sender.track.kind === 'video');
+                            if (videoSender) {
+                                await videoSender.replaceTrack(newVideoTrack);
+                            }
+                        }
+                    }
+                }
+
+                ESCTRIX.playSfx('send');
+                ESCTRIX.showToast(`Switched to ${modeLabel} camera 📷`);
+            } catch (err) {
+                console.error('[flipCamera error]:', err);
+                // Revert facing mode state on error
+                s.currentFacingMode = s.currentFacingMode === 'user' ? 'environment' : 'user';
+                ESCTRIX.showToast('Camera switch failed: ' + (err.message || 'Permission denied'), true);
+            }
         },
 
         async toggleScreenShare() {
@@ -4757,6 +4955,7 @@ const ESCTRIX = {
         downloadBtn: null,
         closeBtn: null,
         backdrop: null,
+        _onClose: null,
 
         init() {
             this.modal = document.getElementById('media-lightbox-modal');
@@ -4775,9 +4974,16 @@ const ESCTRIX = {
             });
         },
 
-        open(url, name = 'Media Preview') {
+        open(url, name = 'Media Preview', onClose = null) {
             if (!this.modal) this.init();
-            if (this.img) this.img.src = url;
+            this._onClose = onClose;
+            if (this.img) {
+                this.img.src = url;
+                this.img.style.display = 'block';
+            }
+            const oldVid = this.modal?.querySelector('.lightbox-video');
+            if (oldVid) oldVid.remove();
+
             if (this.filename) this.filename.textContent = name;
             if (this.downloadBtn) {
                 this.downloadBtn.href = url;
@@ -4790,10 +4996,483 @@ const ESCTRIX = {
             ESCTRIX.playSfx('click');
         },
 
+        openVideo(url, name = 'Video Preview', onClose = null) {
+            if (!this.modal) this.init();
+            this._onClose = onClose;
+            if (this.img) this.img.style.display = 'none';
+
+            let vid = this.modal?.querySelector('.lightbox-video');
+            if (!vid) {
+                vid = document.createElement('video');
+                vid.className = 'lightbox-video';
+                vid.controls = true;
+                vid.autoplay = true;
+                vid.style.maxWidth = '90vw';
+                vid.style.maxHeight = '80vh';
+                vid.style.borderRadius = '12px';
+                vid.style.boxShadow = '0 8px 32px rgba(0,0,0,0.8)';
+                this.img?.parentNode?.insertBefore(vid, this.img);
+            }
+            vid.src = url;
+            vid.style.display = 'block';
+
+            if (this.filename) this.filename.textContent = name;
+            if (this.downloadBtn) {
+                this.downloadBtn.href = url;
+                this.downloadBtn.download = name || 'video.mp4';
+            }
+            if (this.modal) {
+                this.modal.classList.remove('hidden');
+                this.modal.style.display = 'flex';
+            }
+            ESCTRIX.playSfx('click');
+        },
+
         close() {
+            if (this._onClose) {
+                const cb = this._onClose;
+                this._onClose = null;
+                cb();
+            }
+            const vid = this.modal?.querySelector('.lightbox-video');
+            if (vid) {
+                vid.pause();
+                vid.src = '';
+                vid.remove();
+            }
+            if (this.img) this.img.style.display = 'block';
+
             if (this.modal) {
                 this.modal.classList.add('hidden');
                 this.modal.style.display = 'none';
+            }
+        }
+    },
+
+    // ─────────────────────────────────────────────────────────
+    // CHUNKED MEDIA & FILE TRANSMISSION ENGINE
+    // ─────────────────────────────────────────────────────────
+    chunks: {
+        incoming: new Map(),
+
+        showProgress(fileName, speedStr, percent) {
+            const e = ESCTRIX.elements;
+            if (e.fileUploadProgress) e.fileUploadProgress.classList.remove('hidden');
+            if (e.progressFilename) e.progressFilename.textContent = fileName;
+            if (e.progressSpeed) e.progressSpeed.textContent = speedStr;
+            if (e.progressPercent) e.progressPercent.textContent = `${percent}%`;
+            if (e.progressBarFill) e.progressBarFill.style.width = `${percent}%`;
+        },
+
+        hideProgress() {
+            const e = ESCTRIX.elements;
+            if (e.fileUploadProgress) {
+                setTimeout(() => {
+                    e.fileUploadProgress.classList.add('hidden');
+                    if (e.progressBarFill) e.progressBarFill.style.width = '0%';
+                }, 800);
+            }
+        },
+
+        handleChunkMeta(msg, isDirect = false) {
+            const id = msg.transferId || msg.transfer_id;
+            if (!id) return;
+            this.incoming.set(id, {
+                meta: {
+                    transferId: id,
+                    fileName: msg.fileName || msg.file_name || 'file',
+                    fileSize: msg.fileSize || msg.file_size || 0,
+                    fileSizeStr: msg.fileSizeStr || msg.file_size_str || '',
+                    mimeType: msg.mimeType || msg.mime_type || 'application/octet-stream',
+                    msgType: msg.msgType || msg.msg_type || 'file',
+                    totalChunks: msg.totalChunks || msg.total_chunks || 1,
+                    vanish: msg.vanish || 0,
+                    senderName: msg.sender_display_name || msg.sender_username || msg.senderName || 'Peer'
+                },
+                chunks: new Array(msg.totalChunks || msg.total_chunks || 1),
+                receivedBytes: 0,
+                receivedCount: 0,
+                startTime: Date.now(),
+                isDirect,
+                senderUsername: msg.sender_username
+            });
+            this.showProgress(`Receiving: ${msg.fileName || msg.file_name || 'file'}`, '0 KB/s', 0);
+        },
+
+        handleChunkData(msg, isDirect = false) {
+            const id = msg.transferId || msg.transfer_id;
+            const rec = this.incoming.get(id);
+            if (!rec) return;
+
+            const idx = msg.chunkIndex !== undefined ? msg.chunkIndex : msg.chunk_index;
+            const chunkData = msg.data || msg.chunk;
+            if (!rec.chunks[idx]) {
+                rec.chunks[idx] = chunkData;
+                rec.receivedCount++;
+                const approxBytes = Math.round(chunkData.length * 0.75);
+                rec.receivedBytes += approxBytes;
+            }
+
+            const total = rec.meta.totalChunks;
+            const pct = Math.round((rec.receivedCount / total) * 100);
+            const elapsed = Math.max((Date.now() - rec.startTime) / 1000, 0.05);
+            const speedKBps = (rec.receivedBytes / 1024) / elapsed;
+            const speedStr = speedKBps > 1024 ? `${(speedKBps / 1024).toFixed(1)} MB/s` : `${Math.round(speedKBps)} KB/s`;
+
+            this.showProgress(`Receiving: ${rec.meta.fileName}`, speedStr, pct);
+        },
+
+        handleChunkComplete(msg, isDirect = false) {
+            const id = msg.transferId || msg.transfer_id;
+            const rec = this.incoming.get(id);
+            if (!rec) return;
+
+            this.showProgress(`Finalizing: ${rec.meta.fileName}`, 'Done ✓', 100);
+            this.hideProgress();
+
+            try {
+                const byteArrays = [];
+                for (let i = 0; i < rec.chunks.length; i++) {
+                    const b64 = rec.chunks[i] || '';
+                    const binary = atob(b64);
+                    const bytes = new Uint8Array(binary.length);
+                    for (let j = 0; j < binary.length; j++) {
+                        bytes[j] = binary.charCodeAt(j);
+                    }
+                    byteArrays.push(bytes);
+                }
+                const blob = new Blob(byteArrays, { type: rec.meta.mimeType });
+                const blobUrl = URL.createObjectURL(blob);
+
+                const s = ESCTRIX.state;
+                const chatKey = isDirect ? `@${rec.senderUsername}` : 'space';
+                const sizeStr = rec.meta.fileSizeStr || (blob.size > 1024*1024 ? `${(blob.size/(1024*1024)).toFixed(1)} MB` : `${(blob.size/1024).toFixed(1)} KB`);
+
+                const newMsg = {
+                    sender: 'peer',
+                    name: rec.meta.senderName,
+                    type: rec.meta.msgType,
+                    fileName: rec.meta.fileName,
+                    fileSize: sizeStr,
+                    fileUrl: blobUrl,
+                    content: blobUrl,
+                    vanish: rec.meta.vanish,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                };
+
+                if (!s.chatHistories[chatKey]) s.chatHistories[chatKey] = [];
+                s.chatHistories[chatKey].push(newMsg);
+
+                if (s.activeChat && ((isDirect && s.activeChat.title === chatKey) || (!isDirect && s.activeChat.type === 'space'))) {
+                    ESCTRIX.chat.appendMessageDOM(newMsg);
+                } else {
+                    ESCTRIX.showToast(`📎 Received ${rec.meta.fileName} from ${rec.meta.senderName}`);
+                }
+                ESCTRIX.playSfx('receive');
+            } catch (err) {
+                console.error('[Chunk Assembly Error]:', err);
+                ESCTRIX.showToast(`Failed to assemble received file: ${rec.meta.fileName}`);
+            } finally {
+                this.incoming.delete(id);
+            }
+        },
+
+        async sendFile({ file, isDirect, targetUsername, p2p, vanish }) {
+            const chunkSize = 64 * 1024;
+            const totalChunks = Math.ceil(file.size / chunkSize);
+            const transferId = 'xfr_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+            const isVideo = file.type && file.type.startsWith('video/');
+            const isImg = file.type && file.type.startsWith('image/');
+            const isAudio = file.type && file.type.startsWith('audio/');
+            const msgType = isVideo ? 'video' : (isImg ? 'image' : (isAudio ? 'voice' : 'file'));
+            const sizeStr = file.size > 1024 * 1024 
+                ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
+                : `${(file.size / 1024).toFixed(1)} KB`;
+
+            const s = ESCTRIX.state;
+            const myName = s.user?.display_name || s.user?.username || 'Me';
+
+            this.showProgress(`Sending: ${file.name}`, '0 KB/s', 0);
+
+            // Send metadata
+            if (isDirect && s.userWs && s.userWs.readyState === WebSocket.OPEN) {
+                s.userWs.send(JSON.stringify({
+                    type: 'direct_file_meta',
+                    target_username: targetUsername,
+                    transfer_id: transferId,
+                    file_name: file.name,
+                    file_size: file.size,
+                    file_size_str: sizeStr,
+                    mime_type: file.type || 'application/octet-stream',
+                    msg_type: msgType,
+                    total_chunks: totalChunks,
+                    vanish: vanish ? (typeof vanish === 'number' || vanish === 'view_once' ? vanish : 10) : 0,
+                    sender_display_name: myName
+                }));
+            } else if (p2p) {
+                p2p.sendData({
+                    type: 'file_chunk_meta',
+                    transferId,
+                    fileName: file.name,
+                    fileSize: file.size,
+                    fileSizeStr: sizeStr,
+                    mimeType: file.type || 'application/octet-stream',
+                    msgType,
+                    totalChunks,
+                    vanish: vanish ? (typeof vanish === 'number' || vanish === 'view_once' ? vanish : 10) : 0,
+                    senderName: myName
+                });
+            }
+
+            // Stream chunks
+            let offset = 0;
+            const startTime = Date.now();
+
+            for (let i = 0; i < totalChunks; i++) {
+                const slice = file.slice(offset, offset + chunkSize);
+                const arrayBuffer = await slice.arrayBuffer();
+
+                let binary = '';
+                const bytes = new Uint8Array(arrayBuffer);
+                const len = bytes.byteLength;
+                for (let b = 0; b < len; b += 8192) {
+                    binary += String.fromCharCode.apply(null, bytes.subarray(b, Math.min(b + 8192, len)));
+                }
+                const base64Chunk = btoa(binary);
+
+                if (isDirect && s.userWs && s.userWs.readyState === WebSocket.OPEN) {
+                    if (s.userWs.bufferedAmount > 262144) {
+                        await new Promise(res => setTimeout(res, 50));
+                    }
+                    s.userWs.send(JSON.stringify({
+                        type: 'direct_file_chunk',
+                        target_username: targetUsername,
+                        transfer_id: transferId,
+                        chunk_index: i,
+                        total_chunks: totalChunks,
+                        chunk: base64Chunk
+                    }));
+                } else if (p2p) {
+                    for (const [, peerObj] of p2p.peers) {
+                        if (peerObj.dc && peerObj.dc.readyState === 'open' && peerObj.dc.bufferedAmount > 262144) {
+                            await new Promise(res => {
+                                const lowHandler = () => {
+                                    peerObj.dc.removeEventListener('bufferedamountlow', lowHandler);
+                                    res();
+                                };
+                                peerObj.dc.addEventListener('bufferedamountlow', lowHandler);
+                                setTimeout(res, 60);
+                            });
+                        }
+                    }
+                    p2p.sendData({
+                        type: 'file_chunk_data',
+                        transferId,
+                        chunkIndex: i,
+                        totalChunks,
+                        data: base64Chunk
+                    });
+                }
+
+                offset += chunkSize;
+                const transferred = Math.min(offset, file.size);
+                const pct = Math.round((transferred / file.size) * 100);
+                const elapsed = Math.max((Date.now() - startTime) / 1000, 0.05);
+                const speedKBps = (transferred / 1024) / elapsed;
+                const speedStr = speedKBps > 1024 ? `${(speedKBps / 1024).toFixed(1)} MB/s` : `${Math.round(speedKBps)} KB/s`;
+
+                this.showProgress(`Sending: ${file.name}`, speedStr, pct);
+            }
+
+            // Send completion message
+            if (isDirect && s.userWs && s.userWs.readyState === WebSocket.OPEN) {
+                s.userWs.send(JSON.stringify({
+                    type: 'direct_file_complete',
+                    target_username: targetUsername,
+                    transfer_id: transferId,
+                    file_name: file.name,
+                    file_size: sizeStr,
+                    msg_type: msgType,
+                    vanish: vanish ? (typeof vanish === 'number' || vanish === 'view_once' ? vanish : 10) : 0,
+                    sender_display_name: myName
+                }));
+            } else if (p2p) {
+                p2p.sendData({
+                    type: 'file_chunk_complete',
+                    transferId,
+                    fileName: file.name,
+                    fileSize: file.size,
+                    fileSizeStr: sizeStr,
+                    msgType,
+                    vanish: vanish ? (typeof vanish === 'number' || vanish === 'view_once' ? vanish : 10) : 0
+                });
+            }
+
+            this.showProgress(`Completed: ${file.name}`, 'Sent ✓', 100);
+            this.hideProgress();
+
+            const localBlobUrl = URL.createObjectURL(file);
+            const chatKey = isDirect ? `@${targetUsername}` : s.activeChat?.type;
+            const localMsg = {
+                sender: 'me',
+                name: 'You',
+                type: msgType,
+                fileName: file.name,
+                fileSize: sizeStr,
+                fileUrl: localBlobUrl,
+                content: localBlobUrl,
+                vanish: vanish ? (typeof vanish === 'number' || vanish === 'view_once' ? vanish : 10) : 0,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+
+            if (!s.chatHistories[chatKey]) s.chatHistories[chatKey] = [];
+            s.chatHistories[chatKey].push(localMsg);
+            ESCTRIX.chat.appendMessageDOM(localMsg);
+            ESCTRIX.playSfx('send');
+        }
+    },
+
+    // ─────────────────────────────────────────────────────────
+    // BIOMETRIC WEBAUTHN / PASSKEY CONTROLLER
+    // ─────────────────────────────────────────────────────────
+    passkey: {
+        isSupported() {
+            return !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create);
+        },
+
+        async register() {
+            if (!this.isSupported()) {
+                ESCTRIX.showToast('WebAuthn Passkeys are not supported on this browser/device.');
+                return;
+            }
+            const user = ESCTRIX.state.user;
+            if (!user) {
+                ESCTRIX.showToast('Please sign in first to register a passkey.');
+                return;
+            }
+            try {
+                const chalRes = await fetch(`/api/auth/passkey/challenge?username=${encodeURIComponent(user.username)}`);
+                const chalData = await chalRes.json();
+                if (chalData.status !== 'success') {
+                    throw new Error(chalData.message || 'Failed to acquire passkey challenge');
+                }
+
+                const challengeBytes = new Uint8Array(chalData.challenge.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+                const userIdBytes = new TextEncoder().encode(user.username);
+
+                const credential = await navigator.credentials.create({
+                    publicKey: {
+                        challenge: challengeBytes,
+                        rp: {
+                            name: 'ESCTRIX Quantum',
+                            id: window.location.hostname
+                        },
+                        user: {
+                            id: userIdBytes,
+                            name: user.username,
+                            displayName: user.display_name || user.username
+                        },
+                        pubKeyCredParams: [
+                            { type: 'public-key', alg: -7 },
+                            { type: 'public-key', alg: -257 }
+                        ],
+                        authenticatorSelection: {
+                            authenticatorAttachment: 'platform',
+                            userVerification: 'preferred',
+                            residentKey: 'preferred'
+                        },
+                        timeout: 60000,
+                        attestation: 'none'
+                    }
+                });
+
+                if (!credential) {
+                    throw new Error('Credential creation was cancelled or returned empty.');
+                }
+
+                const credentialId = btoa(String.fromCharCode.apply(null, new Uint8Array(credential.rawId)));
+                const pubKeyData = credential.response.getPublicKey 
+                    ? btoa(String.fromCharCode.apply(null, new Uint8Array(credential.response.getPublicKey())))
+                    : credentialId;
+
+                const regRes = await fetch('/api/auth/passkey/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: user.username,
+                        credential_id: credentialId,
+                        public_key: pubKeyData
+                    })
+                });
+                const regData = await regRes.json();
+                if (regData.status === 'success') {
+                    ESCTRIX.playSfx('send');
+                    ESCTRIX.showToast('Hardware Passkey enrolled successfully! 🛡️');
+                    const label = document.getElementById('passkey-status-label');
+                    if (label) label.textContent = 'Enrolled ✓ (Active)';
+                } else {
+                    throw new Error(regData.message || 'Registration failed');
+                }
+            } catch (err) {
+                console.error('[Passkey Register Error]:', err);
+                ESCTRIX.showToast(err.name === 'NotAllowedError' ? 'Passkey setup cancelled.' : `Passkey error: ${err.message || 'Unknown'}`);
+            }
+        },
+
+        async authenticate() {
+            if (!this.isSupported()) {
+                ESCTRIX.showToast('WebAuthn Passkeys are not supported on this browser/device.');
+                return;
+            }
+            try {
+                ESCTRIX.showToast('Waiting for biometric verification... 🔒');
+                const chalRes = await fetch('/api/auth/passkey/challenge');
+                const chalData = await chalRes.json();
+                if (chalData.status !== 'success') {
+                    throw new Error('Failed to acquire passkey challenge');
+                }
+
+                const challengeBytes = new Uint8Array(chalData.challenge.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+
+                const assertion = await navigator.credentials.get({
+                    publicKey: {
+                        challenge: challengeBytes,
+                        rpId: window.location.hostname,
+                        userVerification: 'preferred',
+                        timeout: 60000
+                    }
+                });
+
+                if (!assertion) {
+                    throw new Error('Biometric verification cancelled.');
+                }
+
+                const credentialId = btoa(String.fromCharCode.apply(null, new Uint8Array(assertion.rawId)));
+
+                const authRes = await fetch('/api/auth/passkey/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        credential_id: credentialId
+                    })
+                });
+                const authData = await authRes.json();
+                if (authData.status === 'success' && authData.user) {
+                    ESCTRIX.playSfx('send');
+                    ESCTRIX.showToast(`Biometric match verified! Welcome, @${authData.user.username} 🛡️`);
+                    ESCTRIX.state.user = authData.user;
+                    localStorage.setItem('esctrix_user', JSON.stringify(authData.user));
+                    ESCTRIX.setupPersistentUserSignaling(authData.user.username);
+                    ESCTRIX.switchScreen('dashboard-screen');
+                    ESCTRIX.updateUserUI(authData.user);
+                    ESCTRIX.contacts.fetchContacts();
+                    ESCTRIX.contacts.fetchIncomingFriends();
+                } else {
+                    throw new Error(authData.message || 'Passkey not recognized on this server.');
+                }
+            } catch (err) {
+                console.error('[Passkey Auth Error]:', err);
+                ESCTRIX.showToast(err.name === 'NotAllowedError' ? 'Biometric login cancelled.' : `Login error: ${err.message || 'Verification failed'}`);
             }
         }
     },

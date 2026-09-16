@@ -6362,3 +6362,240 @@ input:checked + .slider:before {
     background: rgba(6, 214, 199, 0.2);
     border-color: var(--accent);
 }
+
+/* ══════════════════════════════════════════════════ */
+/* IN-CHAT VIDEO BUBBLE & PLAYER                      */
+/* ══════════════════════════════════════════════════ */
+.video-bubble {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    max-width: 320px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.video-bubble:hover {
+    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3);
+}
+
+.chat-media-video {
+    width: 100%;
+    max-height: 260px;
+    display: block;
+    border-radius: 12px;
+    background: #000;
+    outline: none;
+}
+
+.video-bubble-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: rgba(10, 15, 26, 0.85);
+    font-size: 0.72rem;
+    color: var(--text-muted, #94a3b8);
+    font-weight: 500;
+}
+
+.video-bubble-overlay span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.video-dl-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    text-decoration: none;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.video-dl-btn:hover {
+    background: var(--accent, #06d6c7);
+    color: #050b14;
+    transform: scale(1.1);
+}
+
+/* ══════════════════════════════════════════════════ */
+/* VIEW-ONCE SECRECY CARDS (EPHEMERAL MEDIA)          */
+/* ══════════════════════════════════════════════════ */
+.view-once-bubble {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.view-once-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(139, 92, 246, 0.15));
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.18);
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.view-once-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(239, 68, 68, 0.6);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+}
+
+.view-once-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: #f87171;
+    flex-shrink: 0;
+    animation: viewOncePulse 2s infinite ease-in-out;
+}
+
+@keyframes viewOncePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+
+.view-once-meta {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.view-once-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.view-once-sub {
+    font-size: 0.72rem;
+    color: var(--text-muted, #94a3b8);
+}
+
+.view-once-reveal-btn {
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #fff;
+    border: none;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.view-once-reveal-btn:hover {
+    transform: scale(1.05);
+    opacity: 0.95;
+}
+
+.view-once-burned {
+    opacity: 0.5;
+    pointer-events: none;
+    border-style: dashed;
+}
+
+/* ══════════════════════════════════════════════════ */
+/* CHUNKED FILE TRANSFER PROGRESS HUD                 */
+/* ══════════════════════════════════════════════════ */
+.file-upload-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 14px;
+    margin: 4px 16px 8px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(6, 214, 199, 0.3);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 4px 20px rgba(6, 214, 199, 0.15);
+    transition: all 0.25s ease;
+}
+
+.file-upload-progress.hidden {
+    display: none !important;
+}
+
+.progress-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+}
+
+.progress-fn {
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+.progress-spd {
+    color: var(--accent, #06d6c7);
+    font-weight: 600;
+}
+
+.progress-bar-track {
+    width: 100%;
+    height: 6px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--accent, #06d6c7), #8b5cf6);
+    box-shadow: 0 0 10px rgba(6, 214, 199, 0.6);
+    transition: width 0.15s ease;
+}
+
+.progress-pct {
+    align-self: flex-end;
+    font-size: 0.7rem;
+    color: var(--text-muted, #94a3b8);
+    font-weight: 600;
+}
+
+/* ══════════════════════════════════════════════════ */
+/* BIOMETRIC PASSKEY BUTTONS & PULSE                  */
+/* ══════════════════════════════════════════════════ */
+.passkey-btn {
+    position: relative;
+    border: 1px solid rgba(6, 214, 199, 0.3) !important;
+    transition: all 0.2s ease !important;
+}
+
+.passkey-btn:hover {
+    border-color: var(--accent, #06d6c7) !important;
+    box-shadow: 0 0 16px rgba(6, 214, 199, 0.25) !important;
+    transform: translateY(-1px);
+}

@@ -16,6 +16,9 @@ services:
         value: "true"
       - key: ADMIN_USERS
         value: "ESCTRIX_Admin"
+      # Permanent Supabase Cloud Storage (Prevents account loss across Render restarts):
+      # - key: SUPABASE_DB_URL
+      #   sync: false
       # Optional: Add GEMINI_API_KEY to upgrade Aura AI to live Google Gemini 1.5 Flash
       # - key: GEMINI_API_KEY
       #   sync: false

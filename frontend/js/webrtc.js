@@ -230,7 +230,8 @@ class P2PConnection {
 
             case 'call_request':
             case 'call_accepted':
-            case 'call_declined': {
+            case 'call_declined':
+            case 'call_ended': {
                 if (this.onCallSignal) {
                     this.onCallSignal({
                         type: msg.type,
@@ -437,6 +438,98 @@ class P2PConnection {
                 peerObj.dc.send(arrayBuffer);
             }
         }
+    }
+
+    /**
+     * Slices large video, image, or document files into 64KB chunks and sends with flow control.
+     */
+    async sendFileChunked(file, { vanish = false, onProgress = null, chunkSize = 64 * 1024 } = {}) {
+        const totalChunks = Math.ceil(file.size / chunkSize);
+        const transferId = 'xfr_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+        const isVideo = file.type && file.type.startsWith('video/');
+        const isImg = file.type && file.type.startsWith('image/');
+        const isAudio = file.type && file.type.startsWith('audio/');
+        const msgType = isVideo ? 'video' : (isImg ? 'image' : (isAudio ? 'voice' : 'file'));
+        const sizeStr = file.size > 1024 * 1024 
+            ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
+            : `${(file.size / 1024).toFixed(1)} KB`;
+
+        const meta = {
+            type: 'file_chunk_meta',
+            transferId,
+            fileName: file.name,
+            fileSize: file.size,
+            fileSizeStr: sizeStr,
+            mimeType: file.type || 'application/octet-stream',
+            msgType,
+            totalChunks,
+            vanish,
+            senderName: this.myUsername
+        };
+
+        this.sendData(meta);
+
+        let offset = 0;
+        const startTime = Date.now();
+
+        for (let i = 0; i < totalChunks; i++) {
+            const slice = file.slice(offset, offset + chunkSize);
+            const arrayBuffer = await slice.arrayBuffer();
+
+            // Convert to base64 chunk
+            let binary = '';
+            const bytes = new Uint8Array(arrayBuffer);
+            const len = bytes.byteLength;
+            for (let b = 0; b < len; b += 8192) {
+                binary += String.fromCharCode.apply(null, bytes.subarray(b, Math.min(b + 8192, len)));
+            }
+            const base64Chunk = btoa(binary);
+
+            // Flow control check across peer DCs
+            for (const [, peerObj] of this.peers) {
+                if (peerObj.dc && peerObj.dc.readyState === 'open' && peerObj.dc.bufferedAmount > 262144) {
+                    await new Promise(res => {
+                        const lowHandler = () => {
+                            peerObj.dc.removeEventListener('bufferedamountlow', lowHandler);
+                            res();
+                        };
+                        peerObj.dc.addEventListener('bufferedamountlow', lowHandler);
+                        setTimeout(res, 80);
+                    });
+                }
+            }
+
+            this.sendData({
+                type: 'file_chunk_data',
+                transferId,
+                chunkIndex: i,
+                totalChunks,
+                data: base64Chunk
+            });
+
+            offset += chunkSize;
+            const transferred = Math.min(offset, file.size);
+            const pct = Math.round((transferred / file.size) * 100);
+            const elapsed = Math.max((Date.now() - startTime) / 1000, 0.05);
+            const speedKBps = (transferred / 1024) / elapsed;
+            const speedStr = speedKBps > 1024 ? `${(speedKBps / 1024).toFixed(1)} MB/s` : `${Math.round(speedKBps)} KB/s`;
+
+            if (onProgress) {
+                onProgress({ transferId, transferred, total: file.size, percent: pct, speed: speedStr, fileName: file.name });
+            }
+        }
+
+        this.sendData({
+            type: 'file_chunk_complete',
+            transferId,
+            fileName: file.name,
+            fileSize: file.size,
+            fileSizeStr: sizeStr,
+            msgType,
+            vanish
+        });
+
+        return { transferId, meta };
     }
 
     /**
