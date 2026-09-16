@@ -280,12 +280,12 @@
         <!-- SCREEN 2: DUAL-PANE WORKSPACE SHELL        -->
         <!-- ══════════════════════════════════════════ -->
         <section id="dashboard-screen" class="screen">
-            <div class="quantum-shell telegram-shell glass-panel">
+            <div class="quantum-shell cyber-shell glass-panel">
 
                 <!-- ────────────────────────────────────── -->
                 <!-- LEFT PANE: WORKSPACE SIDEBAR           -->
                 <!-- ────────────────────────────────────── -->
-                <aside class="quantum-sidebar telegram-sidebar" id="telegram-sidebar">
+                <aside class="quantum-sidebar cyber-sidebar" id="quantum-sidebar">
                     <!-- Sidebar Top Header -->
                     <div class="sidebar-header">
                         <button id="drawer-open-btn" class="icon-btn-round" title="Profile & Settings">
@@ -310,8 +310,9 @@
                     </div>
 
                     <!-- Category Tabs (Workspace Folders) -->
-                    <div class="quantum-folder-tabs telegram-folder-tabs">
+                    <div class="quantum-folder-tabs cyber-folder-tabs">
                         <button class="folder-tab active" data-folder="all">All</button>
+                        <button class="folder-tab" data-folder="requests">Requests <span id="requests-count-badge" class="tab-count-badge hidden" style="background:var(--accent); color:#000;">0</span></button>
                         <button class="folder-tab" data-folder="contacts">Contacts <span id="contacts-count-badge" class="tab-count-badge">0</span></button>
                         <button class="folder-tab" data-folder="direct">Direct</button>
                         <button class="folder-tab" data-folder="spaces">Spaces</button>
@@ -398,7 +399,7 @@
                 <!-- ────────────────────────────────────── -->
                 <!-- RIGHT PANE: MAIN CHAT INTERFACE       -->
                 <!-- ────────────────────────────────────── -->
-                <main class="quantum-chat-pane telegram-chat-pane" id="telegram-chat-pane">
+                <main class="quantum-chat-pane cyber-chat-pane" id="quantum-chat-pane">
                     
                     <!-- Chat View Top Header -->
                     <header class="chat-pane-header">
@@ -458,9 +459,8 @@
                                         <i class="ph ph-user-circle"></i> <span>View Contact Profile</span>
                                     </button>
                                     <button id="menu-settings-btn" class="dropdown-item">
-                                        <i class="ph ph-gear-six"></i> <span>Settings & Profile</span>
+                                        <i class="ph ph-sliders"></i> <span>Chat Preferences</span>
                                     </button>
-                                    <div class="dropdown-divider" style="height:1px; background:var(--panel-border); margin:4px 0;"></div>
                                     <button id="menu-vanish-btn" class="dropdown-item">
                                         <i class="ph ph-ghost"></i> <span id="menu-vanish-label">Vanish Timer: Off</span>
                                     </button>
@@ -480,6 +480,21 @@
                             </div>
                         </div>
                     </header>
+
+                    <!-- In-Chat Message Request Notification Banner -->
+                    <div id="chat-request-banner" class="chat-request-banner hidden">
+                        <div class="chat-request-info">
+                            <i class="ph ph-shield-warning"></i>
+                            <div class="chat-request-text">
+                                <strong>Message Request:</strong>
+                                <span id="chat-request-msg">This user is not in your contacts. Accept to allow calls and read receipts.</span>
+                            </div>
+                        </div>
+                        <div class="chat-request-actions">
+                            <button id="chat-request-accept-btn" class="btn primary-btn btn-sm"><i class="ph ph-check"></i> Accept</button>
+                            <button id="chat-request-decline-btn" class="btn danger-btn btn-sm"><i class="ph ph-x"></i> Decline</button>
+                        </div>
+                    </div>
 
                     <!-- Chat Messages Stream -->
                     <div class="chat-messages-viewport" id="messages-viewport">
@@ -778,7 +793,7 @@
                 <button id="user-profile-close-btn" class="icon-btn-round"><i class="ph ph-x"></i></button>
             </div>
             
-            <div class="quantum-profile-card instagram-profile-card">
+            <div class="quantum-profile-card cyber-profile-card">
                 <div class="profile-avatar-halo" id="up-avatar-halo">
                     <div class="profile-avatar-main" id="up-avatar">U</div>
                 </div>

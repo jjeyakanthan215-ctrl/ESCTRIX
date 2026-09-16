@@ -11,7 +11,7 @@
 
 **ESCTRIX Quantum** is an ultra-secure, decentralized communication suite built on the premise that private human communication should never depend on centralized corporate databases, surveillance capitalism, or unencrypted cloud transit. 
 
-By unifying **Zero-Knowledge client-side cryptography**, **WebRTC peer-to-peer data channels**, **64KB chunked non-blocking media streaming**, **Aura Neural AI**, and **FIDO2/WebAuthn hardware passkeys**, ESCTRIX Quantum delivers the convenience of modern messengers (WhatsApp, Telegram, Discord) with the mathematical privacy guarantees of zero-knowledge architectures.
+By unifying **Zero-Knowledge client-side cryptography**, **WebRTC peer-to-peer data channels**, **64KB chunked non-blocking media streaming**, **Aura Neural AI**, and **FIDO2/WebAuthn hardware passkeys**, ESCTRIX Quantum delivers the convenience of modern messengers (Quantum Messaging, Quantum Cyber, Discord) with the mathematical privacy guarantees of zero-knowledge architectures.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -80,7 +80,7 @@ Traditional web messengers struggle with large file transfers over WebSockets or
 
 ## 3. Comprehensive Advantages Matrix
 
-| Feature / Metric | Legacy Messengers (WhatsApp, Telegram, Discord) | Signal Messenger | ESCTRIX Quantum |
+| Feature / Metric | Legacy Messengers (Quantum Messaging, Quantum Cyber, Discord) | Signal Messenger | ESCTRIX Quantum |
 | :--- | :--- | :--- | :--- |
 | **Data Storage** | Centralized cloud databases store chat logs and metadata. | Central servers route all messages; client stores locally. | **Zero-knowledge client-side memory; P2P channels store nothing on server.** |
 | **Phone Number Requirement** | Mandatory phone number required; reveals real-world identity. | Mandatory phone number required. | **Zero phone number; anonymous Account IDs & handles.** |

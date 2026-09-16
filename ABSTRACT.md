@@ -29,7 +29,7 @@ Packaged in a futuristic glassmorphic dual-pane interface with synthetic Web Aud
 
 ### Summary Table: Core Innovation Highlights
 
-| Dimension | Legacy Messengers (WhatsApp, Telegram, Discord) | ESCTRIX Quantum Architecture |
+| Dimension | Legacy Messengers (Quantum Messaging, Quantum Cyber, Discord) | ESCTRIX Quantum Architecture |
 | :--- | :--- | :--- |
 | **Trust Model** | Trust-the-Provider / Centralized Database Storing Messages | **Zero-Knowledge Client-Side E2EE (Server is Blind)** |
 | **Transport Layer** | Server-Terminated TLS / Cloud Storage | **Direct Browser-to-Browser WebRTC Mesh (DTLS/SRTP)** |

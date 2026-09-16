@@ -1079,7 +1079,7 @@ img {
 /* ══════════════════════════════════════════════════ */
 /* QUANTUM WORKSPACE SHELL (Laptop & Desktop PC)      */
 /* ══════════════════════════════════════════════════ */
-.telegram-shell {
+.quantum-shell, .cyber-shell {
     width: 100%;
     height: 100%;
     display: grid;
@@ -1090,7 +1090,7 @@ img {
 }
 
 @media (min-width: 1200px) {
-    .telegram-shell {
+    .quantum-shell, .cyber-shell {
         grid-template-columns: 390px 1fr;
     }
 }
@@ -1105,7 +1105,7 @@ img {
         background: radial-gradient(circle at 50% 25%, rgba(139, 92, 246, 0.12), transparent 70%), var(--bg-color);
     }
 
-    .telegram-shell {
+    .quantum-shell, .cyber-shell {
         max-width: 1620px;
         height: calc(100vh - 40px);
         max-height: 1040px;
@@ -1116,7 +1116,7 @@ img {
 }
 
 /* ── Workspace Left Sidebar ── */
-.telegram-sidebar {
+.quantum-sidebar, .cyber-sidebar {
     background: rgba(10, 15, 29, 0.88);
     border-right: 1px solid var(--panel-border);
     display: flex;
@@ -1228,7 +1228,7 @@ img {
 }
 
 /* Category Filter Tabs (Folders) */
-.telegram-folder-tabs {
+.quantum-folder-tabs, .cyber-folder-tabs {
     display: flex;
     padding: 8px 14px;
     gap: 6px;
@@ -1237,7 +1237,7 @@ img {
     scrollbar-width: none;
 }
 
-.telegram-folder-tabs::-webkit-scrollbar {
+.quantum-folder-tabs::-webkit-scrollbar, .cyber-folder-tabs::-webkit-scrollbar {
     display: none;
 }
 
@@ -1488,7 +1488,7 @@ img {
 /* ────────────────────────────────────────────────── */
 /* MAIN CHAT PANE (Right Pane)                        */
 /* ────────────────────────────────────────────────── */
-.telegram-chat-pane {
+.quantum-chat-pane, .cyber-chat-pane {
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -3042,7 +3042,7 @@ input:checked + .slider:before {
         display: block;
     }
 
-    .telegram-shell {
+    .quantum-shell, .cyber-shell {
         grid-template-columns: 1fr;
         width: 100%;
         max-width: 100%;
@@ -3054,12 +3054,12 @@ input:checked + .slider:before {
         overflow: hidden;
     }
 
-    .telegram-sidebar {
+    .quantum-sidebar, .cyber-sidebar {
         width: 100%;
         display: flex;
     }
 
-    .telegram-chat-pane {
+    .quantum-chat-pane, .cyber-chat-pane {
         width: 100%;
         height: 100%;
         max-height: 100dvh;
@@ -3069,11 +3069,11 @@ input:checked + .slider:before {
     }
 
     /* When chat is open on mobile: */
-    .telegram-shell.chat-open .telegram-sidebar {
+    .quantum-shell.chat-open .quantum-sidebar, .cyber-shell.chat-open .cyber-sidebar {
         display: none;
     }
 
-    .telegram-shell.chat-open .telegram-chat-pane {
+    .quantum-shell.chat-open .quantum-chat-pane, .cyber-shell.chat-open .cyber-chat-pane {
         display: flex;
     }
 
@@ -3713,7 +3713,7 @@ input:checked + .slider:before {
     text-align: center;
 }
 
-.instagram-profile-card {
+.quantum-profile-card, .cyber-profile-card {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -5084,22 +5084,7 @@ input:checked + .slider:before {
 /* QUANTUM MESSENGER NATIVE ALIASES & ADVANCED SETTINGS EXPERIENCE    */
 /* ══════════════════════════════════════════════════════════════════ */
 
-/* Quantum Aliases */
-.quantum-shell {
-    composes: telegram-shell;
-}
-.quantum-sidebar {
-    composes: telegram-sidebar;
-}
-.quantum-folder-tabs {
-    composes: telegram-folder-tabs;
-}
-.quantum-chat-pane {
-    composes: telegram-chat-pane;
-}
-.quantum-profile-card {
-    composes: instagram-profile-card;
-}
+/* Quantum Native Styling Unified */
 
 /* ── Distinctive Futuristic Settings Button on Usage ── */
 .advanced-settings-btn {
@@ -6293,7 +6278,7 @@ input:checked + .slider:before {
 }
 
 /* ══════════════════════════════════════════════════ */
-/* MESSAGE EMOJI REACTIONS (WhatsApp / Telegram Style)*/
+/* MESSAGE EMOJI REACTIONS (Quantum Cyber Style)*/
 /* ══════════════════════════════════════════════════ */
 .message {
     position: relative;
@@ -6635,7 +6620,7 @@ input:checked + .slider:before {
     transform: translateY(-1px);
 }
 
-/* Header Live Typing Indicator (Telegram / WhatsApp style) */
+/* Header Live Typing Indicator (Quantum Cyber style) */
 .typing-header-text {
     display: inline-flex;
     align-items: center;
@@ -7050,7 +7035,7 @@ input:checked + .slider:before {
     100% { transform: scale(1); opacity: 1; }
 }
 
-/* Instagram Double-Tap Heart Burst */
+/* Quantum Double-Tap Heart Burst */
 .heart-burst {
     position: absolute;
     top: 50%;
@@ -7069,7 +7054,7 @@ input:checked + .slider:before {
     100% { transform: translate(-50%, -80%) scale(0.8); opacity: 0; }
 }
 
-/* Multi-State Delivery Ticks (WhatsApp / Telegram style) */
+/* Multi-State Delivery Ticks (Quantum Cyber Style) */
 .msg-status-tick.tick-sent i {
     color: rgba(255, 255, 255, 0.55);
 }
@@ -7178,4 +7163,125 @@ input:checked + .slider:before {
 @keyframes bannerLightningPulse {
     from { opacity: 0.6; transform: scale(0.9); }
     to { opacity: 1; transform: scale(1.15); color: #06d6c7; }
+}
+/* ────────────────────────────────────────────────── */
+/* MESSAGE REQUESTS & LIVE PRESENCE STYLING          */
+/* ────────────────────────────────────────────────── */
+.chat-request-banner {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(139, 92, 246, 0.12));
+    border-bottom: 1px solid rgba(245, 158, 11, 0.35);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    backdrop-filter: blur(10px);
+    z-index: 15;
+    animation: slideDown 0.3s ease;
+}
+
+.chat-request-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #fcd34d;
+    font-size: 0.86rem;
+}
+
+.chat-request-info i {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+.chat-request-text strong {
+    color: #fff;
+    margin-right: 6px;
+}
+
+.chat-request-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.incoming-request-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin: 8px 12px;
+    transition: all 0.25s ease;
+}
+
+.incoming-request-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+
+.request-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.request-card-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.request-card-meta {
+    display: flex;
+    flex-direction: column;
+}
+
+.request-card-name {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.request-card-handle {
+    font-size: 0.74rem;
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.request-card-snippet {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.35;
+    margin-bottom: 10px;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 8px;
+    border-left: 2px solid var(--accent);
+}
+
+.request-actions-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tab-count-badge.pulse-badge {
+    animation: tabPulse 1.8s infinite;
+}
+
+@keyframes tabPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(6, 214, 199, 0.6); }
+    50% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(6, 214, 199, 0); }
+}
+
+.presence-dot.online {
+    background: #10b981 !important;
+    box-shadow: 0 0 8px #10b981, 0 0 16px rgba(16, 185, 129, 0.6) !important;
+}
+
+.presence-dot.offline {
+    background: #64748b !important;
+    box-shadow: none !important;
 }

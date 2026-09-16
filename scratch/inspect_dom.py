@@ -53,9 +53,9 @@ def inspect():
         # Check active chat pane or click on Aura AI / Chat
         print("Opening chat...", flush=True)
         # Check if chat-screen or 2-pane dashboard is already the chat interface!
-        chat_pane = page.query_selector("#telegram-chat-pane")
-        print("Telegram-style Chat pane in DOM:", bool(chat_pane), flush=True)
-        print("Chat pane visible:", page.is_visible("#telegram-chat-pane"), flush=True)
+        chat_pane = page.query_selector("#quantum-chat-pane")
+        print("Quantum Cyber-style Chat pane in DOM:", bool(chat_pane), flush=True)
+        print("Chat pane visible:", page.is_visible("#quantum-chat-pane"), flush=True)
 
         # Check Active Chat Header details
         chat_name = page.query_selector("#active-chat-name")

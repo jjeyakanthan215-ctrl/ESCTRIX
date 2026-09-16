@@ -17,7 +17,9 @@ from database import (
     store_offline_message, get_offline_messages, delete_offline_messages,
     get_user_profile, update_user_profile, search_users,
     add_saved_message, get_saved_messages, delete_saved_message,
-    add_contact, get_contacts, update_user_role, reset_user_password,
+    add_contact, remove_contact, decline_friend_request, get_contacts,
+    get_user_conversations, get_message_requests,
+    update_user_role, reset_user_password,
     get_incoming_friend_adds, is_friend, get_friends_count,
     prune_inactive_users, touch_user_activity, ENABLE_ACCOUNT_PRUNING,
     store_direct_message, get_direct_chat_history, mark_direct_messages_read,
@@ -358,17 +360,37 @@ async def fetch_contacts(username: str):
     return {"status": "success", "contacts": contacts}
 
 
+class ContactRemove(BaseModel):
+    owner_username: str
+    contact_username: str
+
+
+class RequestAction(BaseModel):
+    username: str
+    requester_username: str
+
+
 @app.post("/api/user/contacts/add")
 async def add_new_contact(data: ContactAdd):
-    if add_contact(data.owner_username, data.contact_username):
+    res = add_contact(data.owner_username, data.contact_username)
+    if res.get("status") == "success":
         # Notify the target user if they have an active persistent socket connection
         await manager.send_to_user(data.contact_username, {
             "type": "friend_added",
             "sender_username": data.owner_username,
+            "relation": res.get("relation"),
+            "is_mutual": res.get("is_mutual"),
             "message": f"@{data.owner_username} added you as a friend!"
         })
-        return {"status": "success"}
-    return {"status": "error", "message": "User not found or already in contacts"}
+        return {"status": "success", "relation": res.get("relation"), "is_mutual": res.get("is_mutual")}
+    return {"status": "error", "message": res.get("message", "Could not add contact")}
+
+
+@app.post("/api/user/contacts/remove")
+async def remove_user_contact(data: ContactRemove):
+    """Remove a contact from the user's friend list."""
+    ok = remove_contact(data.owner_username, data.contact_username)
+    return {"status": "success" if ok else "error"}
 
 
 @app.get("/api/user/contacts/incoming")
@@ -376,6 +398,48 @@ async def fetch_incoming_friend_adds(username: str):
     """Retrieve users who have added this user as a friend, but aren't yet added back."""
     incoming = get_incoming_friend_adds(username)
     return {"status": "success", "incoming": incoming}
+
+
+@app.get("/api/user/conversations")
+async def fetch_user_conversations(username: str):
+    """Fetch recent conversations for user with last message, unread counts, and request state."""
+    convs = get_user_conversations(username)
+    return {"status": "success", "conversations": convs}
+
+
+@app.get("/api/user/requests")
+async def fetch_user_requests(username: str):
+    """Fetch pending incoming friend requests and message requests."""
+    reqs = get_message_requests(username)
+    return {"status": "success", **reqs}
+
+
+@app.post("/api/user/requests/accept")
+async def accept_request_endpoint(data: RequestAction):
+    """Accept incoming friend or message request."""
+    res = add_contact(data.username, data.requester_username)
+    mark_direct_messages_read(data.username, data.requester_username)
+    await manager.send_to_user(data.requester_username, {
+        "type": "request_accepted",
+        "sender_username": data.username,
+        "message": f"@{data.username} accepted your request!"
+    })
+    return {"status": "success", "data": res}
+
+
+@app.post("/api/user/requests/decline")
+async def decline_request_endpoint(data: RequestAction):
+    """Decline incoming friend or message request."""
+    ok = decline_friend_request(data.username, data.requester_username)
+    return {"status": "success" if ok else "error"}
+
+
+@app.get("/api/user/presence")
+async def check_users_presence(usernames: str):
+    """Check online status for a comma-separated list of usernames."""
+    uname_list = [u.strip() for u in usernames.split(",") if u.strip()]
+    statuses = manager.get_online_status(uname_list)
+    return {"status": "success", "presence": statuses}
 
 
 @app.get("/api/user/friends/check")
@@ -411,9 +475,14 @@ async def fetch_direct_messages(contact_username: str, username: str, limit: int
 
 
 @app.post("/api/direct-messages/read")
-async def mark_messages_read(data: DirectMessageReadRequest):
-    """Mark 1-on-1 messages from a sender as read."""
+async def mark_messages_read_endpoint(data: DirectMessageReadRequest):
+    """Mark 1-on-1 messages from a sender as read and notify sender in real time."""
     success = mark_direct_messages_read(data.reader_username, data.sender_username)
+    if success:
+        await manager.send_to_user(data.sender_username, {
+            "type": "direct_messages_read",
+            "reader_username": data.reader_username
+        })
     return {"status": "success" if success else "error"}
 
 
@@ -668,6 +737,21 @@ async def user_websocket_endpoint(websocket: WebSocket, username: str):
     await websocket.accept()
     manager.register_user(username, websocket)
     logger.info(f"User global signaling socket established: @{username}")
+    
+    # Broadcast online presence to user's contacts
+    try:
+        contacts = get_contacts(username)
+        for c in contacts:
+            c_uname = c.get("contact_username")
+            if c_uname and manager.is_user_online(c_uname):
+                await manager.send_to_user(c_uname, {
+                    "type": "user_presence",
+                    "username": username,
+                    "online": True
+                })
+    except Exception:
+        pass
+
     try:
         while True:
             data = await websocket.receive_text()
@@ -712,15 +796,31 @@ async def user_websocket_endpoint(websocket: WebSocket, username: str):
                         "type": "direct_chat_sent_ack",
                         "temp_id": message.get("temp_id"),
                         "id": stored.get("id") if stored else None,
+                        "target_username": target,
                         "delivered": delivered,
                         "timestamp": stored.get("timestamp") if stored else None
                     }))
+                    if delivered:
+                        await websocket.send_text(json.dumps({
+                            "type": "direct_chat_delivered",
+                            "temp_id": message.get("temp_id"),
+                            "id": stored.get("id") if stored else None,
+                            "target_username": target
+                        }))
             elif msg_type == "direct_typing":
                 target = message.get("target_username")
                 if target:
                     await manager.send_to_user(target, {
                         "type": "direct_typing",
                         "sender_username": username
+                    })
+            elif msg_type == "direct_read_receipt":
+                target = message.get("target_username")
+                if target:
+                    mark_direct_messages_read(username, target)
+                    await manager.send_to_user(target, {
+                        "type": "direct_messages_read",
+                        "reader_username": username
                     })
             elif msg_type in ["direct_file_meta", "direct_file_chunk", "direct_file_ack"]:
                 target = message.get("target_username")
@@ -775,17 +875,34 @@ async def user_websocket_endpoint(websocket: WebSocket, username: str):
                         **message,
                         "sender_username": username
                     })
-            elif msg_type == "friend_added_notify":
+            elif msg_type in ["friend_added_notify", "contact_request"]:
                 target = message.get("target_username")
                 if target:
+                    profile = get_user_profile(username)
                     await manager.send_to_user(target, {
                         "type": "friend_added",
                         "sender_username": username,
+                        "display_name": profile.get("display_name") if profile else username,
+                        "avatar_color": profile.get("avatar_color") if profile else "",
+                        "avatar_photo": profile.get("avatar_photo") if profile else "",
                         "message": f"@{username} added you as a friend!"
                     })
     except WebSocketDisconnect:
         manager.unregister_user(username, websocket)
         logger.info(f"User global signaling socket closed: @{username}")
+        if not manager.is_user_online(username):
+            try:
+                contacts = get_contacts(username)
+                for c in contacts:
+                    c_uname = c.get("contact_username")
+                    if c_uname and manager.is_user_online(c_uname):
+                        await manager.send_to_user(c_uname, {
+                            "type": "user_presence",
+                            "username": username,
+                            "online": False
+                        })
+            except Exception:
+                pass
     except Exception as e:
         manager.unregister_user(username, websocket)
         logger.warning(f"User socket error for @{username}: {e}")

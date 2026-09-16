@@ -702,6 +702,7 @@ def get_incoming_friend_adds(username: str) -> List[Dict[str, Any]]:
     with get_db_cursor(commit=False) as (cur, is_pg):
         sql = _format_query(
             '''SELECT c.owner_username as sender_username,
+                      c.owner_username as username,
                       c.contact_account_id,
                       COALESCE(u.display_name, c.owner_username) as display_name,
                       COALESCE(u.avatar_color, '') as avatar_color,
@@ -721,6 +722,36 @@ def get_incoming_friend_adds(username: str) -> List[Dict[str, Any]]:
         cur.execute(sql, (username, username))
         rows = cur.fetchall()
         return [dict(r) for r in rows]
+
+
+def remove_contact(owner_username: str, contact_username: str) -> bool:
+    """Remove a contact from a user's contact list and downgrade mutual status if needed."""
+    if not owner_username or not contact_username:
+        return False
+    try:
+        with get_db_cursor(commit=True) as (cur, is_pg):
+            sql = _format_query('DELETE FROM contacts WHERE owner_username = ? AND contact_username = ?', is_pg)
+            cur.execute(sql, (owner_username, contact_username))
+            up_sql = _format_query("UPDATE contacts SET status = 'added' WHERE owner_username = ? AND contact_username = ? AND status = 'mutual'", is_pg)
+            cur.execute(up_sql, (contact_username, owner_username))
+            return True
+    except Exception as e:
+        logger.error(f"Error removing contact: {e}")
+        return False
+
+
+def decline_friend_request(owner_username: str, requester_username: str) -> bool:
+    """Decline an incoming contact request by removing the requester's outgoing contact entry."""
+    if not owner_username or not requester_username:
+        return False
+    try:
+        with get_db_cursor(commit=True) as (cur, is_pg):
+            sql = _format_query('DELETE FROM contacts WHERE owner_username = ? AND contact_username = ?', is_pg)
+            cur.execute(sql, (requester_username, owner_username))
+            return True
+    except Exception as e:
+        logger.error(f"Error declining friend request: {e}")
+        return False
 
 
 def is_friend(user_a: str, user_b: str) -> bool:
@@ -865,6 +896,97 @@ def mark_direct_messages_read(reader_username: str, sender_username: str) -> boo
     except Exception as e:
         logger.error(f"Error marking messages read: {e}")
         return False
+
+
+def get_user_conversations(username: str) -> List[Dict[str, Any]]:
+    """Retrieve all active 1-on-1 conversations for a user, sorted by newest message."""
+    if not username:
+        return []
+    try:
+        with get_db_cursor(commit=False) as (cur, is_pg):
+            sql = _format_query(
+                '''SELECT 
+                       CASE WHEN sender_username = ? THEN recipient_username ELSE sender_username END as peer_username,
+                       MAX(id) as last_msg_id
+                   FROM direct_messages
+                   WHERE sender_username = ? OR recipient_username = ?
+                   GROUP BY CASE WHEN sender_username = ? THEN recipient_username ELSE sender_username END
+                   ORDER BY last_msg_id DESC''',
+                is_pg
+            )
+            cur.execute(sql, (username, username, username, username))
+            peers_rows = cur.fetchall()
+            if not peers_rows:
+                return []
+
+            results = []
+            for r in peers_rows:
+                peer = r['peer_username'] if isinstance(r, dict) else r[0]
+                last_id = r['last_msg_id'] if isinstance(r, dict) else r[1]
+
+                # Get last message details
+                m_sql = _format_query('SELECT * FROM direct_messages WHERE id = ?', is_pg)
+                cur.execute(m_sql, (last_id,))
+                m_row = cur.fetchone()
+                m_data = dict(m_row) if m_row else {}
+
+                # Get unread count
+                u_sql = _format_query('SELECT COUNT(*) as unread FROM direct_messages WHERE sender_username = ? AND recipient_username = ? AND is_read = 0', is_pg)
+                cur.execute(u_sql, (peer, username))
+                u_row = cur.fetchone()
+                unread = (u_row['unread'] if isinstance(u_row, dict) else u_row[0]) if u_row else 0
+
+                # Get peer profile
+                p_sql = _format_query('SELECT account_id, username, display_name, avatar_color, avatar_photo, bio FROM users WHERE username = ?', is_pg)
+                cur.execute(p_sql, (peer,))
+                p_row = cur.fetchone()
+                p_data = dict(p_row) if p_row else {
+                    'username': peer,
+                    'display_name': peer,
+                    'avatar_color': '',
+                    'avatar_photo': '',
+                    'account_id': ''
+                }
+
+                # Check contact relationship
+                c_sql = _format_query('SELECT status FROM contacts WHERE owner_username = ? AND contact_username = ?', is_pg)
+                cur.execute(c_sql, (username, peer))
+                c_row = cur.fetchone()
+                is_contact = bool(c_row)
+                status = (c_row['status'] if isinstance(c_row, dict) else c_row[0]) if c_row else 'none'
+
+                results.append({
+                    'peer_username': peer,
+                    'display_name': p_data.get('display_name') or peer,
+                    'avatar_color': p_data.get('avatar_color') or '',
+                    'avatar_photo': p_data.get('avatar_photo') or '',
+                    'account_id': p_data.get('account_id') or '',
+                    'bio': p_data.get('bio') or '',
+                    'last_message': m_data.get('content') or '',
+                    'last_msg_type': m_data.get('msg_type') or 'text',
+                    'last_msg_time': str(m_data.get('timestamp') or ''),
+                    'last_msg_sender': m_data.get('sender_username') or '',
+                    'unread_count': unread,
+                    'is_contact': is_contact,
+                    'contact_status': status,
+                    'is_request': not is_contact
+                })
+            return results
+    except Exception as e:
+        logger.error(f"Error fetching user conversations: {e}")
+        return []
+
+
+def get_message_requests(username: str) -> Dict[str, Any]:
+    """Retrieve incoming friend requests and message requests from non-contacts."""
+    incoming_friends = get_incoming_friend_adds(username)
+    all_convs = get_user_conversations(username)
+    message_requests = [c for c in all_convs if c.get('is_request') and c.get('peer_username') != username]
+    return {
+        "friend_requests": incoming_friends,
+        "message_requests": message_requests,
+        "total_requests": len(incoming_friends) + len(message_requests)
+    }
 
 
 # ─────────────────────────────────────────────────────────────

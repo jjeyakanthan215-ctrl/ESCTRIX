@@ -14,9 +14,9 @@ Health Check Endpoint: https://esctrix.onrender.com/health (HTTP 200 OK)
 1. EXECUTIVE SUMMARY & ARCHITECTURE
 --------------------------------------------------------------------------------
 ESCTRIX Quantum combines the best UX and security paradigms of major communication platforms:
-- Instagram Style: Search and connect by @username / Account ID, rich Profile Verification Cards, social bios, and photo avatars.
-- WhatsApp Style: 1-to-1 WebRTC HD audio/video calls, WhatsApp voice note HUD with live waveform, pause/resume, audio preview before sending, read receipts (blue double ticks), and dynamic context menus.
-- Telegram Style: Dual-pane desktop and mobile layout, collapsible sidebar, folder categorizations (All, Direct, Mesh, Saved Vault), group space hosting with PIN protection.
+- Cyber UI Style: Search and connect by @username / Account ID, rich Profile Verification Cards, social bios, and photo avatars.
+- Quantum Messaging Style: 1-to-1 WebRTC HD audio/video calls, Quantum Messaging voice note HUD with live waveform, pause/resume, audio preview before sending, read receipts (blue double ticks), and dynamic context menus.
+- Quantum Cyber Style: Dual-pane desktop and mobile layout, collapsible sidebar, folder categorizations (All, Direct, Mesh, Saved Vault), group space hosting with PIN protection.
 - Zero-Knowledge Security: Client-side AES-GCM 256-bit encryption in browser memory, DTLS/SRTP WebRTC peer-to-peer transport, ephemeral WebSocket signaling, zero plaintext storage on servers.
 - Aura Neural AI: Integrated conversational AI companion, real-time vibe sentiment analysis, contextual smart replies, tone polisher, and chat summarization.
 
@@ -35,7 +35,7 @@ A. Stealth Admin Portal & Role-Based Isolation:
      * Keyboard Shortcut: `Ctrl + Shift + A` directly triggers the stealth admin portal.
      * Stealth Command Palette in chat: Typing `/admin` directly opens the console.
 
-B. WhatsApp-Style Voice Note Suite:
+B. Quantum Messaging-Style Voice Note Suite:
    - Live recording HUD bar with pulsing recording dot and elapsed timer (`0:00`).
    - Real-time animated audio waveform visualization.
    - Discard / Trash button (`#voice-discard-btn`) to discard unwanted recordings.

@@ -51,7 +51,7 @@ def run_test():
         print(f"  -> User A (@{user_a}) logged in to dashboard.", flush=True)
 
         # 3. Verify Newly Added Calling & Chat DOM Elements
-        print("[Step 2] Verifying Instagram/WhatsApp/Telegram DOM elements...", flush=True)
+        print("[Step 2] Verifying Cyber UI/Quantum Messaging/Quantum Cyber DOM elements...", flush=True)
         assert page_a.query_selector("#audio-call-btn"), "Dedicated Audio Call button (#audio-call-btn) must exist in header"
         assert page_a.query_selector("#video-call-btn"), "Dedicated Video Call button (#video-call-btn) must exist in header"
         assert page_a.query_selector("#reply-preview-bar"), "Quoted Reply Preview bar (#reply-preview-bar) must exist"
@@ -91,7 +91,7 @@ def run_test():
         assert page_a.is_hidden("#attachment-popover"), "Attachment popover should close when clicking outside"
         print("  -> Attachment popover closed on outside click.", flush=True)
 
-        # 6. Test Message Sending, Quoted Reply, and Instagram Double-Tap to Like
+        # 6. Test Message Sending, Quoted Reply, and Cyber UI Double-Tap to Like
         print("[Step 5] Testing message sending & reaction features...", flush=True)
         page_a.fill("#message-input", "First test message from Alice")
         page_a.click("#send-btn")
@@ -122,8 +122,8 @@ def run_test():
             assert len(reply_quotes) >= 1, "Quoted reply bubble must be present in DOM"
             print("  -> Quoted reply block successfully embedded into message bubble.", flush=True)
 
-        # Test Instagram Double-Tap to Like
-        print("[Step 7] Testing Instagram-style Double-Click to Like (Heart Burst)...", flush=True)
+        # Test Cyber UI Double-Tap to Like
+        print("[Step 7] Testing Cyber UI-style Double-Click to Like (Heart Burst)...", flush=True)
         latest_msg = page_a.query_selector_all(".message.sent")[-1]
         latest_msg.dblclick()
         page_a.wait_for_timeout(600)

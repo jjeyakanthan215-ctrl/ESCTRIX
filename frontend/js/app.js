@@ -58,6 +58,11 @@ const ESCTRIX = {
         incomingFriendAdds: [],
         friendsCount: 0,
         activeDirectTarget: null,
+        conversations: [],
+        messageRequests: [],
+        totalRequestsCount: 0,
+        onlineStatuses: {},
+        currentFolder: 'all',
 
         // Admin Telemetry
         adminWs: null,
@@ -91,7 +96,7 @@ const ESCTRIX = {
             'auth-title', 'auth-subtitle', 'auth-username', 'auth-password', 'auth-pwd-toggle', 'auth-displayname',
             'display-name-group', 'auth-submit-btn', 'passkey-login-btn', 'register-passkey-btn', 'passkey-status-label', 'menu-vanish-label', 'auth-toggle', 'auth-toggle-msg', 'login-error',
             'admin-new-password-input', 'admin-pwd-toggle', 'admin-change-pwd-btn',
-            'telegram-sidebar', 'telegram-chat-pane', 'chat-search-input', 'search-clear-btn',
+            'quantum-sidebar', 'quantum-chat-pane', 'requests-count-badge', 'chat-request-banner', 'chat-request-msg', 'chat-request-accept-btn', 'chat-request-decline-btn', 'chat-search-input', 'search-clear-btn',
             'sidebar-add-friend-btn', 'new-space-btn', 'chat-threads-list', 'dynamic-chat-threads', 'thread-aura-ai', 'thread-saved-messages',
             'cloud-connection-banner', 'cloud-banner-msg', 'cloud-sync-pill', 'cloud-sync-label',
             'drawer-open-btn', 'footer-user-chip', 'footer-user-avatar', 'footer-user-name', 'footer-user-id',
@@ -368,6 +373,8 @@ const ESCTRIX = {
                     this.applyUserProfile(user);
                     this.loadSavedMessages();
                     this.loadContacts();
+                    this.loadConversations();
+                    this.loadRequests();
                     this.connectUserSocket(user.username);
                     this.updateContactsCount();
                     this.renderIntroUserState(user);
@@ -504,10 +511,65 @@ const ESCTRIX = {
             return;
         }
 
+        if (type === 'direct_chat_sent_ack') {
+            if (msg.delivered) {
+                this.updateMessageTick(msg.temp_id || msg.id, 'delivered');
+            }
+            return;
+        }
+
+        if (type === 'direct_chat_delivered') {
+            this.updateMessageTick(msg.temp_id || msg.id, 'delivered');
+            return;
+        }
+
+        if (type === 'direct_messages_read') {
+            const chatKey = `@${msg.reader_username}`;
+            const history = this.state.chatHistories[chatKey] || [];
+            history.forEach(m => {
+                if (m.sender === 'me') m.status = 'read';
+            });
+            if (this.state.activeChat && this.state.activeChat.title === chatKey) {
+                document.querySelectorAll('.message.sent .msg-status-tick').forEach(el => {
+                    el.className = 'msg-status-tick tick-read';
+                    el.innerHTML = '<i class="ph ph-checks"></i>';
+                });
+            }
+            return;
+        }
+
+        if (type === 'user_presence') {
+            this.state.onlineStatuses[msg.username] = Boolean(msg.online);
+            if (this.state.activeChat && this.state.activeChat.title === `@${msg.username}`) {
+                const dot = document.getElementById('active-chat-dot');
+                if (dot) dot.className = `presence-dot ${msg.online ? 'online' : 'offline'}`;
+                const statusEl = document.getElementById('active-chat-status');
+                if (statusEl && !statusEl.querySelector('.typing-header-text')) {
+                    statusEl.textContent = msg.online ? 'Online • Direct E2EE Channel' : 'Offline • Direct relay ready';
+                }
+            }
+            document.querySelectorAll(`.chat-thread-item[data-contact="${msg.username}"], .chat-thread-item[data-username="${msg.username}"]`).forEach(item => {
+                const dot = item.querySelector('.presence-dot');
+                if (dot) dot.className = `presence-dot ${msg.online ? 'online' : 'offline'}`;
+            });
+            return;
+        }
+
+        if (type === 'request_accepted') {
+            this.playSfx('receive');
+            this.showToast(msg.message || `@${msg.sender_username} accepted your request! ✨`);
+            this.loadContacts();
+            this.loadConversations();
+            this.loadRequests();
+            return;
+        }
+
         if (type === 'friend_added') {
             this.playSfx('receive');
-            this.showToast(msg.message || `@${msg.sender_username} added you as a friend! 👥`);
+            this.showToast(msg.message || `@${msg.sender_username} sent you a request! 👥`);
             this.loadContacts();
+            this.loadRequests();
+            this.loadConversations();
             this.updateContactsCount();
             return;
         }
@@ -555,6 +617,12 @@ const ESCTRIX = {
             // If active chat is currently with this sender, display live in DOM
             if (this.state.activeChat && this.state.activeChat.title === chatKey) {
                 this.chat.appendMessageDOM(newMsg);
+                if (this.state.userWs && this.state.userWs.readyState === WebSocket.OPEN) {
+                    this.state.userWs.send(JSON.stringify({
+                        type: 'direct_read_receipt',
+                        target_username: msg.sender_username
+                    }));
+                }
                 fetch('/api/direct-messages/read', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -566,6 +634,8 @@ const ESCTRIX = {
             } else {
                 this.showToast(`💬 @${msg.sender_username}: ${msg.msg_type === 'text' ? msg.content.substring(0, 40) : '[' + msg.msg_type + ']'}`);
             }
+            this.loadConversations();
+            this.loadRequests();
             return;
         }
 
@@ -672,6 +742,139 @@ const ESCTRIX = {
             }
             if (iData.status === 'success') {
                 this.state.incomingFriendAdds = iData.incoming || [];
+            }
+        } catch (e) {}
+    },
+
+    updateMessageTick(msgId, status) {
+        if (!msgId) return;
+        const bubbles = document.querySelectorAll('.message.sent');
+        bubbles.forEach(b => {
+            if (b.dataset.msgId === String(msgId) || b.dataset.tempId === String(msgId)) {
+                const tick = b.querySelector('.msg-status-tick');
+                if (tick) {
+                    if (status === 'delivered') {
+                        tick.className = 'msg-status-tick tick-delivered';
+                        tick.innerHTML = '<i class="ph ph-checks"></i>';
+                    } else if (status === 'read') {
+                        tick.className = 'msg-status-tick tick-read';
+                        tick.innerHTML = '<i class="ph ph-checks"></i>';
+                    }
+                }
+            }
+        });
+    },
+
+    async loadConversations() {
+        const username = this.state.user?.username;
+        if (!username) return;
+        try {
+            const res = await fetch(`/api/user/conversations?username=${encodeURIComponent(username)}`);
+            const data = await res.json();
+            if (data.status === 'success') {
+                this.state.conversations = data.conversations || [];
+                const peers = this.state.conversations.map(c => c.peer_username);
+                if (peers.length > 0) {
+                    this.checkPeersPresence(peers);
+                }
+                if (this.state.currentFolder === 'all' || this.state.currentFolder === 'direct') {
+                    this.chat.renderChatList(this.state.currentFolder);
+                }
+            }
+        } catch (e) {}
+    },
+
+    async loadRequests() {
+        const username = this.state.user?.username;
+        if (!username) return;
+        try {
+            const res = await fetch(`/api/user/requests?username=${encodeURIComponent(username)}`);
+            const data = await res.json();
+            if (data.status === 'success') {
+                this.state.incomingFriendAdds = data.friend_requests || [];
+                this.state.messageRequests = data.message_requests || [];
+                this.state.totalRequestsCount = data.total_requests || 0;
+                
+                const badge = document.getElementById('requests-count-badge');
+                if (badge) {
+                    if (this.state.totalRequestsCount > 0) {
+                        badge.textContent = String(this.state.totalRequestsCount);
+                        badge.classList.remove('hidden');
+                        badge.classList.add('pulse-badge');
+                    } else {
+                        badge.classList.add('hidden');
+                        badge.classList.remove('pulse-badge');
+                    }
+                }
+                if (this.state.currentFolder === 'requests') {
+                    this.chat.renderRequestsFolder();
+                }
+            }
+        } catch (e) {}
+    },
+
+    async acceptRequest(requesterUsername) {
+        const username = this.state.user?.username;
+        if (!username || !requesterUsername) return;
+        try {
+            const res = await fetch('/api/user/requests/accept', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, requester_username: requesterUsername })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                this.playSfx('connect');
+                this.showToast(`Accepted request from @${requesterUsername}! ✨`);
+                await this.loadContacts();
+                await this.loadRequests();
+                await this.loadConversations();
+                const banner = document.getElementById('chat-request-banner');
+                if (banner && this.state.activeChat?.title === `@${requesterUsername}`) {
+                    banner.classList.add('hidden');
+                }
+            }
+        } catch (e) {}
+    },
+
+    async declineRequest(requesterUsername) {
+        const username = this.state.user?.username;
+        if (!username || !requesterUsername) return;
+        try {
+            const res = await fetch('/api/user/requests/decline', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, requester_username: requesterUsername })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                this.showToast(`Request from @${requesterUsername} declined.`);
+                await this.loadRequests();
+                await this.loadConversations();
+                const banner = document.getElementById('chat-request-banner');
+                if (banner && this.state.activeChat?.title === `@${requesterUsername}`) {
+                    banner.classList.add('hidden');
+                }
+            }
+        } catch (e) {}
+    },
+
+    async checkPeersPresence(usernames) {
+        if (!usernames || usernames.length === 0) return;
+        try {
+            const res = await fetch(`/api/user/presence?usernames=${encodeURIComponent(usernames.join(','))}`);
+            const data = await res.json();
+            if (data.status === 'success' && data.presence) {
+                Object.assign(this.state.onlineStatuses, data.presence);
+                for (const [uname, isOnline] of Object.entries(data.presence)) {
+                    document.querySelectorAll(`.chat-thread-item[data-contact="${uname}"] .presence-dot`).forEach(d => {
+                        d.className = `presence-dot ${isOnline ? 'online' : 'offline'}`;
+                    });
+                    if (this.state.activeChat && this.state.activeChat.title === `@${uname}`) {
+                        const dot = document.getElementById('active-chat-dot');
+                        if (dot) dot.className = `presence-dot ${isOnline ? 'online' : 'offline'}`;
+                    }
+                }
             }
         } catch (e) {}
     },
@@ -1085,7 +1288,7 @@ const ESCTRIX = {
             if (this.nav) {
                 this.nav.goBack();
             } else {
-                document.querySelector('.telegram-shell')?.classList.remove('chat-open');
+                (document.querySelector('.quantum-shell') || document.querySelector('.cyber-shell'))?.classList.remove('chat-open');
             }
         });
 
@@ -1384,6 +1587,8 @@ const ESCTRIX = {
                     ESCTRIX.showScreen('dashboard-screen');
                     ESCTRIX.loadSavedMessages();
                     ESCTRIX.loadContacts();
+                    ESCTRIX.loadConversations();
+                    ESCTRIX.loadRequests();
                     ESCTRIX.connectUserSocket(user.username);
                     ESCTRIX.updateContactsCount();
                     ESCTRIX.showToast(`Identity verified: ${user.display_name || user.username} 🚀`);
@@ -2363,6 +2568,30 @@ const ESCTRIX = {
 
                 if (isDirect && targetUname) {
                     this.checkChatGate(targetUname);
+
+                    // Check if contact or incoming request
+                    const isContact = (s.contacts || []).some(c => c.contact_username === targetUname);
+                    const banner = document.getElementById('chat-request-banner');
+                    if (banner) {
+                        if (!isContact) {
+                            banner.classList.remove('hidden');
+                            const msgEl = document.getElementById('chat-request-msg');
+                            if (msgEl) msgEl.textContent = `@${targetUname} is not in your contacts. Accept to allow calls and read receipts.`;
+                            const aBtn = document.getElementById('chat-request-accept-btn');
+                            const dBtn = document.getElementById('chat-request-decline-btn');
+                            if (aBtn) aBtn.onclick = () => ESCTRIX.acceptRequest(targetUname);
+                            if (dBtn) dBtn.onclick = () => ESCTRIX.declineRequest(targetUname);
+                        } else {
+                            banner.classList.add('hidden');
+                        }
+                    }
+
+                    // Presence
+                    const isOnline = Boolean(s.onlineStatuses[targetUname]);
+                    const dot = document.getElementById('active-chat-dot');
+                    if (dot) dot.className = `presence-dot ${isOnline ? 'online' : 'offline'}`;
+                    s.activeChat.subtitle = isOnline ? 'Online • Direct E2EE Channel' : 'Offline • Direct relay ready';
+
                     // Fetch direct message history from database
                     if (s.user?.username) {
                         const chatKey = `@${targetUname}`;
@@ -2376,6 +2605,7 @@ const ESCTRIX = {
                                         name: m.sender_username,
                                         text: m.content,
                                         type: m.msg_type || 'text',
+                                        status: m.is_read ? 'read' : 'delivered',
                                         fileUrl: (m.msg_type === 'image' || m.msg_type === 'file' || m.msg_type === 'voice') ? m.content : undefined,
                                         payload: m.msg_type === 'voice' ? m.content : undefined,
                                         fileName: m.file_meta || 'File',
@@ -2386,12 +2616,29 @@ const ESCTRIX = {
                                     if (s.activeChat && s.activeChat.title === chatKey) {
                                         this.renderMessages();
                                     }
+                                    // Mark messages as read
+                                    fetch('/api/direct-messages/read', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            reader_username: s.user.username,
+                                            sender_username: targetUname
+                                        })
+                                    }).catch(() => {});
+                                    if (s.userWs && s.userWs.readyState === WebSocket.OPEN) {
+                                        s.userWs.send(JSON.stringify({
+                                            type: 'direct_read_receipt',
+                                            target_username: targetUname
+                                        }));
+                                    }
                                 }
                             })
                             .catch(() => {});
                     }
                 } else {
                     this.hideChatGate();
+                    const banner = document.getElementById('chat-request-banner');
+                    if (banner) banner.classList.add('hidden');
                 }
             }
 
@@ -2399,7 +2646,7 @@ const ESCTRIX = {
             e.activeChatStatus.textContent = s.activeChat.subtitle;
 
             // On mobile, trigger layout slide and push history state
-            const shell = document.querySelector('.telegram-shell');
+            const shell = document.querySelector('.quantum-shell') || document.querySelector('.cyber-shell');
             if (shell) {
                 const wasOpen = shell.classList.contains('chat-open');
                 shell.classList.add('chat-open');
@@ -2440,6 +2687,8 @@ const ESCTRIX = {
             const isMe = msg.sender === 'me';
             const isViewOnce = msg.vanish === 'view_once' || msg.vanish === -1 || msg.viewOnce;
             div.className = `message ${isMe ? 'sent' : 'received'} ${msg.vanish ? 'vanish-msg' : ''}`;
+            if (msg.id) div.dataset.msgId = String(msg.id);
+            if (msg.tempId) div.dataset.tempId = String(msg.tempId);
             const timeStr = msg.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             let tickClass = 'tick-read';
             let tickIcon = 'ph-checks';
@@ -2699,7 +2948,7 @@ const ESCTRIX = {
                 ESCTRIX.chat.startReply(senderName, snippet);
             });
 
-            // Instagram double-tap / double-click to like
+            // Double-tap / double-click to like (Heart burst)
             div.addEventListener('dblclick', (ev) => {
                 if (ev.target.closest('button, a, video, audio, input')) return;
                 const heart = document.createElement('div');
@@ -2802,7 +3051,10 @@ const ESCTRIX = {
             const replySnapshot = s.activeReplyTo ? { ...s.activeReplyTo } : null;
             this.cancelReply();
 
+            const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
             const newMsg = {
+                id: tempId,
+                tempId,
                 sender: 'me',
                 text,
                 type: 'text',
@@ -2826,6 +3078,7 @@ const ESCTRIX = {
                 if (s.userWs && s.userWs.readyState === WebSocket.OPEN) {
                     s.userWs.send(JSON.stringify({
                         type: 'direct_chat_message',
+                        temp_id: tempId,
                         target_username: targetUname,
                         content: text,
                         msg_type: 'text',
@@ -2960,6 +3213,7 @@ const ESCTRIX = {
         },
 
         filterFolder(folder) {
+            ESCTRIX.state.currentFolder = folder;
             document.querySelectorAll('.folder-tab').forEach(t => t.classList.remove('active'));
             document.querySelector(`.folder-tab[data-folder="${folder}"]`)?.classList.add('active');
 
@@ -2968,34 +3222,174 @@ const ESCTRIX = {
             const dynamicList = ESCTRIX.elements.dynamicChatThreads;
 
             if (folder === 'all') {
-                aiThread.style.display = 'flex';
-                savedThread.style.display = 'flex';
-                dynamicList.style.display = 'block';
-                this.renderChatList();
+                if (aiThread) aiThread.style.display = 'flex';
+                if (savedThread) savedThread.style.display = 'flex';
+                if (dynamicList) dynamicList.style.display = 'block';
+                this.renderChatList('all');
+            } else if (folder === 'requests') {
+                if (aiThread) aiThread.style.display = 'none';
+                if (savedThread) savedThread.style.display = 'none';
+                if (dynamicList) dynamicList.style.display = 'block';
+                this.renderRequestsFolder();
+            } else if (folder === 'direct') {
+                if (aiThread) aiThread.style.display = 'none';
+                if (savedThread) savedThread.style.display = 'none';
+                if (dynamicList) dynamicList.style.display = 'block';
+                this.renderChatList('direct');
             } else if (folder === 'ai') {
-                aiThread.style.display = 'flex';
-                savedThread.style.display = 'none';
-                dynamicList.style.display = 'none';
+                if (aiThread) aiThread.style.display = 'flex';
+                if (savedThread) savedThread.style.display = 'none';
+                if (dynamicList) dynamicList.style.display = 'none';
             } else if (folder === 'saved') {
-                aiThread.style.display = 'none';
-                savedThread.style.display = 'flex';
-                dynamicList.style.display = 'none';
+                if (aiThread) aiThread.style.display = 'none';
+                if (savedThread) savedThread.style.display = 'flex';
+                if (dynamicList) dynamicList.style.display = 'none';
             } else if (folder === 'spaces') {
-                aiThread.style.display = 'none';
-                savedThread.style.display = 'none';
-                dynamicList.style.display = 'block';
-                this.renderChatList();
+                if (aiThread) aiThread.style.display = 'none';
+                if (savedThread) savedThread.style.display = 'none';
+                if (dynamicList) dynamicList.style.display = 'block';
+                this.renderChatList('spaces');
             } else if (folder === 'contacts') {
-                aiThread.style.display = 'none';
-                savedThread.style.display = 'none';
-                dynamicList.style.display = 'block';
+                if (aiThread) aiThread.style.display = 'none';
+                if (savedThread) savedThread.style.display = 'none';
+                if (dynamicList) dynamicList.style.display = 'block';
                 this.renderContactsFolder();
             } else {
-                aiThread.style.display = 'flex';
-                savedThread.style.display = 'flex';
-                dynamicList.style.display = 'block';
-                this.renderChatList();
+                if (aiThread) aiThread.style.display = 'flex';
+                if (savedThread) savedThread.style.display = 'flex';
+                if (dynamicList) dynamicList.style.display = 'block';
+                this.renderChatList('all');
             }
+        },
+
+        renderRequestsFolder() {
+            const list = ESCTRIX.elements.dynamicChatThreads;
+            const incomingFriends = ESCTRIX.state.incomingFriendAdds || [];
+            const messageRequests = ESCTRIX.state.messageRequests || [];
+            const total = incomingFriends.length + messageRequests.length;
+
+            let html = `
+                <div class="contacts-section-header" style="padding:12px 16px 8px; display:flex; align-items:center; justify-content:space-between;">
+                    <span style="font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; font-weight:700; color:var(--accent); display:flex; align-items:center; gap:6px;">
+                        <i class="ph ph-bell-ringing"></i> Requests (${total})
+                    </span>
+                </div>
+            `;
+
+            if (total === 0) {
+                html += `
+                    <div style="padding:40px 20px; text-align:center; color:var(--text-muted);">
+                        <i class="ph ph-shield-check" style="font-size:2.8rem; opacity:0.4; display:block; margin-bottom:12px; color:var(--accent);"></i>
+                        <div style="font-size:0.95rem; font-weight:600; color:var(--text-main); margin-bottom:6px;">No Pending Requests</div>
+                        <div style="font-size:0.78rem; line-height:1.4;">When someone adds you or sends you a direct message, it will appear here for review.</div>
+                    </div>
+                `;
+                list.innerHTML = html;
+                return;
+            }
+
+            if (incomingFriends.length > 0) {
+                html += `
+                    <div style="padding:6px 16px; font-size:0.72rem; color:var(--primary); font-weight:700; text-transform:uppercase; letter-spacing:0.06em;">
+                        Friend Requests (${incomingFriends.length})
+                    </div>
+                `;
+                incomingFriends.forEach(u => {
+                    const uname = u.sender_username || u.username;
+                    const avatarContent = u.avatar_photo
+                        ? `<img src="${u.avatar_photo}" class="avatar-img" alt="Avatar">`
+                        : (u.display_name || uname || 'U').charAt(0).toUpperCase();
+                    const avatarBg = u.avatar_photo ? 'transparent' : (u.avatar_color || 'var(--primary)');
+                    html += `
+                        <div class="incoming-request-card" data-username="${uname}">
+                            <div class="request-card-header">
+                                <div class="request-card-user">
+                                    <div class="thread-avatar" style="background:${avatarBg}; width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff;">
+                                        ${avatarContent}
+                                    </div>
+                                    <div class="request-card-meta">
+                                        <span class="request-card-name">${u.display_name || uname}</span>
+                                        <span class="request-card-handle">@${uname}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            ${u.bio ? `<div class="request-card-snippet">${u.bio}</div>` : ''}
+                            <div class="request-actions-row">
+                                <button class="btn primary-btn btn-sm accept-request-btn" data-username="${uname}" style="flex:1; justify-content:center;">
+                                    <i class="ph ph-check"></i> Accept
+                                </button>
+                                <button class="btn danger-btn btn-sm decline-request-btn" data-username="${uname}" style="flex:1; justify-content:center; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#fca5a5;">
+                                    <i class="ph ph-x"></i> Decline
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            if (messageRequests.length > 0) {
+                html += `
+                    <div style="padding:10px 16px 6px; font-size:0.72rem; color:var(--accent); font-weight:700; text-transform:uppercase; letter-spacing:0.06em;">
+                        Message Requests (${messageRequests.length})
+                    </div>
+                `;
+                messageRequests.forEach(m => {
+                    const uname = m.peer_username;
+                    const avatarContent = m.avatar_photo
+                        ? `<img src="${m.avatar_photo}" class="avatar-img" alt="Avatar">`
+                        : (m.display_name || uname || 'U').charAt(0).toUpperCase();
+                    const avatarBg = m.avatar_photo ? 'transparent' : (m.avatar_color || 'var(--primary)');
+                    html += `
+                        <div class="incoming-request-card" data-username="${uname}">
+                            <div class="request-card-header">
+                                <div class="request-card-user">
+                                    <div class="thread-avatar" style="background:${avatarBg}; width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff;">
+                                        ${avatarContent}
+                                    </div>
+                                    <div class="request-card-meta">
+                                        <span class="request-card-name">${m.display_name || uname}</span>
+                                        <span class="request-card-handle">@${uname}</span>
+                                    </div>
+                                </div>
+                                <span style="font-size:0.7rem; color:var(--text-muted); font-family:var(--font-mono);">${m.last_msg_time ? new Date(m.last_msg_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                            </div>
+                            <div class="request-card-snippet">
+                                "${m.last_message || '[Encrypted Message]'}"
+                            </div>
+                            <div class="request-actions-row">
+                                <button class="btn primary-btn btn-sm accept-request-btn" data-username="${uname}" style="flex:1; justify-content:center;">
+                                    <i class="ph ph-check"></i> Accept
+                                </button>
+                                <button class="btn danger-btn btn-sm decline-request-btn" data-username="${uname}" style="flex:1; justify-content:center; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#fca5a5;">
+                                    <i class="ph ph-x"></i> Decline
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            list.innerHTML = html;
+
+            list.querySelectorAll('.accept-request-btn').forEach(btn => {
+                btn.addEventListener('click', async (ev) => {
+                    ev.stopPropagation();
+                    const uname = btn.dataset.username;
+                    if (!uname) return;
+                    btn.innerHTML = `<i class="ph ph-circle-notch animate-spin"></i>`;
+                    await ESCTRIX.acceptRequest(uname);
+                });
+            });
+
+            list.querySelectorAll('.decline-request-btn').forEach(btn => {
+                btn.addEventListener('click', async (ev) => {
+                    ev.stopPropagation();
+                    const uname = btn.dataset.username;
+                    if (!uname) return;
+                    btn.innerHTML = `<i class="ph ph-circle-notch animate-spin"></i>`;
+                    await ESCTRIX.declineRequest(uname);
+                });
+            });
         },
 
         async handleSearch(query) {
@@ -3346,17 +3740,16 @@ const ESCTRIX = {
             if (e.fileBtn) e.fileBtn.disabled = false;
         },
 
-        renderChatList() {
+        renderChatList(filter = 'all') {
             const list = ESCTRIX.elements.dynamicChatThreads;
             const contacts = ESCTRIX.state.contacts || [];
-
-            if (contacts.length === 0 && !ESCTRIX.state.activeSpaceName) {
-                list.innerHTML = `<div style="padding:14px; text-align:center; font-size:0.8rem; color:var(--text-muted)">No active contacts or spaces. Click (+) to join.</div>`;
-                return;
-            }
+            const conversations = ESCTRIX.state.conversations || [];
+            const onlineStatuses = ESCTRIX.state.onlineStatuses || {};
 
             let html = '';
-            if (ESCTRIX.state.activeSpaceName) {
+
+            // 1. Active Space Room (if active and matches filter)
+            if (ESCTRIX.state.activeSpaceName && (filter === 'all' || filter === 'spaces')) {
                 html += `
                     <div class="chat-thread-item" id="space-thread-item">
                         <div class="thread-avatar-wrap">
@@ -3378,26 +3771,84 @@ const ESCTRIX = {
                 `;
             }
 
-            contacts.forEach(c => {
-                html += `
-                    <div class="chat-thread-item contact-thread-item" data-contact="${c.contact_username}">
-                        <div class="thread-avatar-wrap">
-                            <div class="thread-avatar" style="background:${c.avatar_color || 'var(--primary)'}">
-                                ${(c.display_name || c.contact_username).charAt(0).toUpperCase()}
+            // 2. Direct Conversations
+            const activeConvs = conversations.filter(c => !c.is_request || filter === 'all');
+            const renderedPeers = new Set();
+
+            if (filter !== 'spaces') {
+                activeConvs.forEach(c => {
+                    renderedPeers.add(c.peer_username);
+                    const isOnline = Boolean(onlineStatuses[c.peer_username]);
+                    const avatarContent = c.avatar_photo
+                        ? `<img src="${c.avatar_photo}" class="avatar-img" alt="Avatar">`
+                        : (c.display_name || c.peer_username).charAt(0).toUpperCase();
+                    const avatarBg = c.avatar_photo ? 'transparent' : (c.avatar_color || 'linear-gradient(135deg, #8b5cf6, #06d6c7)');
+                    const timeStr = c.last_msg_time ? new Date(c.last_msg_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                    const unreadHtml = c.unread_count > 0 ? `<span class="badge-pill" style="background:var(--accent); color:#000; font-size:0.7rem; font-weight:700; border-radius:10px; padding:2px 7px;">${c.unread_count}</span>` : '';
+
+                    html += `
+                        <div class="chat-thread-item contact-thread-item" data-contact="${c.peer_username}">
+                            <div class="thread-avatar-wrap">
+                                <div class="thread-avatar" style="background:${avatarBg}">
+                                    ${avatarContent}
+                                </div>
+                                <span class="presence-dot ${isOnline ? 'online' : 'offline'}"></span>
+                            </div>
+                            <div class="thread-info">
+                                <div class="thread-top-line">
+                                    <span class="thread-title">${c.display_name || c.peer_username}</span>
+                                    <span class="thread-time">${timeStr}</span>
+                                </div>
+                                <div class="thread-bottom-line">
+                                    <span class="thread-preview" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                        ${c.last_message ? (c.last_msg_sender === ESCTRIX.state.user?.username ? '<span style="color:var(--accent);">You: </span>' : '') + c.last_message : '@' + c.peer_username}
+                                    </span>
+                                    ${unreadHtml}
+                                </div>
                             </div>
                         </div>
-                        <div class="thread-info">
-                            <div class="thread-top-line">
-                                <span class="thread-title">${c.display_name || c.contact_username}</span>
-                                <span class="thread-time" style="font-family:var(--font-mono); color:var(--accent)">${c.contact_account_id}</span>
-                            </div>
-                            <div class="thread-bottom-line">
-                                <span class="thread-preview">@${c.contact_username}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
+                    `;
+                });
+
+                // Also list contacts who don't have active conversations yet
+                if (filter === 'all' || filter === 'direct') {
+                    contacts.forEach(c => {
+                        if (!renderedPeers.has(c.contact_username)) {
+                            const isOnline = Boolean(onlineStatuses[c.contact_username]);
+                            const avatarContent = c.avatar_photo
+                                ? `<img src="${c.avatar_photo}" class="avatar-img" alt="Avatar">`
+                                : (c.display_name || c.contact_username).charAt(0).toUpperCase();
+                            const avatarBg = c.avatar_photo ? 'transparent' : (c.avatar_color || 'linear-gradient(135deg, #3b82f6, #06d6c7)');
+                            html += `
+                                <div class="chat-thread-item contact-thread-item" data-contact="${c.contact_username}">
+                                    <div class="thread-avatar-wrap">
+                                        <div class="thread-avatar" style="background:${avatarBg}">
+                                            ${avatarContent}
+                                        </div>
+                                        <span class="presence-dot ${isOnline ? 'online' : 'offline'}"></span>
+                                    </div>
+                                    <div class="thread-info">
+                                        <div class="thread-top-line">
+                                            <span class="thread-title">${c.display_name || c.contact_username}</span>
+                                            <span class="thread-time" style="font-family:var(--font-mono); color:var(--accent)">${c.contact_account_id || ''}</span>
+                                        </div>
+                                        <div class="thread-bottom-line">
+                                            <span class="thread-preview">@${c.contact_username}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    });
+                }
+            }
+
+            if (!html) {
+                html = `<div style="padding:28px 16px; text-align:center; font-size:0.82rem; color:var(--text-muted)">
+                    <i class="ph ph-chats-circle" style="font-size:2.4rem; opacity:0.35; display:block; margin-bottom:8px; color:var(--accent);"></i>
+                    No conversations yet. Find friends to start chatting!
+                </div>`;
+            }
 
             list.innerHTML = html;
 
@@ -3408,8 +3859,10 @@ const ESCTRIX = {
             list.querySelectorAll('.contact-thread-item').forEach(el => {
                 el.addEventListener('click', () => {
                     const uname = el.dataset.contact;
-                    ESCTRIX.space.openDirectSpace(uname);
-                    ESCTRIX.chat.switchChat('space', { spaceName: `@${uname}` });
+                    if (uname) {
+                        ESCTRIX.space.openDirectSpace(uname);
+                        ESCTRIX.chat.switchChat('space', { spaceName: `@${uname}` });
+                    }
                 });
             });
         }
@@ -5905,7 +6358,7 @@ const ESCTRIX = {
                 }
 
                 // 3. Check if on mobile and chat is currently open (.chat-open)
-                const shell = document.querySelector('.telegram-shell');
+                const shell = document.querySelector('.quantum-shell') || document.querySelector('.cyber-shell');
                 if (shell && shell.classList.contains('chat-open')) {
                     shell.classList.remove('chat-open');
                     return;

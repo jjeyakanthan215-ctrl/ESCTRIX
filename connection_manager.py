@@ -42,6 +42,10 @@ class ConnectionManager:
     def is_user_online(self, username: str) -> bool:
         return bool(self.user_sockets.get(username))
 
+    def get_online_status(self, usernames: List[str]) -> Dict[str, bool]:
+        """Return online boolean status dictionary for a list of usernames."""
+        return {u: self.is_user_online(u) for u in usernames if u}
+
     async def send_to_user(self, username: str, message: dict) -> bool:
         """Send a message to all active global WebSocket connections for a user."""
         sockets = self.user_sockets.get(username, [])
@@ -133,6 +137,16 @@ class ConnectionManager:
         room = self.get_room(space_name)
         if not room:
             return 'no_room'
+
+        # If user is reconnecting from the same username, replace/cleanup old client cleanly
+        if username:
+            for old_cid, old_uname in list(room['usernames'].items()):
+                if old_uname == username and old_cid != client_id:
+                    room['clients'].pop(old_cid, None)
+                    room['usernames'].pop(old_cid, None)
+                    if room.get('host_client_id') == old_cid:
+                        room['host_client_id'] = client_id
+
         if len(room['clients']) >= MAX_ROOM_CAPACITY:
             return 'full'
         room['clients'][client_id] = websocket
