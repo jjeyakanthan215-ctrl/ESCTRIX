@@ -421,8 +421,12 @@
                                 <span id="vibe-text">Positive & Clear</span>
                             </div>
 
-                            <button id="video-call-btn" class="icon-btn-round" title="Start Audio / Video Call">
-                                <i class="ph ph-phone-call"></i>
+                            <button id="audio-call-btn" class="icon-btn-round" title="Start Audio Call">
+                                <i class="ph ph-phone"></i>
+                            </button>
+
+                            <button id="video-call-btn" class="icon-btn-round" title="Start Video Call">
+                                <i class="ph ph-video-camera"></i>
                             </button>
 
                             <button id="screen-share-btn" class="icon-btn-round" title="Share Screen">
@@ -545,13 +549,44 @@
                         <span id="progress-percent" class="progress-pct">0%</span>
                     </div>
 
+                    <!-- Quoted Message Reply Bar (WA / TG style) -->
+                    <div id="reply-preview-bar" class="reply-preview-bar hidden">
+                        <div class="reply-preview-border"></div>
+                        <div class="reply-preview-content">
+                            <span id="reply-preview-sender" class="reply-preview-sender">Replying to Peer</span>
+                            <span id="reply-preview-text" class="reply-preview-text">Snippet text</span>
+                        </div>
+                        <button id="reply-cancel-btn" class="reply-cancel-btn" title="Cancel Reply"><i class="ph ph-x"></i></button>
+                    </div>
+
                     <!-- Bottom Input Bar -->
                     <footer class="chat-input-footer">
                         <input type="file" id="file-input" style="display:none">
 
-                        <button id="file-btn" class="input-tool-btn" title="Attach File or Media">
-                            <i class="ph ph-paperclip"></i>
-                        </button>
+                        <!-- Attachment Tools Popover Trigger (IG / WA style) -->
+                        <div class="attachment-tools-wrap">
+                            <button id="file-btn" class="input-tool-btn" title="Attach Media or Documents">
+                                <i class="ph ph-plus"></i>
+                            </button>
+                            <div id="attachment-popover" class="attachment-popover hidden">
+                                <button class="attachment-popover-item" id="attach-media-btn">
+                                    <div class="attach-icon-circle attach-media"><i class="ph ph-image"></i></div>
+                                    <span>Photos & Videos</span>
+                                </button>
+                                <button class="attachment-popover-item" id="attach-doc-btn">
+                                    <div class="attach-icon-circle attach-doc"><i class="ph ph-file-text"></i></div>
+                                    <span>Document / File</span>
+                                </button>
+                                <button class="attachment-popover-item" id="attach-viewonce-btn">
+                                    <div class="attach-icon-circle attach-viewonce"><i class="ph ph-lock-key"></i></div>
+                                    <span>View-Once Media 🔒</span>
+                                </button>
+                                <button class="attachment-popover-item" id="attach-voice-btn">
+                                    <div class="attach-icon-circle attach-voice"><i class="ph ph-microphone"></i></div>
+                                    <span>Voice Message 🎙️</span>
+                                </button>
+                            </div>
+                        </div>
 
                         <button id="emoji-picker-btn" class="input-tool-btn" title="Emoji Reactions">
                             <i class="ph ph-smiley"></i>
@@ -2014,6 +2049,23 @@
             <button id="e2ee-call-verify-btn" class="icon-btn" title="Verify Security" style="margin-left:auto; background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); width:34px; height:34px; font-size:0.95rem;">
                 <i class="ph ph-shield-check"></i>
             </button>
+            <button id="call-minimize-btn" class="icon-btn" title="Minimize Call (Picture-in-Picture)" style="background:rgba(255,255,255,0.12); color:#fff; border:1px solid rgba(255,255,255,0.2); width:34px; height:34px; font-size:0.95rem;">
+                <i class="ph ph-arrows-in-simple"></i>
+            </button>
+        </div>
+
+        <!-- Outgoing Call / Ringing Card (WA / TG / IG style) -->
+        <div id="outgoing-call-card" class="outgoing-call-card hidden">
+            <div class="outgoing-avatar-wrap">
+                <div class="outgoing-ripple ring-1"></div>
+                <div class="outgoing-ripple ring-2"></div>
+                <div class="outgoing-avatar" id="outgoing-avatar">P</div>
+            </div>
+            <h3 id="outgoing-peer-name" class="outgoing-peer-name">Peer</h3>
+            <span id="outgoing-status" class="outgoing-status">Calling...</span>
+            <div class="outgoing-encryption-badge">
+                <i class="ph ph-shield-check"></i> Zero-Knowledge E2EE Mesh Stream
+            </div>
         </div>
 
         <div class="video-controls">
@@ -2037,6 +2089,23 @@
                 <input type="text" id="incall-message-input" placeholder="Type a message..." autocomplete="off">
                 <button id="incall-send-btn" class="vc-btn incall-send" title="Send"><i class="ph ph-paper-plane-right"></i></button>
             </div>
+        </div>
+    </div>
+
+    <!-- Floating Picture-in-Picture Call Pill (WA / TG / IG style) -->
+    <div id="call-pip-pill" class="call-pip-pill hidden">
+        <div class="pip-avatar-wrap">
+            <div class="pip-avatar" id="pip-avatar">P</div>
+            <span class="pip-live-dot"></span>
+        </div>
+        <div class="pip-meta">
+            <span id="pip-peer-name" class="pip-name">Peer</span>
+            <span id="pip-timer" class="pip-timer">00:00</span>
+        </div>
+        <div class="pip-actions">
+            <button id="pip-mute-btn" class="pip-btn" title="Mute/Unmute"><i class="ph ph-microphone"></i></button>
+            <button id="pip-expand-btn" class="pip-btn pip-expand" title="Maximize Call"><i class="ph ph-arrows-out-simple"></i></button>
+            <button id="pip-end-btn" class="pip-btn pip-end" title="End Call"><i class="ph ph-phone-x"></i></button>
         </div>
     </div>
 

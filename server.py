@@ -704,6 +704,7 @@ async def user_websocket_endpoint(websocket: WebSocket, username: str):
                         "msg_type": msg_format,
                         "file_meta": file_meta,
                         "vanish": vanish,
+                        "reply_to": message.get("reply_to"),
                         "timestamp": stored.get("timestamp") if stored else None
                     }
                     delivered = await manager.send_to_user(target, payload)

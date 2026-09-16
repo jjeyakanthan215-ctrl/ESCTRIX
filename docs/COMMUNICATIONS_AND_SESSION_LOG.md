@@ -79,13 +79,48 @@
 
 ---
 
+### Request 6: WhatsApp / Telegram / Instagram-Style Calling & Chat Upgrade (DOM-Verified)
+- **User Prompt:** 
+  > *"can you check the calling option on this web app to make better and ned to make for chat page option and the sending and reaceiving option could you check that everthing for the project based like a ig or wa or tg so make the chaar option better for this project check evetrhing using the Dom and check automatically and make the project to Dom and clear the error if error occures' save this project files continue"*
+- **Delivered Solutions:**
+  1. **Dedicated Audio & Video Call Quick Actions**:
+     - Split single call launcher into dedicated `#audio-call-btn` (phone icon) and `#video-call-btn` (camera icon) in direct chat headers with hover effects.
+  2. **WhatsApp / Telegram-Style Outgoing Ringing Overlay**:
+     - Added `#outgoing-call-card` with glowing radar ripple rings (`@keyframes waRingPulse`), caller avatar, recipient status ("Calling..."), and E2EE security badge.
+  3. **Web Audio Synthesized Telephone Cadence & SFX**:
+     - Synthesized outgoing telephone cadence (440Hz + 480Hz dual-tone sine wave at 2s on / 4s off rhythm), melodic multi-tone incoming ringtone, and 3-beep call decline SFX using native browser `AudioContext` without external audio file dependencies.
+  4. **Dynamic Voice Mic ⟷ Send Plane Button**:
+     - Dynamic button transformation: displays microphone icon when the text input is empty (instant voice recording trigger), and smoothly transitions (`@keyframes popScaleIn`) to Telegram-style paper plane when characters are entered.
+  5. **Quoted Reply Preview Bar & Embedded Quotes**:
+     - Added `#reply-preview-bar` above chat input displaying quoted sender name, message snippet, and dismiss button (`#reply-cancel-btn`).
+     - Embedded `.message-reply-quote` directly inside message bubbles with border accents and quick-reply action button on hover.
+  6. **WhatsApp-Style Attachment Popover Menu**:
+     - Replaced basic file dialog with `#attachment-popover` featuring labeled circular actions for Photos & Videos, Documents, View-Once Media (1-View 🔒), and Voice Note recording.
+  7. **Instagram-Style Double-Tap Heart Burst**:
+     - Double-clicking or double-tapping any message bubble triggers a vibrant pink heart burst animation (`@keyframes heartBurst`) and attaches the heart reaction pill.
+  8. **Multi-State Delivery Checkmarks**:
+     - Integrated WhatsApp-style status ticks (`.tick-sent`, `.tick-delivered`, `.tick-read`) showing single grey tick for sent, double grey ticks for delivered, and neon cyan double ticks for read receipts.
+  9. **Floating Picture-in-Picture (PiP) Call Pill**:
+     - `#call-minimize-btn` minimizes active calls into a sleek floating glassmorphic pill (`#call-pip-pill`) showing live duration timer, mute toggle, call end, and maximize button so users can chat freely while on a call.
+  10. **Automated Playwright DOM Test Suite & Zero Error Guarantee**:
+      - Authored `scratch/test_chat_and_call_dom.py` verifying all 10 UI/UX workflows automatically via Chromium DOM.
+      - Resolved pointer-event interception by elevating `#video-info-bar` / `#video-controls` to `z-index: 25` and setting `pointer-events: none` on `#outgoing-call-card`.
+      - Resolved `ESCTRIX.ai.handleUserQuery` alias in `app.js`.
+      - 100% automated test pass with ZERO JavaScript errors and ZERO DOM errors reported in the console.
+
+---
+
 ## 2. Key Architecture Decisions & Reference Rules
 
 | Component | Technical Implementation | Purpose |
 |---|---|---|
 | **Database** | Dual Engine (`psycopg2` for Supabase Postgres + `sqlite3` fallback) | Permanent cloud persistence on Render with zero-setup local dev |
 | **Account Retention** | `ENABLE_ACCOUNT_PRUNING=false` default guard | Prevents user accounts from ever being deleted automatically |
-| **Calling** | WebRTC `RTCRtpSender.replaceTrack` | Seamless camera switching without renegotiation or ringing popups |
+| **Calling Quick-Launch** | Split `#audio-call-btn` & `#video-call-btn` with synthesized ringtones | Instant WhatsApp/Telegram 1-tap calling experience |
+| **Calling Resilience** | WebRTC `RTCRtpSender.replaceTrack` | Seamless camera switching without renegotiation or ringing popups |
 | **Call Teardown** | Symmetrical `call_ended` / `direct_call_end` with non-echo flag | Clean termination of media, overlays, and timers on both sides |
+| **Call Multitasking** | Floating `#call-pip-pill` with `minimize()` & `maximize()` | Enables in-app multitasking during active encrypted calls |
+| **Chat Interaction** | Quoted reply bar, Send/Mic switch, double-tap heart burst | Modern WhatsApp/Telegram/Instagram conversational UX |
 | **Media Transfer** | 64KB chunking with `dc.bufferedAmount` backpressure | Multi-megabyte video & document transfer without memory leaks |
 | **Authentication** | Password (bcrypt) + FIDO2 / WebAuthn Biometric Passkeys | Cryptographic authentication via FaceID / TouchID / Windows Hello |
+

@@ -96,10 +96,11 @@ const ESCTRIX = {
             'drawer-open-btn', 'footer-user-chip', 'footer-user-avatar', 'footer-user-name', 'footer-user-id',
             'footer-settings-btn', 'cmd-palette-btn', 'admin-panel-btn', 'admin-back-btn',
             'back-to-threads-btn', 'active-chat-avatar', 'active-chat-dot', 'active-chat-name', 'active-chat-status',
-            'vibe-indicator-badge', 'vibe-emoji', 'vibe-text', 'video-call-btn', 'screen-share-btn',
+            'vibe-indicator-badge', 'vibe-emoji', 'vibe-text', 'audio-call-btn', 'video-call-btn', 'screen-share-btn',
             'e2ee-verify-btn', 'chat-menu-btn', 'chat-dropdown-menu', 'menu-peer-profile-btn', 'menu-settings-btn',
             'menu-vanish-btn', 'menu-burn-btn', 'menu-summarize-btn', 'menu-export-btn', 'menu-clear-btn',
             'messages-viewport', 'messages-list', 'typing-indicator', 'typing-avatar', 'typing-name',
+            'reply-preview-bar', 'reply-preview-sender', 'reply-preview-text', 'reply-cancel-btn',
             // Voice Recording HUD
             'voice-recording-bar', 'voice-rec-timer', 'voice-rec-status',
             'voice-discard-btn', 'voice-pause-btn', 'voice-preview-btn', 'voice-send-btn',
@@ -109,7 +110,8 @@ const ESCTRIX = {
             'dialog-input', 'dialog-cancel-btn', 'dialog-confirm-btn',
             'quantum-cursor-dot', 'quantum-cursor-ring',
             'file-upload-progress', 'progress-bar-fill', 'progress-percent', 'progress-filename', 'progress-speed',
-            'file-input', 'file-btn', 'emoji-picker-btn', 'emoji-picker', 'ai-assist-btn', 'ai-tools-popover',
+            'file-input', 'file-btn', 'attachment-popover', 'attach-media-btn', 'attach-doc-btn', 'attach-viewonce-btn', 'attach-voice-btn',
+            'emoji-picker-btn', 'emoji-picker', 'ai-assist-btn', 'ai-tools-popover',
             'ai-tool-polish', 'ai-tool-translate', 'ai-tool-summarize', 'ai-tool-vibe',
             'message-input', 'voice-note-btn', 'send-btn',
             'new-space-modal', 'new-space-close-btn', 'tab-host', 'tab-join', 'host-setup', 'client-setup',
@@ -121,7 +123,9 @@ const ESCTRIX = {
             'ai-translate-modal', 'ai-translate-close-btn', 'translate-lang-select', 'ai-translate-input',
             'ai-translate-output-wrap', 'ai-translate-output', 'execute-translate-btn', 'apply-translated-btn',
             'video-overlay', 'local-video', 'group-video-grid', 'video-peer-name', 'call-timer',
-            'e2ee-call-verify-btn', 'switch-speaker-btn', 'mute-btn', 'cam-off-btn', 'switch-cam-btn',
+            'e2ee-call-verify-btn', 'call-minimize-btn', 'outgoing-call-card', 'outgoing-avatar', 'outgoing-peer-name', 'outgoing-status',
+            'call-pip-pill', 'pip-avatar', 'pip-peer-name', 'pip-timer', 'pip-mute-btn', 'pip-expand-btn', 'pip-end-btn',
+            'switch-speaker-btn', 'mute-btn', 'cam-off-btn', 'switch-cam-btn',
             'call-screen-share-btn', 'incall-chat-btn', 'incall-chat-panel', 'incall-chat-close', 'incall-messages',
             'incall-message-input', 'incall-send-btn', 'end-video-call-btn',
             'call-type-modal', 'call-type-peer-name', 'start-audio-call-btn', 'start-video-call-btn', 'cancel-call-type-btn',
@@ -235,9 +239,84 @@ const ESCTRIX = {
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
                 osc.start(now);
                 osc.stop(now + 0.03);
+            } else if (type === 'decline') {
+                // Standard three-beep busy/decline signal
+                const freqs = [425, 425, 425];
+                freqs.forEach((f, idx) => {
+                    const o = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(f, now + idx * 0.18);
+                    o.connect(g);
+                    g.connect(ctx.destination);
+                    g.gain.setValueAtTime(0.07, now + idx * 0.18);
+                    g.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.18 + 0.12);
+                    o.start(now + idx * 0.18);
+                    o.stop(now + idx * 0.18 + 0.12);
+                });
             }
         } catch (e) {
             console.debug('SFX error:', e);
+        }
+    },
+
+    startRingtone(mode = 'outgoing') {
+        this.stopRingtone();
+        if (!this.state.sfxEnabled) return;
+        try {
+            const playCadence = () => {
+                if (!this.state.audioCtx) return;
+                const ctx = this.state.audioCtx;
+                if (ctx.state === 'suspended') ctx.resume();
+                const now = ctx.currentTime;
+
+                if (mode === 'outgoing') {
+                    // Telephone dial tone cadence (440Hz + 480Hz)
+                    const osc1 = ctx.createOscillator();
+                    const osc2 = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc1.type = 'sine';
+                    osc2.type = 'sine';
+                    osc1.frequency.setValueAtTime(440, now);
+                    osc2.frequency.setValueAtTime(480, now);
+                    osc1.connect(gain);
+                    osc2.connect(gain);
+                    gain.connect(ctx.destination);
+                    gain.gain.setValueAtTime(0.045, now);
+                    gain.gain.setValueAtTime(0.045, now + 1.2);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.4);
+                    osc1.start(now);
+                    osc2.start(now);
+                    osc1.stop(now + 1.4);
+                    osc2.stop(now + 1.4);
+                } else {
+                    // Incoming melodic chime cadence (harmonic bells)
+                    const freqs = [523.25, 659.25, 783.99, 1046.50];
+                    freqs.forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        gain.gain.setValueAtTime(0.07, now + idx * 0.12);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.12 + 0.35);
+                        osc.start(now + idx * 0.12);
+                        osc.stop(now + idx * 0.12 + 0.35);
+                    });
+                }
+            };
+            playCadence();
+            this._ringtoneInterval = setInterval(playCadence, mode === 'outgoing' ? 3000 : 2500);
+        } catch (err) {
+            console.debug('Ringtone error:', err);
+        }
+    },
+
+    stopRingtone() {
+        if (this._ringtoneInterval) {
+            clearInterval(this._ringtoneInterval);
+            this._ringtoneInterval = null;
         }
     },
 
@@ -435,6 +514,8 @@ const ESCTRIX = {
                 fileName: msg.file_meta || 'File',
                 fileSize: '',
                 vanish: Boolean(msg.vanish),
+                replyTo: msg.reply_to || undefined,
+                status: 'delivered',
                 time: msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
 
@@ -467,17 +548,25 @@ const ESCTRIX = {
                 if (e.typingIndicator && e.typingName) {
                     e.typingName.textContent = `@${msg.sender_username}`;
                     e.typingIndicator.classList.remove('hidden');
-                    clearTimeout(this._directTypingTimer);
-                    this._directTypingTimer = setTimeout(() => {
-                        e.typingIndicator.classList.add('hidden');
-                    }, 3000);
                 }
+                if (e.activeChatStatus) {
+                    if (!this._origHeaderStatus) this._origHeaderStatus = e.activeChatStatus.innerHTML;
+                    e.activeChatStatus.innerHTML = '<span class="typing-header-text"><span class="typing-dots-mini"><span></span><span></span><span></span></span> typing...</span>';
+                }
+                clearTimeout(this._directTypingTimer);
+                this._directTypingTimer = setTimeout(() => {
+                    if (e.typingIndicator) e.typingIndicator.classList.add('hidden');
+                    if (e.activeChatStatus && this._origHeaderStatus) {
+                        e.activeChatStatus.innerHTML = this._origHeaderStatus;
+                        this._origHeaderStatus = null;
+                    }
+                }, 3000);
             }
             return;
         }
 
         if (type === 'direct_call_offer') {
-            this.playSfx('call');
+            this.startRingtone('incoming');
             const e = this.elements;
             if (e.callerName) e.callerName.textContent = `@${msg.sender_username}`;
             if (e.incomingCallTitle) {
@@ -490,6 +579,8 @@ const ESCTRIX = {
         }
 
         if (type === 'direct_call_answer') {
+            this.stopRingtone();
+            if (this.elements.outgoingCallCard) this.elements.outgoingCallCard.classList.add('hidden');
             if (this.state.directCallPC && msg.answer) {
                 this.state.directCallPC.setRemoteDescription(new RTCSessionDescription(msg.answer))
                     .then(() => {
@@ -501,6 +592,7 @@ const ESCTRIX = {
                     })
                     .catch(err => console.error('[Direct Call] Failed to set remote description:', err));
             }
+            this.call.startTimer();
             this.showToast('Call connected! 📞');
             return;
         }
@@ -518,12 +610,15 @@ const ESCTRIX = {
         }
 
         if (type === 'direct_call_declined') {
+            this.stopRingtone();
+            this.playSfx('decline');
             this.showToast(`@${msg.sender_username} declined the call.`);
             this.call.end(false);
             return;
         }
 
         if (type === 'direct_call_end') {
+            this.stopRingtone();
             this.showToast(`@${msg.sender_username} ended the call.`);
             this.call.end(false);
             return;
@@ -978,24 +1073,92 @@ const ESCTRIX = {
         e.stopHostBtn?.addEventListener('click', () => this.space.stopHosting());
         e.connectBtn?.addEventListener('click', () => this.space.joinSpace());
 
-        // Message Input & Sending
-        e.sendBtn?.addEventListener('click', () => this.chat.sendMessage());
+        // Message Input & Dynamic Send / Mic Switch (WA / TG style)
+        const updateSendBtnState = () => {
+            const val = e.messageInput?.value.trim() || '';
+            if (val.length > 0) {
+                if (e.sendBtn) {
+                    e.sendBtn.classList.remove('mic-mode');
+                    e.sendBtn.innerHTML = '<i class="ph ph-paper-plane-right"></i>';
+                    e.sendBtn.title = 'Send Message (Enter)';
+                }
+            } else {
+                if (e.sendBtn) {
+                    e.sendBtn.classList.add('mic-mode');
+                    e.sendBtn.innerHTML = '<i class="ph ph-microphone"></i>';
+                    e.sendBtn.title = 'Hold or Click to Record Voice Note';
+                }
+            }
+        };
+        updateSendBtnState();
+
+        e.sendBtn?.addEventListener('click', () => {
+            if (e.sendBtn.classList.contains('mic-mode') && (!e.messageInput?.value || e.messageInput.value.trim().length === 0)) {
+                this.voice.start();
+            } else {
+                this.chat.sendMessage();
+                updateSendBtnState();
+            }
+        });
+
         e.messageInput?.addEventListener('keypress', (ev) => {
             const enterSend = localStorage.getItem('esctrix_enter_send') !== 'false';
             if (ev.key === 'Enter' && !ev.shiftKey && enterSend) {
                 ev.preventDefault();
                 this.chat.sendMessage();
+                updateSendBtnState();
             }
         });
+
         e.messageInput?.addEventListener('input', (ev) => {
+            updateSendBtnState();
             if (ev.target.value === '/') {
                 this.commandPalette.open();
             }
             this.chat.handleTyping();
         });
 
-        // File Attachment
-        e.fileBtn?.addEventListener('click', () => e.fileInput.click());
+        // Quoted Reply Preview Bar Cancel
+        e.replyCancelBtn?.addEventListener('click', () => this.chat.cancelReply());
+
+        // File Attachment & Popover (IG / WA style)
+        e.fileBtn?.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            e.attachmentPopover?.classList.toggle('hidden');
+        });
+        document.addEventListener('click', (ev) => {
+            if (!ev.target.closest('.attachment-tools-wrap') && e.attachmentPopover) {
+                e.attachmentPopover.classList.add('hidden');
+            }
+        });
+        e.attachMediaBtn?.addEventListener('click', () => {
+            e.attachmentPopover?.classList.add('hidden');
+            if (e.fileInput) {
+                e.fileInput.accept = 'image/*,video/*';
+                e.fileInput.click();
+            }
+        });
+        e.attachDocBtn?.addEventListener('click', () => {
+            e.attachmentPopover?.classList.add('hidden');
+            if (e.fileInput) {
+                e.fileInput.accept = '*/*';
+                e.fileInput.click();
+            }
+        });
+        e.attachViewonceBtn?.addEventListener('click', () => {
+            e.attachmentPopover?.classList.add('hidden');
+            this.state.vanishTimer = 'view_once';
+            this.state.vanishMode = true;
+            this.showToast('Vanish Mode set to: VIEW-ONCE 🔒');
+            if (e.fileInput) {
+                e.fileInput.accept = 'image/*,video/*';
+                e.fileInput.click();
+            }
+        });
+        e.attachVoiceBtn?.addEventListener('click', () => {
+            e.attachmentPopover?.classList.add('hidden');
+            this.voice.start();
+        });
         e.fileInput?.addEventListener('change', (ev) => this.chat.handleFileSelect(ev));
 
         // Emoji Picker
@@ -1004,6 +1167,7 @@ const ESCTRIX = {
             btn.addEventListener('click', () => {
                 e.messageInput.value += btn.textContent;
                 e.emojiPicker.classList.add('hidden');
+                updateSendBtnState();
                 e.messageInput.focus();
             });
         });
@@ -1084,8 +1248,13 @@ const ESCTRIX = {
         e.menuExportBtn?.addEventListener('click', () => this.chat.exportHistory());
         e.menuClearBtn?.addEventListener('click', () => this.chat.clearCurrentView());
 
-        // Calls & Media Controls
-        e.videoCallBtn?.addEventListener('click', () => this.call.openCallChooser());
+        // Calls & Media Controls (WA / TG / IG style)
+        e.audioCallBtn?.addEventListener('click', () => this.call.initiate('audio'));
+        e.videoCallBtn?.addEventListener('click', () => this.call.initiate('video'));
+        e.callMinimizeBtn?.addEventListener('click', () => this.call.minimize());
+        e.pipExpandBtn?.addEventListener('click', () => this.call.maximize());
+        e.pipMuteBtn?.addEventListener('click', () => this.call.toggleMute());
+        e.pipEndBtn?.addEventListener('click', () => this.call.end());
         e.startAudioCallBtn?.addEventListener('click', () => this.call.initiate('audio'));
         e.startVideoCallBtn?.addEventListener('click', () => this.call.initiate('video'));
         e.cancelCallTypeBtn?.addEventListener('click', () => this.modal.close('call-type-modal'));
@@ -2244,7 +2413,24 @@ const ESCTRIX = {
             const isViewOnce = msg.vanish === 'view_once' || msg.vanish === -1 || msg.viewOnce;
             div.className = `message ${isMe ? 'sent' : 'received'} ${msg.vanish ? 'vanish-msg' : ''}`;
             const timeStr = msg.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const statusTick = isMe ? '<span class="msg-status-tick tick-read"><i class="ph ph-checks"></i></span>' : '';
+            let tickClass = 'tick-read';
+            let tickIcon = 'ph-checks';
+            if (msg.status === 'sent') {
+                tickClass = 'tick-sent';
+                tickIcon = 'ph-check';
+            } else if (msg.status === 'delivered') {
+                tickClass = 'tick-delivered';
+                tickIcon = 'ph-checks';
+            }
+            const statusTick = isMe ? `<span class="msg-status-tick ${tickClass}"><i class="ph ${tickIcon}"></i></span>` : '';
+
+            // Quoted message snippet if replying (WA / TG style)
+            const quoteHtml = msg.replyTo ? `
+                <div class="message-reply-quote">
+                    <span class="message-reply-quote-sender">${msg.replyTo.sender || 'Peer'}</span>
+                    <span class="message-reply-quote-text">${msg.replyTo.text || ''}</span>
+                </div>
+            ` : '';
 
             const vanishDuration = typeof msg.vanish === 'number' && msg.vanish > 0 ? msg.vanish : 10;
             // Vanish header badge if active
@@ -2255,7 +2441,7 @@ const ESCTRIX = {
                 </div>
             ` : '';
 
-            // Quick Emoji Reaction Bar (Float on hover)
+            // Quick Emoji Reaction Bar (Float on hover + Quick Reply)
             const reactionBar = `
                 <div class="msg-reactions-bar">
                     <button class="reaction-quick-btn" data-emoji="🔥">🔥</button>
@@ -2263,6 +2449,7 @@ const ESCTRIX = {
                     <button class="reaction-quick-btn" data-emoji="🛡️">🛡️</button>
                     <button class="reaction-quick-btn" data-emoji="👀">👀</button>
                     <button class="reaction-quick-btn" data-emoji="❤️">❤️</button>
+                    <button class="msg-reply-trigger-btn" title="Reply"><i class="ph ph-arrow-bend-up-left"></i></button>
                 </div>
             `;
 
@@ -2440,6 +2627,7 @@ const ESCTRIX = {
                     ${reactionBar}
                     ${vanishHeader}
                     ${!isMe && msg.name ? `<span class="sender-name">${msg.name}</span>` : ''}
+                    ${quoteHtml}
                     <div class="message-text">${formatted}</div>
                     <div class="msg-reactions-container"></div>
                     <div class="message-meta">
@@ -2475,6 +2663,42 @@ const ESCTRIX = {
                 });
             });
 
+            // Quick Reply button trigger
+            div.querySelector('.msg-reply-trigger-btn')?.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                const senderName = isMe ? 'You' : (msg.name || ESCTRIX.state.activeChat?.title || 'Peer');
+                const snippet = msg.text || msg.fileName || (msg.type ? `[${msg.type}]` : 'Message');
+                ESCTRIX.chat.startReply(senderName, snippet);
+            });
+
+            // Instagram double-tap / double-click to like
+            div.addEventListener('dblclick', (ev) => {
+                if (ev.target.closest('button, a, video, audio, input')) return;
+                const heart = document.createElement('div');
+                heart.className = 'heart-burst';
+                heart.textContent = '❤️';
+                div.appendChild(heart);
+                setTimeout(() => heart.remove(), 900);
+                ESCTRIX.playSfx('click');
+
+                const rContainer = div.querySelector('.msg-reactions-container');
+                if (rContainer) {
+                    const existingPill = rContainer.querySelector('[data-emoji="❤️"]');
+                    if (existingPill) {
+                        let count = parseInt(existingPill.dataset.count || '1') + 1;
+                        existingPill.dataset.count = String(count);
+                        existingPill.textContent = `❤️ ${count}`;
+                    } else {
+                        const pill = document.createElement('span');
+                        pill.className = 'msg-reaction-pill';
+                        pill.dataset.emoji = '❤️';
+                        pill.dataset.count = '1';
+                        pill.textContent = '❤️';
+                        rContainer.appendChild(pill);
+                    }
+                }
+            });
+
             // Handle Vanishing Countdown Timer
             if (msg.vanish && !isViewOnce) {
                 const totalDuration = typeof msg.vanish === 'number' && msg.vanish > 0 ? msg.vanish : 10;
@@ -2506,6 +2730,20 @@ const ESCTRIX = {
             e.messagesViewport.scrollTop = e.messagesViewport.scrollHeight;
         },
 
+        startReply(sender, text) {
+            ESCTRIX.state.activeReplyTo = { sender, text };
+            const e = ESCTRIX.elements;
+            if (e.replyPreviewSender) e.replyPreviewSender.textContent = `Replying to ${sender}`;
+            if (e.replyPreviewText) e.replyPreviewText.textContent = text.length > 55 ? text.substring(0, 52) + '...' : text;
+            if (e.replyPreviewBar) e.replyPreviewBar.classList.remove('hidden');
+            e.messageInput?.focus();
+        },
+
+        cancelReply() {
+            ESCTRIX.state.activeReplyTo = null;
+            if (ESCTRIX.elements.replyPreviewBar) ESCTRIX.elements.replyPreviewBar.classList.add('hidden');
+        },
+
         formatMarkdown(text) {
             // Safe escape and formatting
             let escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -2533,11 +2771,16 @@ const ESCTRIX = {
             const isDirect = s.activeChat?.title && s.activeChat.title.startsWith('@');
             const targetUname = isDirect ? s.activeChat.title.slice(1) : null;
 
+            const replySnapshot = s.activeReplyTo ? { ...s.activeReplyTo } : null;
+            this.cancelReply();
+
             const newMsg = {
                 sender: 'me',
                 text,
                 type: 'text',
                 vanish: s.vanishMode,
+                status: 'sent',
+                replyTo: replySnapshot,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
 
@@ -2559,6 +2802,7 @@ const ESCTRIX = {
                         content: text,
                         msg_type: 'text',
                         vanish: s.vanishMode ? 1 : 0,
+                        reply_to: replySnapshot,
                         sender_display_name: s.user?.display_name || s.user?.username
                     }));
                 }
@@ -2567,7 +2811,8 @@ const ESCTRIX = {
                         type: 'chat',
                         text,
                         senderName: s.user?.display_name || s.user?.username,
-                        vanish: s.vanishMode
+                        vanish: s.vanishMode,
+                        replyTo: replySnapshot
                     });
                 }
             } else if (s.activeChat.type === 'space') {
@@ -2576,7 +2821,8 @@ const ESCTRIX = {
                         type: 'chat',
                         text,
                         senderName: s.user?.display_name || s.user?.username,
-                        vanish: s.vanishMode
+                        vanish: s.vanishMode,
+                        replyTo: replySnapshot
                     });
                 }
             }
@@ -3145,6 +3391,10 @@ const ESCTRIX = {
     // AURA AI SUITE MODULE
     // ─────────────────────────────────────────────────────────
     ai: {
+        async handleUserQuery(prompt) {
+            return this.sendToAura(prompt);
+        },
+
         async sendToAura(prompt) {
             const e = ESCTRIX.elements;
             // Display typing indicator
@@ -4056,20 +4306,30 @@ const ESCTRIX = {
                     }
                 }
 
+                if (e.outgoingCallCard) {
+                    e.outgoingCallCard.classList.remove('hidden');
+                    if (e.outgoingPeerName) e.outgoingPeerName.textContent = isDirect ? `@${targetUname}` : (s.activeChat?.title || 'Peer');
+                    if (e.outgoingAvatar) e.outgoingAvatar.textContent = (targetUname || s.activeChat?.title || 'P').replace('@', '').charAt(0).toUpperCase();
+                    if (e.outgoingStatus) e.outgoingStatus.textContent = type === 'video' ? 'Outgoing Video Call... Ringing...' : 'Outgoing Voice Call... Ringing...';
+                }
+                ESCTRIX.startRingtone('outgoing');
+
                 e.videoOverlay.classList.remove('hidden');
-                e.videoPeerName.textContent = s.activeChat?.title || 'Call in progress';
+                e.videoPeerName.textContent = isDirect ? `@${targetUname}` : (s.activeChat?.title || 'Call in progress');
+                if (e.callTimer) e.callTimer.textContent = 'Calling...';
                 s.isVideoCalling = true;
-                this.startTimer();
                 ESCTRIX.showToast(`Initiating ${type} call...`);
             } catch (err) {
                 console.error('[Call initiate error]:', err);
+                ESCTRIX.stopRingtone();
+                if (e.outgoingCallCard) e.outgoingCallCard.classList.add('hidden');
                 ESCTRIX.showToast('Camera or Microphone access required for calls.', true);
             }
         },
 
         handleSignal(signal) {
             if (signal.type === 'call_request') {
-                ESCTRIX.playSfx('call');
+                ESCTRIX.startRingtone('incoming');
                 const caller = signal.data?.caller || signal.sender || 'Peer';
                 const callType = signal.data?.callType || 'video';
                 if (ESCTRIX.elements.callerName) ESCTRIX.elements.callerName.textContent = caller;
@@ -4079,12 +4339,18 @@ const ESCTRIX = {
                 ESCTRIX.state.incomingSpaceCall = signal;
                 ESCTRIX.modal.open('call-modal');
             } else if (signal.type === 'call_accepted') {
+                ESCTRIX.stopRingtone();
+                if (ESCTRIX.elements.outgoingCallCard) ESCTRIX.elements.outgoingCallCard.classList.add('hidden');
+                this.startTimer();
                 ESCTRIX.playSfx('send');
                 ESCTRIX.showToast('Call connected! 📞');
             } else if (signal.type === 'call_declined') {
+                ESCTRIX.stopRingtone();
+                ESCTRIX.playSfx('decline');
                 ESCTRIX.showToast('Call declined.');
                 this.end(false);
             } else if (signal.type === 'call_ended') {
+                ESCTRIX.stopRingtone();
                 ESCTRIX.showToast('Call ended by peer.');
                 this.end(false);
             }
@@ -4092,6 +4358,7 @@ const ESCTRIX = {
 
         async accept() {
             ESCTRIX.modal.close('call-modal');
+            ESCTRIX.stopRingtone();
             const s = ESCTRIX.state;
             const e = ESCTRIX.elements;
 
@@ -4143,6 +4410,7 @@ const ESCTRIX = {
                     s.incomingSpaceCall = null;
                 }
 
+                if (e.outgoingCallCard) e.outgoingCallCard.classList.add('hidden');
                 e.videoOverlay.classList.remove('hidden');
                 e.videoPeerName.textContent = s.activeDirectCallTarget ? `@${s.activeDirectCallTarget}` : (s.activeChat?.title || 'In Call');
                 s.isVideoCalling = true;
@@ -4155,6 +4423,7 @@ const ESCTRIX = {
 
         decline() {
             ESCTRIX.modal.close('call-modal');
+            ESCTRIX.stopRingtone();
             const s = ESCTRIX.state;
             if (s.incomingDirectCall && s.userWs && s.userWs.readyState === WebSocket.OPEN) {
                 s.userWs.send(JSON.stringify({
@@ -4225,13 +4494,43 @@ const ESCTRIX = {
                 s.callSeconds++;
                 const mins = Math.floor(s.callSeconds / 60).toString().padStart(2, '0');
                 const secs = (s.callSeconds % 60).toString().padStart(2, '0');
-                e.callTimer.textContent = `${mins}:${secs}`;
+                const timeStr = `${mins}:${secs}`;
+                if (e.callTimer) e.callTimer.textContent = timeStr;
+                if (e.pipTimer) e.pipTimer.textContent = timeStr;
             }, 1000);
+        },
+
+        minimize() {
+            const s = ESCTRIX.state;
+            const e = ESCTRIX.elements;
+            if (!s.isVideoCalling) return;
+            if (e.videoOverlay) e.videoOverlay.classList.add('hidden');
+            if (e.callPipPill) {
+                const target = s.activeDirectCallTarget ? `@${s.activeDirectCallTarget}` : (s.activeChat?.title || 'In Call');
+                if (e.pipPeerName) e.pipPeerName.textContent = target;
+                if (e.pipAvatar) e.pipAvatar.textContent = target.replace('@', '').charAt(0).toUpperCase();
+                if (e.pipTimer && e.callTimer) e.pipTimer.textContent = e.callTimer.textContent;
+                e.callPipPill.classList.remove('hidden');
+            }
+            ESCTRIX.showToast('Call minimized to floating window');
+        },
+
+        maximize() {
+            const e = ESCTRIX.elements;
+            if (e.callPipPill) e.callPipPill.classList.add('hidden');
+            if (e.videoOverlay) e.videoOverlay.classList.remove('hidden');
         },
 
         end(sendSignal = true) {
             const s = ESCTRIX.state;
             const e = ESCTRIX.elements;
+
+            ESCTRIX.stopRingtone();
+            if (e.outgoingCallCard) e.outgoingCallCard.classList.add('hidden');
+            if (e.callPipPill) e.callPipPill.classList.add('hidden');
+            if (e.muteBtn) e.muteBtn.classList.remove('is-muted');
+            if (e.camOffBtn) e.camOffBtn.classList.remove('is-cam-off');
+            if (e.callScreenShareBtn) e.callScreenShareBtn.classList.remove('is-sharing');
 
             if (sendSignal) {
                 // Direct 1-on-1 call end signal
@@ -4302,7 +4601,11 @@ const ESCTRIX = {
             if (audioTrack) {
                 s.isMuted = !s.isMuted;
                 audioTrack.enabled = !s.isMuted;
-                ESCTRIX.elements.muteBtn.querySelector('i').className = s.isMuted ? 'ph ph-microphone-slash' : 'ph ph-microphone';
+                ESCTRIX.elements.muteBtn?.querySelector('i') && (ESCTRIX.elements.muteBtn.querySelector('i').className = s.isMuted ? 'ph ph-microphone-slash' : 'ph ph-microphone');
+                ESCTRIX.elements.muteBtn?.classList.toggle('is-muted', s.isMuted);
+                if (ESCTRIX.elements.pipMuteBtn) {
+                    ESCTRIX.elements.pipMuteBtn.querySelector('i').className = s.isMuted ? 'ph ph-microphone-slash' : 'ph ph-microphone';
+                }
                 ESCTRIX.showToast(s.isMuted ? 'Muted' : 'Unmuted');
             }
         },
@@ -4313,7 +4616,8 @@ const ESCTRIX = {
             if (videoTrack) {
                 s.isCamOff = !s.isCamOff;
                 videoTrack.enabled = !s.isCamOff;
-                ESCTRIX.elements.camOffBtn.querySelector('i').className = s.isCamOff ? 'ph ph-video-camera-slash' : 'ph ph-video-camera';
+                ESCTRIX.elements.camOffBtn?.querySelector('i') && (ESCTRIX.elements.camOffBtn.querySelector('i').className = s.isCamOff ? 'ph ph-video-camera-slash' : 'ph ph-video-camera');
+                ESCTRIX.elements.camOffBtn?.classList.toggle('is-cam-off', s.isCamOff);
             }
         },
 
