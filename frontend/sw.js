@@ -1,4 +1,4 @@
-const CACHE_NAME = 'esctrix-v17-quantum';
+const CACHE_NAME = 'esctrix-v18-quantum';
 const OFFLINE_URL = '/offline.html';
 const ASSETS = [
     '/',

@@ -565,12 +565,21 @@ async def start_hosting(data: HostStart):
     except Exception:
         connect_url = render_url or f"http://localhost:{DEFAULT_PORT}"
 
-    qr_base64 = generate_qr_base64(connect_url)
+    # Embed space name and PIN into the QR connect URL for seamless 1-tap peer join
+    from urllib.parse import urlencode
+    query_params = {"join": data.space_name}
+    if data.pin:
+        query_params["pin"] = data.pin
+    full_join_url = f"{connect_url.rstrip('/')}/?{urlencode(query_params)}"
+
+    qr_base64 = generate_qr_base64(full_join_url)
+    data_uri = f"data:image/png;base64,{qr_base64}"
 
     return {
         "status": "success",
-        "qr_code": qr_base64,
-        "server_ip": connect_url
+        "qr_code": data_uri,
+        "server_ip": connect_url,
+        "join_url": full_join_url
     }
 
 
@@ -770,7 +779,8 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
             elif current_room and message.get("type") in [
                 "offer", "answer", "candidate",
                 "call_request", "call_accepted", "call_declined",
-                "typing", "vibe_update", "message_delivered", "message_read", "burn_room"
+                "typing", "vibe_update", "message_delivered", "message_read", "burn_room",
+                "quantum_chat"
             ]:
                 target = message.get("target")
 
@@ -780,12 +790,11 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                         "sender": client_id
                     })
                 else:
-                    payload = {
-                        "type": message.get("type"),
-                        "sender": client_id,
-                        "data": message.get("data")
-                    }
-                    await manager.broadcast_to_room(current_room, payload, exclude_client_id=client_id)
+                    await manager.broadcast_to_room(
+                        current_room,
+                        {**message, "sender": client_id},
+                        exclude_client_id=client_id
+                    )
 
     except WebSocketDisconnect:
         if current_room:

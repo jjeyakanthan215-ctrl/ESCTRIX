@@ -323,6 +323,21 @@ const ESCTRIX = {
         }
         // Introduction page is always the starting gateway of the project
         this.showScreen('intro-screen');
+
+        // Check for ?join=room_name&pin=123 from scanned QR code or shared link
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const autoJoinSpace = urlParams.get('join');
+            const autoJoinPin = urlParams.get('pin');
+            if (autoJoinSpace) {
+                setTimeout(() => {
+                    this.space.switchTab('join');
+                    if (this.elements.joinSpaceName) this.elements.joinSpaceName.value = autoJoinSpace;
+                    if (autoJoinPin && this.elements.joinPin) this.elements.joinPin.value = autoJoinPin;
+                    this.modal.open('new-space-modal');
+                }, 600);
+            }
+        } catch (e) {}
     },
 
     // ─────────────────────────────────────────────────────────
@@ -918,7 +933,10 @@ const ESCTRIX = {
         });
 
         // New Space Modal
-        e.newSpaceBtn?.addEventListener('click', () => this.modal.open('new-space-modal'));
+        e.newSpaceBtn?.addEventListener('click', () => {
+            this.space.switchTab('host');
+            this.modal.open('new-space-modal');
+        });
         e.newSpaceCloseBtn?.addEventListener('click', () => this.modal.close('new-space-modal'));
         e.tabHost?.addEventListener('click', () => this.space.switchTab('host'));
         e.tabJoin?.addEventListener('click', () => this.space.switchTab('join'));
@@ -3578,13 +3596,20 @@ const ESCTRIX = {
             if (tab === 'host') {
                 e.tabHost.classList.add('active-tab');
                 e.tabJoin.classList.remove('active-tab');
-                e.hostSetup.style.display = 'block';
                 e.clientSetup.style.display = 'none';
+                if (ESCTRIX.state.activeSpaceName) {
+                    e.hostWaiting.style.display = 'block';
+                    e.hostSetup.style.display = 'none';
+                } else {
+                    e.hostSetup.style.display = 'block';
+                    e.hostWaiting.style.display = 'none';
+                }
             } else {
                 e.tabJoin.classList.add('active-tab');
                 e.tabHost.classList.remove('active-tab');
                 e.clientSetup.style.display = 'block';
                 e.hostSetup.style.display = 'none';
+                e.hostWaiting.style.display = 'none';
             }
         },
 
@@ -3610,9 +3635,14 @@ const ESCTRIX = {
                     ESCTRIX.playSfx('send');
                     ESCTRIX.state.activeSpaceName = spaceName;
                     ESCTRIX.state.activeSpacePin = pin;
+                    e.hostError.textContent = '';
                     e.hostSetup.style.display = 'none';
                     e.hostWaiting.style.display = 'block';
-                    e.qrCodeImg.src = data.qr_code;
+                    
+                    const qrSrc = data.qr_code && data.qr_code.startsWith('data:') 
+                        ? data.qr_code 
+                        : `data:image/png;base64,${data.qr_code}`;
+                    e.qrCodeImg.src = qrSrc;
                     e.displayPin.textContent = pin || 'NONE';
                     e.mySpaceName.textContent = spaceName;
 
@@ -3629,6 +3659,7 @@ const ESCTRIX = {
         },
 
         async stopHosting() {
+            const e = ESCTRIX.elements;
             const spaceName = ESCTRIX.state.activeSpaceName;
             if (spaceName) {
                 fetch('/api/host/stop', {
@@ -3642,6 +3673,12 @@ const ESCTRIX = {
                 ESCTRIX.state.p2p = null;
             }
             ESCTRIX.state.activeSpaceName = '';
+            ESCTRIX.state.activeSpacePin = '';
+            if (e.hostSpaceName) e.hostSpaceName.value = '';
+            if (e.hostPin) e.hostPin.value = '';
+            if (e.hostError) e.hostError.textContent = '';
+            if (e.hostWaiting) e.hostWaiting.style.display = 'none';
+            if (e.hostSetup) e.hostSetup.style.display = 'block';
             ESCTRIX.modal.close('new-space-modal');
             ESCTRIX.chat.renderChatList();
             ESCTRIX.showToast('Space closed.');
@@ -3677,6 +3714,8 @@ const ESCTRIX = {
                 ESCTRIX.state.p2p.disconnect();
             }
 
+            const e = ESCTRIX.elements;
+
             ESCTRIX.state.p2p = new P2PConnection(
                 // onMessage
                 (data) => {
@@ -3710,12 +3749,12 @@ const ESCTRIX = {
                             duration: data.duration || '0:05',
                             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                         };
+                        if (!ESCTRIX.state.chatHistories['space']) ESCTRIX.state.chatHistories['space'] = [];
                         ESCTRIX.state.chatHistories['space'].push(vMsg);
                         if (ESCTRIX.state.activeChat.type === 'space') {
                             ESCTRIX.chat.appendMessageDOM(vMsg);
                         }
                     } else if (data.type === 'typing') {
-                        const e = ESCTRIX.elements;
                         if (e.typingIndicator && e.typingName) {
                             e.typingName.textContent = data.username || 'Peer';
                             e.typingIndicator.classList.remove('hidden');
@@ -3733,6 +3772,7 @@ const ESCTRIX = {
                             fileUrl: data.payload,
                             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                         };
+                        if (!ESCTRIX.state.chatHistories['space']) ESCTRIX.state.chatHistories['space'] = [];
                         ESCTRIX.state.chatHistories['space'].push(fMsg);
                         if (ESCTRIX.state.activeChat.type === 'space') {
                             ESCTRIX.chat.appendMessageDOM(fMsg);
@@ -3740,13 +3780,22 @@ const ESCTRIX = {
                     }
                 },
                 // onConnectionStateChange
-                (state) => {
-                    console.log('[P2P State]:', state);
+                (state, details) => {
+                    console.log('[P2P State]:', state, details);
                     if (state === 'connected') {
                         ESCTRIX.playSfx('send');
+                        if (e.authError) e.authError.textContent = '';
                         ESCTRIX.modal.close('new-space-modal');
                         ESCTRIX.chat.switchChat('space');
                         ESCTRIX.showToast('P2P Direct WebRTC Mesh Connected! 🛡️');
+                    } else if (state === 'failed_auth') {
+                        if (e.authError) {
+                            e.authError.textContent = ESCTRIX.state.p2p?.authMessage || 'Authentication failed: Incorrect PIN or invalid space.';
+                        }
+                    } else if (state === 'disconnected') {
+                        if (e.authError && e.authError.textContent.includes('Synchronizing')) {
+                            e.authError.textContent = 'Disconnected from room.';
+                        }
                     }
                 },
                 // onTrack
@@ -3903,10 +3952,13 @@ const ESCTRIX = {
                         offer: offer
                     }));
                 } else {
-                    s.localVideoStream.getTracks().forEach(track => {
-                        s.p2p?.addTrack(track, s.localVideoStream);
-                    });
-                    s.p2p?.sendCallSignal('call_request', { callType: type, caller: s.user?.username });
+                    if (s.p2p) {
+                        await s.p2p.startMedia(s.localVideoStream);
+                        s.p2p.sendCallSignal('call_request', {
+                            callType: type,
+                            caller: s.user?.display_name || s.user?.username || 'Peer'
+                        });
+                    }
                 }
 
                 e.videoOverlay.classList.remove('hidden');
@@ -3923,10 +3975,17 @@ const ESCTRIX = {
         handleSignal(signal) {
             if (signal.type === 'call_request') {
                 ESCTRIX.playSfx('call');
-                ESCTRIX.elements.callerName.textContent = signal.data?.caller || 'Peer';
+                const caller = signal.data?.caller || signal.sender || 'Peer';
+                const callType = signal.data?.callType || 'video';
+                if (ESCTRIX.elements.callerName) ESCTRIX.elements.callerName.textContent = caller;
+                if (ESCTRIX.elements.incomingCallTitle) {
+                    ESCTRIX.elements.incomingCallTitle.textContent = callType === 'video' ? 'Incoming Video Call' : 'Incoming Audio Call';
+                }
+                ESCTRIX.state.incomingSpaceCall = signal;
                 ESCTRIX.modal.open('call-modal');
             } else if (signal.type === 'call_accepted') {
-                ESCTRIX.showToast('Call accepted by peer.');
+                ESCTRIX.playSfx('send');
+                ESCTRIX.showToast('Call connected! 📞');
             } else if (signal.type === 'call_declined') {
                 ESCTRIX.showToast('Call declined.');
                 this.end();
@@ -3939,7 +3998,7 @@ const ESCTRIX = {
             const e = ESCTRIX.elements;
 
             try {
-                const isVideo = s.incomingDirectCall ? (s.incomingDirectCall.call_type === 'video') : true;
+                const isVideo = s.incomingDirectCall ? (s.incomingDirectCall.call_type === 'video') : (s.incomingSpaceCall?.data?.callType === 'video');
                 s.localVideoStream = await navigator.mediaDevices.getUserMedia({
                     audio: true,
                     video: isVideo ? { facingMode: s.currentFacingMode } : false
@@ -3979,10 +4038,11 @@ const ESCTRIX = {
                     }));
                     s.incomingDirectCall = null;
                 } else {
-                    s.localVideoStream.getTracks().forEach(track => {
-                        s.p2p?.addTrack(track, s.localVideoStream);
-                    });
-                    s.p2p?.sendCallSignal('call_accepted', {});
+                    if (s.p2p) {
+                        await s.p2p.startMedia(s.localVideoStream);
+                        s.p2p.sendCallSignal('call_accepted', {});
+                    }
+                    s.incomingSpaceCall = null;
                 }
 
                 e.videoOverlay.classList.remove('hidden');
@@ -4004,8 +4064,9 @@ const ESCTRIX = {
                     target_username: s.incomingDirectCall.sender_username
                 }));
                 s.incomingDirectCall = null;
-            } else {
-                s.p2p?.sendCallSignal('call_declined', {});
+            } else if (s.p2p) {
+                s.p2p.sendCallSignal('call_declined', {});
+                s.incomingSpaceCall = null;
             }
         },
 

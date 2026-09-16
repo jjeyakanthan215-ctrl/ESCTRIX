@@ -125,7 +125,8 @@ class P2PConnection {
             }
 
             case 'peer_joined': {
-                const { clientId, username } = msg;
+                const clientId = msg.client_id || msg.clientId;
+                const username = msg.username || 'Peer';
                 console.log('[Mesh] Peer joined:', username, clientId);
                 this.peerName = username;
                 // Notify UI
@@ -153,7 +154,7 @@ class P2PConnection {
 
             case 'offer': {
                 const senderId = msg.sender;
-                const offerPayload = msg.data;
+                const offerPayload = msg.data || {};
                 const remoteSdp = offerPayload.sdp || msg.data; // fallback for backwards compatibility
                 const remoteUsername = offerPayload.username || '';
                 
@@ -169,6 +170,19 @@ class P2PConnection {
                 
                 const peerObj = this.peers.get(senderId);
                 await peerObj.pc.setRemoteDescription(new RTCSessionDescription(remoteSdp));
+
+                // Drain queued ICE candidates
+                if (peerObj.queuedCandidates && peerObj.queuedCandidates.length > 0) {
+                    while (peerObj.queuedCandidates.length > 0) {
+                        const cand = peerObj.queuedCandidates.shift();
+                        try {
+                            await peerObj.pc.addIceCandidate(new RTCIceCandidate(cand));
+                        } catch (e) {
+                            console.warn('[ICE] Queued candidate error:', e);
+                        }
+                    }
+                }
+
                 const answer = await peerObj.pc.createAnswer();
                 await peerObj.pc.setLocalDescription(answer);
                 this.sendSignalingMessage('answer', answer, senderId);
@@ -181,6 +195,17 @@ class P2PConnection {
                 const peerObj = this.peers.get(senderId);
                 if (peerObj) {
                     await peerObj.pc.setRemoteDescription(new RTCSessionDescription(msg.data));
+                    // Drain queued ICE candidates
+                    if (peerObj.queuedCandidates && peerObj.queuedCandidates.length > 0) {
+                        while (peerObj.queuedCandidates.length > 0) {
+                            const cand = peerObj.queuedCandidates.shift();
+                            try {
+                                await peerObj.pc.addIceCandidate(new RTCIceCandidate(cand));
+                            } catch (e) {
+                                console.warn('[ICE] Queued candidate error:', e);
+                            }
+                        }
+                    }
                 }
                 break;
             }
@@ -190,7 +215,12 @@ class P2PConnection {
                 const peerObj = this.peers.get(senderId);
                 if (peerObj && msg.data) {
                     try {
-                        await peerObj.pc.addIceCandidate(new RTCIceCandidate(msg.data));
+                        if (peerObj.pc.remoteDescription && peerObj.pc.remoteDescription.type) {
+                            await peerObj.pc.addIceCandidate(new RTCIceCandidate(msg.data));
+                        } else {
+                            if (!peerObj.queuedCandidates) peerObj.queuedCandidates = [];
+                            peerObj.queuedCandidates.push(msg.data);
+                        }
                     } catch (e) {
                         console.warn('[ICE] Candidate error:', e);
                     }
@@ -202,7 +232,20 @@ class P2PConnection {
             case 'call_accepted':
             case 'call_declined': {
                 if (this.onCallSignal) {
-                    this.onCallSignal(msg.type, msg.sender, msg.data);
+                    this.onCallSignal({
+                        type: msg.type,
+                        sender: msg.sender,
+                        data: msg.data || {}
+                    });
+                }
+                break;
+            }
+
+            case 'quantum_chat': {
+                if (this.onMessage && msg.data) {
+                    const chatMsg = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
+                    chatMsg._fromPeerId = msg.sender;
+                    this.onMessage(chatMsg);
                 }
                 break;
             }
@@ -328,6 +371,7 @@ class P2PConnection {
 
     /**
      * Send a JSON message to ALL connected peers via their data channels.
+     * If data channels are not open yet, fallback to signaling room relay.
      */
     send(message) {
         const payload = JSON.stringify(message);
@@ -339,7 +383,35 @@ class P2PConnection {
             }
         }
         if (sent === 0) {
-            console.warn('[DataChannel] No open channels to send to');
+            console.warn('[DataChannel] No open channels yet, falling back to Quantum room relay');
+            this.sendSignalingMessage('quantum_chat', message);
+        }
+    }
+
+    /**
+     * Alias for send(message) to match app.js caller convention.
+     */
+    sendData(message) {
+        return this.send(message);
+    }
+
+    /**
+     * Send a call signaling event (call_request, call_accepted, call_declined) to peers.
+     */
+    sendCallSignal(type, data = {}) {
+        this.sendSignalingMessage(type, data);
+    }
+
+    /**
+     * Attach a local audio or video track to all active peer connections.
+     */
+    addTrack(track, stream) {
+        for (const [, peerObj] of this.peers) {
+            try {
+                peerObj.pc.addTrack(track, stream);
+            } catch (e) {
+                console.warn('[Mesh] addTrack error:', e);
+            }
         }
     }
 
@@ -350,6 +422,8 @@ class P2PConnection {
         const peerObj = this.peers.get(peerId);
         if (peerObj && peerObj.dc && peerObj.dc.readyState === 'open') {
             peerObj.dc.send(JSON.stringify(message));
+        } else {
+            this.sendSignalingMessage('quantum_chat', message, peerId);
         }
     }
 
