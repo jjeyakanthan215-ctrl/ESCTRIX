@@ -71,8 +71,16 @@ F. Responsive Design Alignment (Desktop & Mobile):
 
 G. Automated Self-Healing PWA Cache Cleaner:
    - Injected critical inline guard CSS in `<head>` to enforce dimensions before external CSS loads.
-   - Self-healing version comparator script (`CURRENT_VER = '2.1.1-quantum'`) detects stale versions in `localStorage` and automatically deletes outdated Service Worker caches (`caches.delete()`) and unregisters old service workers on client visit.
-   - Cache-busting query strings (`?v=2.1.1`) appended to all stylesheets and scripts.
+   - Self-healing version comparator script (`CURRENT_VER = '2.2.1-quantum'`) detects stale versions in `localStorage` and automatically deletes outdated Service Worker caches (`caches.delete()`) and unregisters old service workers on client visit.
+   - Cache-busting query strings (`?v=2.2.1`) appended to all stylesheets and scripts.
+
+H. Call Modality Alignment, Space QR Code, Tab State Bug & WebRTC Fixes:
+   - Call Modality Modal Alignment: Fixed stretched rectangular header icon with circular glowing `.caller-avatar` halo; added flex-column `.call-modal-actions` with 12px gaps, rounded corners, and vibrant gradients (Emerald audio, Purple video, frosted glass Cancel).
+   - Host Connect QR Code: Embedded direct join parameters (`?join={space}&pin={pin}`) in the QR payload, prefixed `data:image/png;base64,` data URI, and upgraded `.qr-container` to a high-contrast 210px x 210px rounded card with cyan glow.
+   - Host vs Join Tab Switching Bug: Fixed state collision in `space.switchTab` by isolating active room card (`#host-waiting`) from setup form (`#host-setup`), preventing dual-form stack. Clean input reset on `stopHosting()`.
+   - P2P Space Chat Delivery: Added `sendData(message)` alias to `P2PConnection.send()` to eliminate silent `TypeError`, and implemented `quantum_chat` room WebSocket signaling fallback.
+   - WebRTC Audio/Video Calling: Added `sendCallSignal()`, `addTrack()`, ICE candidate queueing before remote description, media renegotiation (`startMedia`), and full room broadcast in `server.py`.
+   - Service Worker & Cache: Bumped cache to `esctrix-v18-quantum` and version to `2.2.1-quantum`.
 
 --------------------------------------------------------------------------------
 3. FILE SITEMAP & PROJECT STRUCTURE
