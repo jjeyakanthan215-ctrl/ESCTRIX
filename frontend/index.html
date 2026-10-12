@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="creamy-alabaster">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <title>ESCTRIX Quantum — Futuristic Decentralized P2P Messenger & AI Suite</title>
     <meta name="description" content="ESCTRIX Quantum: Futuristic decentralized peer-to-peer messaging, Zero-Knowledge E2EE, WebRTC audio/video calls, and Aura AI Neural Copilot.">
-    <meta name="theme-color" content="#f8fafc">
+    <meta name="theme-color" content="#faf8f5">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
@@ -23,12 +23,12 @@
     <meta name="twitter:description" content="Decentralized peer-to-peer messaging platform with Zero-Knowledge E2EE, WebRTC mesh media, and Aura AI Neural Copilot.">
     <meta name="twitter:image" content="https://esctrix.onrender.com/static/logo.png">
 
-    <link rel="stylesheet" href="/static/css/style.css?v=2.3.0">
+    <link rel="stylesheet" href="/static/css/style.css?v=2.3.1">
     <link rel="manifest" href="/manifest.json">
     <script>
-        /* ── Automated Self-Healing Cache Cleaner (Purges stale PWA cache on load) ── */
+        /* ── Automated Self-Healing Cache Cleaner & Theme Initialization ── */
         (function() {
-            var CURRENT_VER = '2.3.0-quantum';
+            var CURRENT_VER = '2.3.1-creamy';
             var lastVer = localStorage.getItem('esctrix_cache_ver');
             if (lastVer !== CURRENT_VER) {
                 localStorage.setItem('esctrix_cache_ver', CURRENT_VER);
@@ -42,6 +42,14 @@
                         regs.forEach(function(r) { r.unregister(); });
                     });
                 }
+            }
+            // Ensure default theme is creamy-alabaster for fresh or migrated sessions
+            var savedTheme = localStorage.getItem('esctrix_theme');
+            if (!savedTheme || savedTheme === 'cyber-obsidian' || savedTheme === 'executive-slate' || savedTheme === 'quantum-dark') {
+                localStorage.setItem('esctrix_theme', 'creamy-alabaster');
+                document.documentElement.setAttribute('data-theme', 'creamy-alabaster');
+            } else {
+                document.documentElement.setAttribute('data-theme', savedTheme);
             }
         })();
     </script>
@@ -254,9 +262,9 @@
                     </button>
 
                     <div class="auth-divider" style="display:flex; align-items:center; margin:14px 0 10px; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px;">
-                        <span style="flex:1; height:1px; background:rgba(255,255,255,0.08); margin-right:8px;"></span>
+                        <span style="flex:1; height:1px; background:var(--panel-border); margin-right:8px;"></span>
                         <span>OR</span>
-                        <span style="flex:1; height:1px; background:rgba(255,255,255,0.08); margin-left:8px;"></span>
+                        <span style="flex:1; height:1px; background:var(--panel-border); margin-left:8px;"></span>
                     </div>
 
                     <button type="button" id="passkey-login-btn" class="btn secondary-btn full-width" style="display:flex; align-items:center; justify-content:center; gap:8px;">
@@ -1386,12 +1394,56 @@
                             </button>
                             <div class="settings-accordion-body">
                                 <div class="theme-grid" id="theme-suite-grid">
-                                    <div class="theme-card active" data-theme="executive-slate">
+                                    <div class="theme-card active" data-theme="creamy-alabaster">
+                                        <div class="theme-swatch-preview">
+                                            <div class="theme-dot" style="background:#faf8f5;"></div>
+                                            <div class="theme-dot" style="background:#2563eb;"></div>
+                                            <div class="theme-dot" style="background:#fde68a;"></div>
+                                        </div>
+                                        <span>Creamy Alabaster</span>
+                                    </div>
+                                    <div class="theme-card" data-theme="pearl-white">
+                                        <div class="theme-swatch-preview">
+                                            <div class="theme-dot" style="background:#ffffff;"></div>
+                                            <div class="theme-dot" style="background:#2563eb;"></div>
+                                            <div class="theme-dot" style="background:#0284c7;"></div>
+                                        </div>
+                                        <span>Pure Pearl White</span>
+                                    </div>
+                                    <div class="theme-card" data-theme="warm-cashmere">
+                                        <div class="theme-swatch-preview">
+                                            <div class="theme-dot" style="background:#f5f2eb;"></div>
+                                            <div class="theme-dot" style="background:#d97706;"></div>
+                                            <div class="theme-dot" style="background:#0284c7;"></div>
+                                        </div>
+                                        <span>Warm Cashmere</span>
+                                    </div>
+                                    <div class="theme-card" data-theme="executive-slate">
                                         <div class="theme-swatch-preview">
                                             <div class="theme-dot" style="background:#080c14;"></div>
                                             <div class="theme-dot" style="background:#2563eb;"></div>
                                             <div class="theme-dot" style="background:#06b6d4;"></div>
                                         </div>
+                                        <span>Executive Slate</span>
+                                    </div>
+                                    <div class="theme-card" data-theme="midnight-titanium">
+                                        <div class="theme-swatch-preview">
+                                            <div class="theme-dot" style="background:#090e17;"></div>
+                                            <div class="theme-dot" style="background:#3b82f6;"></div>
+                                            <div class="theme-dot" style="background:#38bdf8;"></div>
+                                        </div>
+                                        <span>Midnight Titanium</span>
+                                    </div>
+                                    <div class="theme-card" data-theme="oled-pitch">
+                                        <div class="theme-swatch-preview">
+                                            <div class="theme-dot" style="background:#000000;"></div>
+                                            <div class="theme-dot" style="background:#38bdf8;"></div>
+                                            <div class="theme-dot" style="background:#06b6d4;"></div>
+                                        </div>
+                                        <span>OLED Studio Black</span>
+                                    </div>
+                                </div>
+                            </div>
                                         <span>Executive Slate</span>
                                     </div>
                                     <div class="theme-card" data-theme="midnight-titanium">

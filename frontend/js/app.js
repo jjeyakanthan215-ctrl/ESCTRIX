@@ -348,7 +348,11 @@ const ESCTRIX = {
             this.state.sfxEnabled = sfx === 'true';
             if (this.elements.prefSfxToggle) this.elements.prefSfxToggle.checked = this.state.sfxEnabled;
         }
-        const theme = localStorage.getItem('esctrix_theme') || 'executive-slate';
+        let theme = localStorage.getItem('esctrix_theme');
+        if (!theme || theme === 'cyber-obsidian' || theme === 'executive-slate' || theme === 'quantum-dark') {
+            theme = 'creamy-alabaster';
+            localStorage.setItem('esctrix_theme', 'creamy-alabaster');
+        }
         document.documentElement.setAttribute('data-theme', theme);
         this.settings?.loadTheme();
 
@@ -1946,7 +1950,11 @@ const ESCTRIX = {
         },
 
         loadTheme() {
-            const saved = localStorage.getItem('esctrix_theme') || 'executive-slate';
+            let saved = localStorage.getItem('esctrix_theme');
+            if (!saved || saved === 'cyber-obsidian' || saved === 'executive-slate' || saved === 'quantum-dark') {
+                saved = 'creamy-alabaster';
+                localStorage.setItem('esctrix_theme', 'creamy-alabaster');
+            }
             document.documentElement.setAttribute('data-theme', saved);
             document.querySelectorAll('.theme-card').forEach(c => {
                 c.classList.toggle('active', c.dataset.theme === saved);
