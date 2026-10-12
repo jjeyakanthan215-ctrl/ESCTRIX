@@ -1,4 +1,4 @@
-const CACHE_NAME = 'esctrix-v24-luxury-linear-edition';
+const CACHE_NAME = 'esctrix-v24-1-features-luxury';
 const OFFLINE_URL = '/offline.html';
 const ASSETS = [
     '/',
