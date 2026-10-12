@@ -6282,9 +6282,8 @@ const ESCTRIX = {
         ringY: window.innerHeight / 2,
 
         init() {
-            this.dot = document.getElementById('quantum-cursor-dot');
-            this.ring = document.getElementById('quantum-cursor-ring');
-            if (!this.dot || !this.ring) return;
+            // Native zero-latency human cursor
+            return;
 
             window.addEventListener('mousemove', (e) => {
                 this.mouseX = e.clientX;
