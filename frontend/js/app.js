@@ -2727,17 +2727,8 @@ const ESCTRIX = {
                 </div>
             ` : '';
 
-            // Quick Emoji Reaction Bar (Float on hover + Quick Reply)
-            const reactionBar = `
-                <div class="msg-reactions-bar">
-                    <button class="reaction-quick-btn" data-emoji="🔥">🔥</button>
-                    <button class="reaction-quick-btn" data-emoji="⚡">⚡</button>
-                    <button class="reaction-quick-btn" data-emoji="🛡️">🛡️</button>
-                    <button class="reaction-quick-btn" data-emoji="👀">👀</button>
-                    <button class="reaction-quick-btn" data-emoji="❤️">❤️</button>
-                    <button class="msg-reply-trigger-btn" title="Reply"><i class="ph ph-arrow-bend-up-left"></i></button>
-                </div>
-            `;
+            // Inline reaction bar removed per user preference — only clean chat content & time are rendered
+            const reactionBar = '';
 
             const vanishFooter = (msg.vanish && !isViewOnce) ? `
                 <div class="vanish-footer">

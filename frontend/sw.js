@@ -1,4 +1,4 @@
-const CACHE_NAME = 'esctrix-v24-1-features-luxury';
+const CACHE_NAME = 'esctrix-v24-2-clean-chat-bubbles';
 const OFFLINE_URL = '/offline.html';
 const ASSETS = [
     '/',
