@@ -1,4 +1,4 @@
-const CACHE_NAME = 'esctrix-v23-creamy-alabaster';
+const CACHE_NAME = 'esctrix-v24-luxury-linear-edition';
 const OFFLINE_URL = '/offline.html';
 const ASSETS = [
     '/',
@@ -43,13 +43,32 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// ── Fetch: Stale-While-Revalidate with Instant Cache Delivery ──
-// Never wait for Render cold starts: Return cached DOM instantly (0ms) and update in background!
+// ── Fetch: Network-First for Navigation (Instant Fresh HTML) & SWR for Static Assets ──
 self.addEventListener('fetch', (event) => {
     if (event.request.method !== 'GET') return;
     const url = new URL(event.request.url);
     if (url.origin !== self.location.origin) return;
     if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/')) return;
+
+    // Navigation requests (HTML pages): Network-first with cache fallback
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request)
+                .then(async (networkResponse) => {
+                    if (networkResponse && networkResponse.status === 200) {
+                        const cache = await caches.open(CACHE_NAME);
+                        cache.put(event.request, networkResponse.clone());
+                    }
+                    return networkResponse;
+                })
+                .catch(async () => {
+                    const cache = await caches.open(CACHE_NAME);
+                    const cached = await cache.match(event.request);
+                    return cached || cache.match(OFFLINE_URL);
+                })
+        );
+        return;
+    }
 
     event.respondWith(
         caches.open(CACHE_NAME).then(async (cache) => {
@@ -63,15 +82,9 @@ self.addEventListener('fetch', (event) => {
                     }
                     return networkResponse;
                 })
-                .catch(() => {
-                    if (event.request.mode === 'navigate' && !cachedResponse) {
-                        return cache.match(OFFLINE_URL);
-                    }
-                    return null;
-                });
+                .catch(() => null);
 
-            // If we have cached copy, return it immediately (<5ms)!
-            // Network fetch executes in the background to update cache for next load.
+            // If we have cached copy for static asset, return it immediately (<5ms)!
             if (cachedResponse) {
                 return cachedResponse;
             }

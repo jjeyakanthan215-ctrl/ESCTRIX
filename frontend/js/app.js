@@ -984,6 +984,7 @@ const ESCTRIX = {
         e.introGetStartedBtn?.addEventListener('click', handleGetStarted);
         e.introNavGetStartedBtn?.addEventListener('click', handleGetStarted);
         e.introBottomGetStartedBtn?.addEventListener('click', handleGetStarted);
+        document.getElementById('hero-app-mockup')?.addEventListener('click', handleGetStarted);
 
         e.introSwitchAccountBtn?.addEventListener('click', () => {
             this.playSfx('click');

@@ -23,12 +23,12 @@
     <meta name="twitter:description" content="Decentralized peer-to-peer messaging platform with Zero-Knowledge E2EE, WebRTC mesh media, and Aura AI Neural Copilot.">
     <meta name="twitter:image" content="https://esctrix.onrender.com/static/logo.png">
 
-    <link rel="stylesheet" href="/static/css/style.css?v=2.3.2">
+    <link rel="stylesheet" href="/static/css/style.css?v=2.4.0">
     <link rel="manifest" href="/manifest.json">
     <script>
         /* ── Automated Self-Healing Cache Cleaner & Theme Initialization ── */
         (function() {
-            var CURRENT_VER = '2.3.2-creamy';
+            var CURRENT_VER = '2.4.0-linear-luxury';
             var lastVer = localStorage.getItem('esctrix_cache_ver');
             if (lastVer !== CURRENT_VER) {
                 localStorage.setItem('esctrix_cache_ver', CURRENT_VER);
@@ -116,30 +116,27 @@
                     </div>
                 </header>
 
-                <!-- Hero Section -->
+                <!-- Hero Section (Linear & Apple Style) -->
                 <div class="intro-hero-top">
-                    <div class="intro-badge-row">
-                        <span class="intro-pill-badge"><i class="ph ph-shield-check"></i> ZERO-KNOWLEDGE E2EE</span>
-                        <span class="intro-pill-badge"><i class="ph ph-sparkle"></i> AURA NEURAL AI</span>
-                        <span class="intro-pill-badge"><i class="ph ph-layout"></i> DECENTRALIZED 2-PANE</span>
+                    <div class="hero-announcement-pill">
+                        <span class="presence-dot online"></span>
+                        <span class="announcement-text">Next-Generation Zero-Knowledge DTLS Mesh • 100% Client-Side E2EE</span>
                     </div>
 
-                    <div class="intro-logo-halo">
-                        <img src="/static/logo.png" alt="ESCTRIX" class="intro-logo-img">
-                    </div>
+                    <h1 class="hero-headline">
+                        Decentralized Messaging.<br>
+                        <span class="hero-highlight-gradient">Zero Surveillance. Real-Time Freedom.</span>
+                    </h1>
 
-                    <h1 class="intro-title">ESCTRIX <span class="quantum-gradient-text">QUANTUM</span></h1>
-                    <p class="intro-subtitle">
-                        The Next-Generation Decentralized Peer-to-Peer Communication Platform.
-                        Direct encrypted WebRTC media, permanent digital identities, and Aura AI Neural Copilot.
-                        Zero third-party cloud surveillance.
+                    <p class="hero-lead-text">
+                        Direct peer-to-peer WebRTC mesh calling, client-side zero-knowledge encryption, dynamic voice note waveforms, and intelligent Aura AI Copilot in an executive dual-pane workspace.
                     </p>
 
                     <!-- Active User Identity Card (Shown dynamically if authenticated) -->
                     <div id="intro-user-card" class="intro-user-card hidden">
                         <div class="intro-user-avatar" id="intro-user-avatar">U</div>
                         <div class="intro-user-meta">
-                            <div class="intro-user-welcome">Active Identity Detected: <strong id="intro-user-displayname">User</strong> (<span id="intro-user-handle">@username</span>)</div>
+                            <div class="intro-user-welcome">Active Identity: <strong id="intro-user-displayname">User</strong> (<span id="intro-user-handle">@username</span>)</div>
                             <div class="intro-user-sub">Account ID: <code id="intro-user-accountid">ESC-000000</code> • Session Synchronized</div>
                         </div>
                     </div>
@@ -147,13 +144,105 @@
                     <!-- Main Gateway Action Group -->
                     <div class="intro-action-group">
                         <button id="intro-get-started-btn" class="btn primary-btn intro-btn-cta">
-                            <i class="ph ph-rocket-launch"></i> <span id="intro-btn-label">Get Started</span>
+                            <i class="ph ph-arrow-right"></i> <span id="intro-btn-label">Launch Web Messenger</span>
                         </button>
-                        <button id="intro-switch-account-btn" class="btn ghost-btn hidden" style="font-size:0.85rem;">
+                        <button id="intro-switch-account-btn" class="btn ghost-btn hidden" style="font-size:0.88rem;">
                             <i class="ph ph-arrows-left-right"></i> Switch Identity
                         </button>
                     </div>
-                    <p class="intro-footnote">Single gateway to access your decentralized workspaces • No installation required</p>
+                    <p class="intro-footnote">Direct zero-knowledge gateway • No third-party tracking • Works natively in your browser</p>
+
+                    <!-- Linear-Style Interactive App Preview Mockup Window -->
+                    <div class="hero-app-mockup" id="hero-app-mockup" title="Click to launch ESCTRIX messenger">
+                        <div class="mockup-window-header">
+                            <div class="mockup-window-dots">
+                                <span class="dot dot-close"></span>
+                                <span class="dot dot-minimize"></span>
+                                <span class="dot dot-expand"></span>
+                            </div>
+                            <div class="mockup-window-title">
+                                <i class="ph ph-shield-check" style="color:var(--primary);"></i> ESCTRIX Quantum Workstation • Zero-Knowledge E2EE Active
+                            </div>
+                            <div class="mockup-window-badge">
+                                <span class="presence-dot online"></span> 60 FPS P2P MESH
+                            </div>
+                        </div>
+
+                        <div class="mockup-window-body">
+                            <!-- Mockup Sidebar -->
+                            <div class="mockup-sidebar">
+                                <div class="mockup-search-pill">
+                                    <i class="ph ph-magnifying-glass"></i> Search conversations...
+                                </div>
+                                <div class="mockup-thread-item active">
+                                    <div class="mockup-avatar" style="background:linear-gradient(135deg, #2563eb, #0284c7);">
+                                        <i class="ph ph-sparkle"></i>
+                                    </div>
+                                    <div class="mockup-thread-meta">
+                                        <div class="mockup-thread-name">Aura AI Neural Copilot <span class="mockup-tag">BOT</span></div>
+                                        <div class="mockup-thread-preview">DTLS mesh voice note ready...</div>
+                                    </div>
+                                </div>
+                                <div class="mockup-thread-item">
+                                    <div class="mockup-avatar" style="background:linear-gradient(135deg, #10b981, #059669);">S</div>
+                                    <div class="mockup-thread-meta">
+                                        <div class="mockup-thread-name">Security Officer</div>
+                                        <div class="mockup-thread-preview">Zero plaintext memory verified.</div>
+                                    </div>
+                                </div>
+                                <div class="mockup-thread-item">
+                                    <div class="mockup-avatar" style="background:linear-gradient(135deg, #f59e0b, #d97706);">Q</div>
+                                    <div class="mockup-thread-meta">
+                                        <div class="mockup-thread-name">Quantum Mesh Space</div>
+                                        <div class="mockup-thread-preview">4 peers synchronized.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mockup Chat Pane -->
+                            <div class="mockup-chat-pane">
+                                <div class="mockup-chat-header">
+                                    <div class="mockup-chat-header-info">
+                                        <strong>Aura AI Neural Copilot</strong>
+                                        <span class="mockup-status-sub"><span class="presence-dot online"></span> Cloud Mesh Online • AES-256</span>
+                                    </div>
+                                    <div class="mockup-header-actions">
+                                        <span class="mockup-icon-btn"><i class="ph ph-phone"></i></span>
+                                        <span class="mockup-icon-btn"><i class="ph ph-video-camera"></i></span>
+                                        <span class="mockup-icon-btn"><i class="ph ph-shield-check"></i></span>
+                                    </div>
+                                </div>
+
+                                <div class="mockup-messages">
+                                    <div class="mockup-msg mockup-received">
+                                        All media, video calls, and voice notes travel directly peer-to-peer via DTLS/SRTP with client-side Zero-Knowledge AES-256 encryption.
+                                        <div class="mockup-msg-time">10:42 AM</div>
+                                    </div>
+                                    <div class="mockup-msg mockup-sent">
+                                        Tested chunked file transfer and voice waveforms. Everything is ultra-responsive and private!
+                                        <div class="mockup-msg-time">10:43 AM <span class="mockup-ticks">✓✓</span></div>
+                                    </div>
+                                    <div class="mockup-typing-pill">
+                                        <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
+                                        <span>Aura AI is real-time synchronized</span>
+                                    </div>
+                                </div>
+
+                                <div class="mockup-composer">
+                                    <div class="mockup-composer-input">
+                                        <i class="ph ph-paperclip"></i>
+                                        <span>Type an encrypted message...</span>
+                                    </div>
+                                    <div class="mockup-composer-btn">
+                                        <i class="ph ph-microphone"></i>
+                                    </div>
+                                    <div class="mockup-composer-btn primary">
+                                        <i class="ph ph-paper-plane-right"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Features Showcase Grid -->
@@ -1441,50 +1530,6 @@
                                             <div class="theme-dot" style="background:#06b6d4;"></div>
                                         </div>
                                         <span>OLED Studio Black</span>
-                                    </div>
-                                </div>
-                            </div>
-                                        <span>Executive Slate</span>
-                                    </div>
-                                    <div class="theme-card" data-theme="midnight-titanium">
-                                        <div class="theme-swatch-preview">
-                                            <div class="theme-dot" style="background:#090e17;"></div>
-                                            <div class="theme-dot" style="background:#3b82f6;"></div>
-                                            <div class="theme-dot" style="background:#38bdf8;"></div>
-                                        </div>
-                                        <span>Midnight Titanium</span>
-                                    </div>
-                                    <div class="theme-card" data-theme="ai-nexus-light">
-                                        <div class="theme-swatch-preview">
-                                            <div class="theme-dot" style="background:#f8fafc;"></div>
-                                            <div class="theme-dot" style="background:#2563eb;"></div>
-                                            <div class="theme-dot" style="background:#0ea5e9;"></div>
-                                        </div>
-                                        <span>Nexus Light Pro</span>
-                                    </div>
-                                    <div class="theme-card" data-theme="aurora-emerald">
-                                        <div class="theme-swatch-preview">
-                                            <div class="theme-dot" style="background:#03140f;"></div>
-                                            <div class="theme-dot" style="background:#10b981;"></div>
-                                            <div class="theme-dot" style="background:#34d399;"></div>
-                                        </div>
-                                        <span>Aurora Emerald</span>
-                                    </div>
-                                    <div class="theme-card" data-theme="oled-pitch">
-                                        <div class="theme-swatch-preview">
-                                            <div class="theme-dot" style="background:#000000;"></div>
-                                            <div class="theme-dot" style="background:#38bdf8;"></div>
-                                            <div class="theme-dot" style="background:#06b6d4;"></div>
-                                        </div>
-                                        <span>OLED Studio Black</span>
-                                    </div>
-                                    <div class="theme-card" data-theme="nebula-frost">
-                                        <div class="theme-swatch-preview">
-                                            <div class="theme-dot" style="background:#0b1526;"></div>
-                                            <div class="theme-dot" style="background:#0284c7;"></div>
-                                            <div class="theme-dot" style="background:#38bdf8;"></div>
-                                        </div>
-                                        <span>Nebula Frost</span>
                                     </div>
                                 </div>
                             </div>
