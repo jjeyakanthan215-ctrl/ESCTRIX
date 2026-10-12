@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESCTRIX — You're Offline</title>
-    <meta name="theme-color" content="#8b5cf6">
+    <meta name="theme-color" content="#2563eb">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -28,7 +28,7 @@
         h1 {
             font-size: 1.6rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #8b5cf6, #06d6c7);
+            background: linear-gradient(135deg, #2563eb, #06b6d4);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -41,17 +41,21 @@
             margin-bottom: 28px;
         }
         button {
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
             color: white;
-            border: none;
-            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 9999px;
             padding: 13px 28px;
             font-size: 0.95rem;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s;
+            box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.3), 0 6px 20px rgba(37, 99, 235, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        button:hover { transform: translateY(-2px); }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.3), 0 8px 25px rgba(37, 99, 235, 0.55);
+        }
     </style>
 </head>
 <body>

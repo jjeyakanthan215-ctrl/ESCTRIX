@@ -277,7 +277,7 @@ def ai_vibe_analysis(messages: List[str]) -> Dict[str, Any]:
         return {
             "vibe": "Technical & Analytical",
             "emoji": "🔬",
-            "color": "#8b5cf6",
+            "color": "#0ea5e9",
             "score": 0.8,
             "summary": "Deep focus on technical problem-solving."
         }

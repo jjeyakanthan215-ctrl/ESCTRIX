@@ -228,19 +228,22 @@
                 <div class="auth-form-container">
                     <h3 id="auth-title">Account Login</h3>
 
-                    <div class="input-group" id="display-name-group" style="display:none;">
+                    <div class="input-group required-field" id="display-name-group" style="display:none;" data-required="true">
                         <i class="ph ph-identification-card input-icon"></i>
-                        <input type="text" id="auth-displayname" placeholder="Enter Display Name" autocomplete="off" class="text-input">
+                        <input type="text" id="auth-displayname" placeholder="Enter Display Name" autocomplete="off" class="text-input" required>
+                        <span class="capsule-req-pill"><span class="capsule-req-dot"></span>Required</span>
                     </div>
 
-                    <div class="input-group">
+                    <div class="input-group required-field" data-required="true">
                         <i class="ph ph-user input-icon" id="auth-user-icon"></i>
-                        <input type="text" id="auth-username" placeholder="Username (Handle)" autocomplete="off" class="text-input">
+                        <input type="text" id="auth-username" placeholder="Username (Handle)" autocomplete="off" class="text-input" required>
+                        <span class="capsule-req-pill"><span class="capsule-req-dot"></span>Required</span>
                     </div>
 
-                    <div class="input-group pwd-input-group">
+                    <div class="input-group pwd-input-group required-field" data-required="true">
                         <i class="ph ph-lock-key input-icon"></i>
-                        <input type="password" id="auth-password" placeholder="Password" autocomplete="off" class="text-input">
+                        <input type="password" id="auth-password" placeholder="Password" autocomplete="off" class="text-input" required>
+                        <span class="capsule-req-pill"><span class="capsule-req-dot"></span>Required</span>
                         <button type="button" id="auth-pwd-toggle" class="pwd-toggle-btn" title="Show/Hide Password" aria-label="Show or hide password">
                             <i class="ph ph-eye"></i>
                         </button>
@@ -753,7 +756,10 @@
                         <div class="admin-pwd-row" style="display:flex; gap:8px; align-items:center;">
                             <div class="input-group pwd-input-group" style="flex:1; margin-bottom:0;">
                                 <i class="ph ph-lock-key input-icon"></i>
-                                <input type="password" id="admin-new-password-input" placeholder="Enter new password (min 4 chars)..." class="text-input">
+                                <div class="input-group required-field" style="margin-bottom:0;" data-required="true">
+                                    <input type="password" id="admin-new-password-input" placeholder="Enter new password (min 4 chars)..." class="text-input" required>
+                                    <span class="capsule-req-pill"><span class="capsule-req-dot"></span>Required</span>
+                                </div>
                                 <button type="button" id="admin-pwd-toggle" class="pwd-toggle-btn" title="Show/Hide Password" aria-label="Show or hide password">
                                     <i class="ph ph-eye"></i>
                                 </button>
@@ -1044,7 +1050,7 @@
                             </button>
 
                             <button class="settings-hub-card" data-tab="privacy">
-                                <div class="hub-card-icon" style="background:linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.2)); color:#a855f7;">
+                                <div class="hub-card-icon" style="background:linear-gradient(135deg, rgba(37,99,235,0.2), rgba(6,182,212,0.2)); color:#0ea5e9;">
                                     <i class="ph ph-shield-check"></i>
                                 </div>
                                 <div class="hub-card-details">
@@ -1380,21 +1386,13 @@
                             </button>
                             <div class="settings-accordion-body">
                                 <div class="theme-grid" id="theme-suite-grid">
-                                    <div class="theme-card active" data-theme="ai-nexus-light">
+                                    <div class="theme-card active" data-theme="executive-slate">
                                         <div class="theme-swatch-preview">
-                                            <div class="theme-dot" style="background:#f8fafc;"></div>
+                                            <div class="theme-dot" style="background:#080c14;"></div>
                                             <div class="theme-dot" style="background:#2563eb;"></div>
-                                            <div class="theme-dot" style="background:#0ea5e9;"></div>
+                                            <div class="theme-dot" style="background:#06b6d4;"></div>
                                         </div>
-                                        <span>AI Nexus Light</span>
-                                    </div>
-                                    <div class="theme-card" data-theme="cyber-obsidian">
-                                        <div class="theme-swatch-preview">
-                                            <div class="theme-dot" style="background:#060a12;"></div>
-                                            <div class="theme-dot" style="background:#8b5cf6;"></div>
-                                            <div class="theme-dot" style="background:#06d6c7;"></div>
-                                        </div>
-                                        <span>Cyber Obsidian</span>
+                                        <span>Executive Slate</span>
                                     </div>
                                     <div class="theme-card" data-theme="midnight-titanium">
                                         <div class="theme-swatch-preview">
@@ -1404,6 +1402,14 @@
                                         </div>
                                         <span>Midnight Titanium</span>
                                     </div>
+                                    <div class="theme-card" data-theme="ai-nexus-light">
+                                        <div class="theme-swatch-preview">
+                                            <div class="theme-dot" style="background:#f8fafc;"></div>
+                                            <div class="theme-dot" style="background:#2563eb;"></div>
+                                            <div class="theme-dot" style="background:#0ea5e9;"></div>
+                                        </div>
+                                        <span>Nexus Light Pro</span>
+                                    </div>
                                     <div class="theme-card" data-theme="aurora-emerald">
                                         <div class="theme-swatch-preview">
                                             <div class="theme-dot" style="background:#03140f;"></div>
@@ -1412,26 +1418,18 @@
                                         </div>
                                         <span>Aurora Emerald</span>
                                     </div>
-                                    <div class="theme-card" data-theme="solar-cyberpunk">
-                                        <div class="theme-swatch-preview">
-                                            <div class="theme-dot" style="background:#0f0a14;"></div>
-                                            <div class="theme-dot" style="background:#ec4899;"></div>
-                                            <div class="theme-dot" style="background:#f59e0b;"></div>
-                                        </div>
-                                        <span>Solar Cyberpunk</span>
-                                    </div>
                                     <div class="theme-card" data-theme="oled-pitch">
                                         <div class="theme-swatch-preview">
                                             <div class="theme-dot" style="background:#000000;"></div>
-                                            <div class="theme-dot" style="background:#a855f7;"></div>
-                                            <div class="theme-dot" style="background:#06d6c7;"></div>
+                                            <div class="theme-dot" style="background:#38bdf8;"></div>
+                                            <div class="theme-dot" style="background:#06b6d4;"></div>
                                         </div>
-                                        <span>OLED Pitch</span>
+                                        <span>OLED Studio Black</span>
                                     </div>
                                     <div class="theme-card" data-theme="nebula-frost">
                                         <div class="theme-swatch-preview">
-                                            <div class="theme-dot" style="background:#0e1626;"></div>
-                                            <div class="theme-dot" style="background:#6366f1;"></div>
+                                            <div class="theme-dot" style="background:#0b1526;"></div>
+                                            <div class="theme-dot" style="background:#0284c7;"></div>
                                             <div class="theme-dot" style="background:#38bdf8;"></div>
                                         </div>
                                         <span>Nebula Frost</span>
@@ -1712,7 +1710,7 @@
 
                                 <div class="settings-form-group">
                                     <label>Subject / Topic</label>
-                                    <input type="text" id="support-request-subject" class="text-input" placeholder="e.g. Help with video calling over mobile network">
+                                    <input type="text" id="support-request-subject" class="text-input" placeholder="e.g. Help with video calling over mobile network" required>
                                 </div>
 
                                 <div class="settings-form-group">
@@ -1732,7 +1730,7 @@
                         <div class="settings-accordion-item">
                             <button class="settings-accordion-header" type="button">
                                 <div class="acc-header-left">
-                                    <i class="ph ph-book-open acc-icon" style="color:#a855f7;"></i>
+                                    <i class="ph ph-book-open acc-icon" style="color:#0ea5e9;"></i>
                                     <div class="acc-titles">
                                         <strong>Frequently Asked Questions</strong>
                                         <span class="acc-desc">Instant answers to common platform questions</span>
@@ -1858,9 +1856,10 @@
             <!-- Host Setup View -->
             <div id="host-setup" class="space-tab-pane">
                 <p class="muted">Start a secure peer-to-peer room with custom name & PIN.</p>
-                <div class="input-group" style="margin-top:14px;">
+                <div class="input-group required-field" style="margin-top:14px;" data-required="true">
                     <i class="ph ph-text-t input-icon"></i>
-                    <input type="text" id="host-space-name" placeholder="Space Name (e.g. CyberRoom)" autocomplete="off" class="text-input">
+                    <input type="text" id="host-space-name" placeholder="Space Name (e.g. CyberRoom)" autocomplete="off" class="text-input" required>
+                    <span class="capsule-req-pill"><span class="capsule-req-dot"></span>Required</span>
                 </div>
                 <div class="input-group">
                     <i class="ph ph-key input-icon"></i>
@@ -1892,9 +1891,10 @@
             <!-- Join Space View -->
             <div id="client-setup" class="space-tab-pane" style="display:none;">
                 <p class="muted">Enter space name or peer account handle to join.</p>
-                <div class="input-group" style="margin-top:14px;">
+                <div class="input-group required-field" style="margin-top:14px;" data-required="true">
                     <i class="ph ph-users input-icon"></i>
-                    <input type="text" id="join-space-name" placeholder="Space Name or Account ID" autocomplete="off" class="text-input">
+                    <input type="text" id="join-space-name" placeholder="Space Name or Account ID" autocomplete="off" class="text-input" required>
+                    <span class="capsule-req-pill"><span class="capsule-req-dot"></span>Required</span>
                 </div>
                 <div class="input-group">
                     <i class="ph ph-key input-icon"></i>

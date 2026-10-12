@@ -348,7 +348,7 @@ const ESCTRIX = {
             this.state.sfxEnabled = sfx === 'true';
             if (this.elements.prefSfxToggle) this.elements.prefSfxToggle.checked = this.state.sfxEnabled;
         }
-        const theme = localStorage.getItem('esctrix_theme') || 'ai-nexus-light';
+        const theme = localStorage.getItem('esctrix_theme') || 'executive-slate';
         document.documentElement.setAttribute('data-theme', theme);
         this.settings?.loadTheme();
 
@@ -1626,7 +1626,7 @@ const ESCTRIX = {
     avatarPresets: [
         {
             name: 'Cyber Hacker',
-            url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g1' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%238b5cf6'/%3E%3Cstop offset='100%25' stop-color='%2306d6c7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='50' fill='%230b101d'/%3E%3Ccircle cx='50' cy='50' r='46' fill='none' stroke='url(%23g1)' stroke-width='3'/%3E%3Cpath d='M25 40 Q50 20 75 40 L75 60 Q50 85 25 60 Z' fill='%231f293d' stroke='%2306d6c7' stroke-width='2'/%3E%3Crect x='34' y='46' width='12' height='6' rx='3' fill='%2306d6c7'/%3E%3Crect x='54' y='46' width='12' height='6' rx='3' fill='%2306d6c7'/%3E%3Cpath d='M42 62 Q50 68 58 62' stroke='%238b5cf6' stroke-width='2' fill='none'/%3E%3C/svg%3E"
+            url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g1' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%232563eb'/%3E%3Cstop offset='100%25' stop-color='%2306d6c7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='50' fill='%230b101d'/%3E%3Ccircle cx='50' cy='50' r='46' fill='none' stroke='url(%23g1)' stroke-width='3'/%3E%3Cpath d='M25 40 Q50 20 75 40 L75 60 Q50 85 25 60 Z' fill='%231f293d' stroke='%2306d6c7' stroke-width='2'/%3E%3Crect x='34' y='46' width='12' height='6' rx='3' fill='%2306d6c7'/%3E%3Crect x='54' y='46' width='12' height='6' rx='3' fill='%2306d6c7'/%3E%3Cpath d='M42 62 Q50 68 58 62' stroke='%232563eb' stroke-width='2' fill='none'/%3E%3C/svg%3E"
         },
         {
             name: 'Neural AI',
@@ -1634,7 +1634,7 @@ const ESCTRIX = {
         },
         {
             name: 'Quantum Agent',
-            url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g3' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ec4899'/%3E%3Cstop offset='100%25' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='50' fill='%23180824'/%3E%3Ccircle cx='50' cy='50' r='46' fill='none' stroke='url(%23g3)' stroke-width='3'/%3E%3Cpath d='M50 22 L76 34 L76 58 Q50 82 50 82 Q24 58 24 58 L24 34 Z' fill='%232e1047' stroke='%23ec4899' stroke-width='2'/%3E%3Cpolygon points='50,34 62,56 38,56' fill='%23f59e0b'/%3E%3Ccircle cx='50' cy='66' r='3' fill='%2306d6c7'/%3E%3C/svg%3E"
+            url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g3' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ec4899'/%3E%3Cstop offset='100%25' stop-color='%232563eb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='50' fill='%23180824'/%3E%3Ccircle cx='50' cy='50' r='46' fill='none' stroke='url(%23g3)' stroke-width='3'/%3E%3Cpath d='M50 22 L76 34 L76 58 Q50 82 50 82 Q24 58 24 58 L24 34 Z' fill='%232e1047' stroke='%23ec4899' stroke-width='2'/%3E%3Cpolygon points='50,34 62,56 38,56' fill='%23f59e0b'/%3E%3Ccircle cx='50' cy='66' r='3' fill='%2306d6c7'/%3E%3C/svg%3E"
         },
         {
             name: 'Aurora Ghost',
@@ -1683,7 +1683,7 @@ const ESCTRIX = {
                 display_name: 'Aura AI Neural Companion',
                 account_id: 'AI-CORE-001',
                 bio: 'Adaptive conversational intelligence and peer security companion.',
-                avatar_color: 'linear-gradient(135deg, #8b5cf6, #06d6c7)'
+                avatar_color: 'linear-gradient(135deg, #2563eb, #06d6c7)'
             });
         } else if (s.activeChat.type === 'saved') {
             if (s.user) this.profileModal.open(s.user);
@@ -1946,7 +1946,7 @@ const ESCTRIX = {
         },
 
         loadTheme() {
-            const saved = localStorage.getItem('esctrix_theme') || 'ai-nexus-light';
+            const saved = localStorage.getItem('esctrix_theme') || 'executive-slate';
             document.documentElement.setAttribute('data-theme', saved);
             document.querySelectorAll('.theme-card').forEach(c => {
                 c.classList.toggle('active', c.dataset.theme === saved);
@@ -2040,12 +2040,12 @@ const ESCTRIX = {
 
         cycleAvatarColor() {
             const colors = [
-                'linear-gradient(135deg, #8b5cf6, #06d6c7)',
-                'linear-gradient(135deg, #ec4899, #8b5cf6)',
-                'linear-gradient(135deg, #3b82f6, #06d6c7)',
+                'linear-gradient(135deg, #2563eb, #06b6d4)',
+                'linear-gradient(135deg, #0284c7, #38bdf8)',
                 'linear-gradient(135deg, #10b981, #059669)',
-                'linear-gradient(135deg, #f59e0b, #ef4444)',
-                'linear-gradient(135deg, #6366f1, #a855f7)'
+                'linear-gradient(135deg, #334155, #64748b)',
+                'linear-gradient(135deg, #1e293b, #3b82f6)',
+                'linear-gradient(135deg, #d97706, #f59e0b)'
             ];
             const current = ESCTRIX.state.user?.avatar_color || colors[0];
             let nextIdx = (colors.indexOf(current) + 1) % colors.length;
@@ -2531,7 +2531,7 @@ const ESCTRIX = {
                 e.threadAuraAi?.classList.add('active');
                 if (e.activeChatAvatar) {
                     e.activeChatAvatar.innerHTML = '<i class="ph ph-sparkle"></i>';
-                    e.activeChatAvatar.style.background = 'linear-gradient(135deg, #8b5cf6, #06d6c7)';
+                    e.activeChatAvatar.style.background = 'linear-gradient(135deg, #2563eb, #06b6d4)';
                 }
                 this.hideChatGate();
             } else if (type === 'saved') {
@@ -3782,7 +3782,7 @@ const ESCTRIX = {
                     const avatarContent = c.avatar_photo
                         ? `<img src="${c.avatar_photo}" class="avatar-img" alt="Avatar">`
                         : (c.display_name || c.peer_username).charAt(0).toUpperCase();
-                    const avatarBg = c.avatar_photo ? 'transparent' : (c.avatar_color || 'linear-gradient(135deg, #8b5cf6, #06d6c7)');
+                    const avatarBg = c.avatar_photo ? 'transparent' : (c.avatar_color || 'linear-gradient(135deg, #2563eb, #06b6d4)');
                     const timeStr = c.last_msg_time ? new Date(c.last_msg_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
                     const unreadHtml = c.unread_count > 0 ? `<span class="badge-pill" style="background:var(--accent); color:#000; font-size:0.7rem; font-weight:700; border-radius:10px; padding:2px 7px;">${c.unread_count}</span>` : '';
 
@@ -4949,7 +4949,7 @@ const ESCTRIX = {
                     audioCard.id = 'audio-call-indicator-card';
                     audioCard.style.cssText = 'display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; width:100%; gap:16px; color:#fff; text-align:center; padding:20px;';
                     audioCard.innerHTML = `
-                        <div class="caller-avatar ringing-pulse" style="width:90px; height:90px; font-size:2.2rem; background:linear-gradient(135deg, #06d6c7, #8b5cf6); margin:0 auto;">
+                        <div class="caller-avatar ringing-pulse" style="width:90px; height:90px; font-size:2.2rem; background:linear-gradient(135deg, #06b6d4, #2563eb); margin:0 auto;">
                             <i class="ph ph-waveform"></i>
                         </div>
                         <h3 style="font-size:1.3rem; margin:0; font-weight:700;">Voice Call Connected</h3>
@@ -5234,7 +5234,7 @@ const ESCTRIX = {
                 for (let c = 0; c < cols; c++) {
                     const val = (hash >> (r * 5 + c)) & 1;
                     if (val) {
-                        ctx.fillStyle = (r + c) % 2 === 0 ? '#06d6c7' : '#8b5cf6';
+                        ctx.fillStyle = (r + c) % 2 === 0 ? '#06b6d4' : '#2563eb';
                         ctx.beginPath();
                         ctx.roundRect(c * size + 4, r * size + 4, size - 8, size - 8, [6]);
                         ctx.fill();

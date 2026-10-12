@@ -10,7 +10,7 @@
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#080c14",
-  "theme_color": "#8b5cf6",
+  "theme_color": "#2563eb",
   "categories": ["social", "communication"],
   "prefer_related_applications": false,
   "icons": [

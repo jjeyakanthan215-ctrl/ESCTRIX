@@ -29,12 +29,12 @@ FIREBASE_PROJECT_ID = os.environ.get('FIREBASE_PROJECT_ID', '').strip()
 FIREBASE_API_KEY = os.environ.get('FIREBASE_API_KEY', '').strip()
 
 AVATAR_COLORS = [
-    'linear-gradient(135deg, #8b5cf6, #06d6c7)',
-    'linear-gradient(135deg, #ec4899, #8b5cf6)',
-    'linear-gradient(135deg, #3b82f6, #06d6c7)',
+    'linear-gradient(135deg, #2563eb, #06b6d4)',
+    'linear-gradient(135deg, #0284c7, #38bdf8)',
     'linear-gradient(135deg, #10b981, #059669)',
-    'linear-gradient(135deg, #f59e0b, #ef4444)',
-    'linear-gradient(135deg, #6366f1, #a855f7)'
+    'linear-gradient(135deg, #334155, #64748b)',
+    'linear-gradient(135deg, #1e293b, #3b82f6)',
+    'linear-gradient(135deg, #d97706, #f59e0b)'
 ]
 
 _pg_pool = None
